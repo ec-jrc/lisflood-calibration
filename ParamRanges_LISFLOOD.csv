@@ -1,0 +1,9 @@
+ParameterName,MinValue,MaxValue,DefaultValue
+UpperZoneTimeConstant,3,40,10
+LowerZoneTimeConstant,40,500,100
+GwPercValue,0.01,2,0.8
+GwLoss,0,0.5,0
+b_Xinanjiang,0.01,1,0.5
+PowerPrefFlow,0.5,8,4
+SnowMeltCoef,2.5,6.5,4
+CalChanMan1,0.1,15,3
