@@ -263,7 +263,7 @@ $(PathEvapo)/$(PrefixE0)
 </comment>
 </textvar>
 
-<textvar name="Latitude" value="$(PathMaps)/lat.map">
+<textvar name="Latitude" value="$(PathMaps)/latitude.nc">
 <comment>
 latitude map to be used for snow/ice modelling
 </comment>
@@ -523,7 +523,7 @@ Path of the initial value maps e.g. lzavin.map (org=$(PathRoot)/outPo)
 </comment>
 </textvar>
 
-<textvar name="PathMaps" value="%CatchmentDataPath/maps">
+<textvar name="PathMaps" value="$(PathRoot)/maps">
 <comment>
 Maps path
 </comment>
@@ -548,51 +548,51 @@ Tables path
 </comment>
 </textvar>
 
-<textvar name="PathMapsTables" value="%CatchmentDataPath/maps/table2map">
+<textvar name="PathMapsTables" value="$(PathRoot)/maps">
 <comment>
 Maps instead tables path
 </comment>
 </textvar>
 
-<textvar name="PathSoilHyd" value="%CatchmentDataPath/maps/soilhyd">
+<textvar name="PathSoilHyd" value="$(PathRoot)/maps">
 <comment>
 Maps instead tables for soil hydraulics path
 </comment>
 </textvar>
 
-<textvar name="PathMapsLandUseChange" value="%CatchmentDataPath/maps/landusechange">
+<textvar name="PathMapsLandUseChange" value="$(PathRoot)/maps">
 <comment>
 Maps for transient land use changes 
 rcp85_20062125
 </comment>
 </textvar>
 
-<textvar name="PathMapsLanduse" value="%CatchmentDataPath/maps/landuse2000">
+<textvar name="PathMapsLanduse" value="$(PathRoot)/maps">
 <comment>
 Maps for land use fractions and related land use maps
 </comment>
 </textvar>
 
-<textvar name="PathWaterUse" value="%CatchmentDataPath/maps/wateruse2000">
+<textvar name="PathWaterUse" value="$(PathRoot)/maps">
 <comment>
 Water use maps path
 </comment>
 </textvar>
 
-<textvar name="PathMeteo" value="%MeteoDataPath">
+<textvar name="PathMeteo" value="$(PathRoot)/maps">
 <comment>
 ./meteoWatch
 Meteo path
 </comment>
 </textvar>
 
-<textvar name="PathLAI" value="%CatchmentDataPath/maps/lai">
+<textvar name="PathLAI" value="$(PathRoot)/maps">
 <comment>
 Leaf Area Index maps path
 </comment>
 </textvar>
 
-<textvar name="PathVarWaterfraction" value="%CatchmentDataPath/maps/variablewater">
+<textvar name="PathVarWaterfraction" value="$(PathRoot)/maps">
 <comment>
 variable water fraction maps path
 </comment>
@@ -1148,7 +1148,7 @@ Consumptive Use (1-Recycling ratio) for industrial water use (0-1)
 </comment>
 </textvar>
 
-<textvar name="EnergyConsumptiveUseFraction" value="$(PathMaps)/energyconsumptiveuse">
+<textvar name="EnergyConsumptiveUseFraction" value="$(PathRoot)/maps/energyconsumptiveuse">
 <comment>
 	# Consumptive Use (1-Recycling ratio) for energy water use (0-1)
 	# Source: Torcellini et al. (2003) "Consumptive Use for US Power Production"
@@ -1220,7 +1220,7 @@ Suggested parameterisation strategy:
 - calibrate on  GwLossFraction if necessary
 </comment>
 
-<textvar name="LZThreshold" value="$(PathMaps)/lzthreshold">
+<textvar name="LZThreshold" value="$(PathRoot)/maps/lzthreshold">
 <comment>
 threshold value below which there is no outflow to the channel
 </comment>
@@ -1232,7 +1232,7 @@ length of the window used to smooth the LZ zone [number of cell length]
 </comment>
 </textvar>
 
-<textvar name="GroundwaterBodies" value="$(PathMaps)/gwbodies">
+<textvar name="GroundwaterBodies" value="$(PathRoot)/maps/gwbodies">
 <comment>
 map of aquifers (0/1), used to smoothen LZ near extraction areas
 </comment>
@@ -1250,13 +1250,13 @@ EVAPORATION FROM OPEN WATER
 
 </comment>
 
-<textvar name="FracMaxWater" value="$(PathMaps)/fracmaxwater">
+<textvar name="FracMaxWater" value="$(PathRoot)/maps/fracmaxwater">
 <comment>
 Fraction of maximum extend of water
 </comment>
 </textvar>
 
-<textvar name="LakeMask" value="$(PathMaps)/lakemask">
+<textvar name="LakeMask" value="$(PathRoot)/maps/lakemask">
 <comment>
 Mask with Lakes from GLWD database 
 </comment>
@@ -1299,7 +1299,7 @@ downstream area taking into account for transmission loss
 </comment>
 </textvar>
 
-<textvar name="UpAreaTrans" value="$(PathMaps)/upArea">
+<textvar name="UpAreaTrans" value="$(PathRoot)/upArea">
 <comment>
 upstream area
 </comment>
@@ -1574,13 +1574,13 @@ Number of last time step in simulation
 </comment>
 </textvar>
 
-</group>
-
 <textvar name="Latitude" value="$(Latitude)">
 <comment>
 latitude map to be used for snow/ice modelling
 </comment>
 </textvar>
+
+</group>
 
 <group>
 
@@ -2454,31 +2454,31 @@ More than the transpiration is added e.g to prevent salinisation
 </comment>
 </textvar>
 
-<textvar name="MapIrrigationCropCoef" value="$(PathMapsTables)/cropcoef_i">
+<textvar name="MapIrrigationCropCoef" value="$(PathRoot)/maps/cropcoef_i">
 <comment>
 Irrigation crop coefficient
 </comment>
 </textvar>
 
-<textvar name="MapIrrigationCropGroupNumber" value="$(PathMapsTables)/cropgrpn_i">
+<textvar name="MapIrrigationCropGroupNumber" value="$(PathRoot)/maps/cropgrpn_i">
 <comment>
 Irrigation crop group number
 </comment>
 </textvar>
 
-<textvar name="Population" value="$(PathMapsLanduse)/pop">
+<textvar name="Population" value="$(PathRoot)/maps/pop">
 <comment>
 Population
 </comment>
 </textvar>
 
-<textvar name="PopulationMaps" value="$(PathWaterUse)/pop">
+<textvar name="PopulationMaps" value="$(PathRoot)/maps/pop">
 <comment>
 Population
 </comment>
 </textvar>
 
-<textvar name="LandUseMask" value="$(PathMaps)/lusemask">
+<textvar name="LandUseMask" value="$(PathRoot)/maps/lusemask">
 <comment>
 Land Use Mask
 </comment>
@@ -4089,19 +4089,19 @@ TOPOGRAPHY MAPS
 **************************************************************
 </comment>
 
-<textvar name="Ldd" value="$(PathMaps)/ldd">
+<textvar name="Ldd" value="$(PathRoot)/maps/ldd">
 <comment>
 local drain direction map (1-9)
 </comment>
 </textvar>
 
-<textvar name="Grad" value="$(PathMaps)/gradient">
+<textvar name="Grad" value="$(PathRoot)/maps/gradient">
 <comment>
 slope gradient [-] (0.50 -&gt; tangent=0.5, angle=26.5 degrees)
 </comment>
 </textvar>
 
-<textvar name="ElevationStD" value="$(PathMaps)/elvstd">
+<textvar name="ElevationStD" value="$(PathRoot)/maps/elvstd">
 <comment>
 Elevation standard deviation [m], i.e. altitude difference elevation within pixel.
 Used for sub-pixel modelling of snow accumulation
@@ -4117,20 +4117,20 @@ is written to file(1,2,3 etc)
 </comment>
 </textvar>
 
-<textvar name="Sites" value="$(PathMaps)/outlets_World">
+<textvar name="Sites" value="$(PathRoot)/maps/outlets_World">
 <comment>
 map with monitoring sites (1,2,3 etc)
 </comment>
 </textvar>
 
-<textvar name="PixelLengthUser" value="$(PathMaps)/pixleng">
+<textvar name="PixelLengthUser" value="$(PathRoot)/maps/pixleng">
 <comment>
 optional map with pixel length [m], only needed in case map attributes
 are not in [m] (e.g. lat / lon systems) 
 </comment>
 </textvar>
 
-<textvar name="PixelAreaUser" value="$(PathMaps)/pixarea">
+<textvar name="PixelAreaUser" value="$(PathRoot)/maps/pixarea">
 <comment>
 optional map with pixel area [m2], only needed in case map attributes
 are not in [m] (e.g. lat / lon systems) 
@@ -4153,7 +4153,7 @@ Suggested parameterisation strategy:
 
 </comment>
 
-<textvar name="SoilDepth1" value="$(PathMapsTables)/soildepth1_o">
+<textvar name="SoilDepth1" value="$(PathRoot)/maps/soildepth1_o">
 <comment>
 Soil depth for 1st layer  
 Minimum Soil Depth [mm] for upper soil layer 
@@ -4162,21 +4162,21 @@ For Africa it is 200 mm
 </comment>
 </textvar>
 
-<textvar name="SoilDepth2" value="$(PathMapsTables)/soildepth2_o">
+<textvar name="SoilDepth2" value="$(PathRoot)/maps/soildepth2_o">
 <comment>
 Soil depth for 2nd layer  
 Minimum Soil Depth [mm] for second soil layer  
 </comment>
 </textvar>
 
-<textvar name="SoilDepth3" value="$(PathMapsTables)/soildepth3_o">
+<textvar name="SoilDepth3" value="$(PathRoot)/maps/soildepth3_o">
 <comment>
 Soil depth for 2nd layer  
 Minimum Soil Depth [mm] for second soil layer  
 </comment>
 </textvar>
 
-<textvar name="SoilDepth1Forest" value="$(PathMapsTables)/soildepth1_f">
+<textvar name="SoilDepth1Forest" value="$(PathRoot)/maps/soildepth1_f">
 <comment>
 Soil depth for 1st layer  
 Minimum Soil Depth [mm] for upper soil layer 
@@ -4185,14 +4185,14 @@ For Africa it is 200 mm
 </comment>
 </textvar>
 
-<textvar name="SoilDepth2Forest" value="$(PathMapsTables)/soildepth2_f">
+<textvar name="SoilDepth2Forest" value="$(PathRoot)/maps/soildepth2_f">
 <comment>
 Soil depth for 2nd layer  
 Minimum Soil Depth [mm] for lower soil layer  
 </comment>
 </textvar>
 
-<textvar name="SoilDepth3Forest" value="$(PathMapsTables)/soildepth3_f">
+<textvar name="SoilDepth3Forest" value="$(PathRoot)/maps/soildepth3_f">
 <comment>
 Soil depth for 2nd layer  
 Minimum Soil Depth [mm] for lower soil layer  300
@@ -4209,69 +4209,69 @@ LAND USE RELATED MAPS AND TABLES
 **************************************************************
 </comment>
 
-<textvar name="DirectRunoffFraction" value="$(PathMapsLanduse)/fracsealed">
+<textvar name="DirectRunoffFraction" value="$(PathRoot)/maps//fracsealed">
 <comment>
 $(PathMapsLanduse)/fracsealed.map
 urban area (0-1)
 </comment>
 </textvar>
 
-<textvar name="DirectRunoffFractionMaps" value="$(PathMapsLandUseChange)/fracsealed">
+<textvar name="DirectRunoffFractionMaps" value="$(PathRoot)/maps/fracsealed">
 <comment>
 stack of Direct Runoff fraction maps (0-1)
 </comment>
 </textvar>
 
-<textvar name="ForestFraction" value="$(PathMapsLanduse)/fracforest">
+<textvar name="ForestFraction" value="$(PathRoot)/maps/fracforest">
 <comment>
 $(PathMapsLanduse)/fracforest.map
 forest fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="ForestFractionMaps" value="$(PathMapsLandUseChange)/fracforest">
+<textvar name="ForestFractionMaps" value="$(PathRoot)/maps/fracforest">
 <comment>
 $(PathMapsLandUseChange)/
 stack of forest fraction maps (0-1)
 </comment>
 </textvar>
 
-<textvar name="WaterFraction" value="$(PathMapsLanduse)/fracwater">
+<textvar name="WaterFraction" value="$(PathRoot)/maps/fracwater">
 <comment>
 $(PathMapsLanduse)/fracwater.map
 forest fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="WaterFractionMaps" value="$(PathMapsLandUseChange)/fracwater">
+<textvar name="WaterFractionMaps" value="$(PathRoot)/maps/fracwater">
 <comment>
 $(PathMapsLandUseChange)/
 stack of water fraction maps (0-1)
 </comment>
 </textvar>
 
-<textvar name="OtherFraction" value="$(PathMapsLanduse)/fracother">
+<textvar name="OtherFraction" value="$(PathRoot)/maps/fracother">
 <comment>
 $(PathMapsLanduse)/fracother.map
 forest fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="OtherFractionMaps" value="$(PathMapsLandUseChange)/fracother">
+<textvar name="OtherFractionMaps" value="$(PathRoot)/maps/fracother">
 <comment>
 $(PathMapsLandUseChange)/
 stack of other fraction maps (0-1)
 </comment>
 </textvar>
 
-<textvar name="IrrigationFraction" value="$(PathMapsLanduse)/fracirrigated">
+<textvar name="IrrigationFraction" value="$(PathRoot)/maps/fracirrigated">
 <comment>
 $(PathMapsLanduse)/fracirrigated.map
 irrigated area fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="IrrigationFractionMaps" value="$(PathMapsLandUseChange)/fracirrigated">
+<textvar name="IrrigationFractionMaps" value="$(PathRoot)/maps/fracirrigated">
 <comment>
 $(PathMapsLandUseChange)/
 stack of Irrigation fraction maps (0-1)
@@ -4285,25 +4285,25 @@ drained fraction from irrigated area  (0-1)
 </comment>
 </textvar>
 
-<textvar name="RiceFraction" value="$(PathMapsLanduse)/fracrice">
+<textvar name="RiceFraction" value="$(PathRoot)/maps/fracrice">
 <comment>
 rice fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="RiceFractionMaps" value="$(PathMapsLandUseChange)/fracrice">
+<textvar name="RiceFractionMaps" value="$(PathRoot)/maps/fracrice">
 <comment>
 stack of rice fraction maps (0-1)
 </comment>
 </textvar>
 
-<textvar name="FractionGroundwaterUsed" value="$(PathMapsLanduse)/fracgwused">
+<textvar name="FractionGroundwaterUsed" value="$(PathRoot)/maps/fracgwused">
 <comment>
 groundwater used fraction of a pixel (0-1)
 </comment>
 </textvar>
 
-<textvar name="FractionNonConventionalWaterUsed" value="$(PathMapsLanduse)/fracncused">
+<textvar name="FractionNonConventionalWaterUsed" value="$(PathRoot)/maps/fracncused">
 <comment>
 NonConventionalWaterUsed (0-1)
 </comment>
@@ -4322,40 +4322,40 @@ EFlowThreshold is map with m3/s discharge, e.g. the 10th percentile discharge of
 </comment>
 </textvar>
 
-<textvar name="MapCropCoef" value="$(PathMapsTables)/cropcoef_o.map">
+<textvar name="MapCropCoef" value="$(PathRoot)/maps//cropcoef_o.map">
 <comment>
 table with crop coefficient for each land use; values ranging from 0.75 to 1.25;
 source: Supit, p.83 CFET
 </comment>
 </textvar>
 
-<textvar name="MapCropGroupNumber" value="$(PathMapsTables)/cropgrpn_o">
+<textvar name="MapCropGroupNumber" value="$(PathRoot)/maps/cropgrpn_o">
 <comment>
 table with crop group number; table 6.1 and 6.2 in WOFOST 6.0, Supit, 1994: p. 86
 </comment>
 </textvar>
 
-<textvar name="MapN" value="$(PathMapsTables)/mannings_o">
+<textvar name="MapN" value="$(PathRoot)/maps/mannings_o">
 <comment>
 $(PathMapsTables)/manngs_2000_250m.map
 table with Manning's roughness for each CORINE landcover class
 </comment>
 </textvar>
 
-<textvar name="MapForestCropCoef" value="$(PathMapsTables)/cropcoef_f">
+<textvar name="MapForestCropCoef" value="$(PathRoot)/maps/cropcoef_f">
 <comment>
 table with crop coefficient for each land use; values ranging from 0.75 to 1.25;
 source: Supit, p.83 CFET
 </comment>
 </textvar>
 
-<textvar name="MapForestCropGroupNumber" value="$(PathMapsTables)/cropgrpn_f">
+<textvar name="MapForestCropGroupNumber" value="$(PathRoot)/maps/cropgrpn_f">
 <comment>
 table with crop group number; table 6.1 and 6.2 in WOFOST 6.0, Supit, 1994: p. 86
 </comment>
 </textvar>
 
-<textvar name="MapForestN" value="$(PathMapsTables)/mannings_f">
+<textvar name="MapForestN" value="$(PathRoot)/maps/mannings_f">
 <comment>
 $(PathMapsTables)/manngs_2000_250m.map
 table with Manning's roughness for each CORINE landcover class
@@ -4391,7 +4391,7 @@ CHANNEL MAPS
 **************************************************************
 </comment>
 
-<textvar name="Channels" value="$(PathMaps)/chan">
+<textvar name="Channels" value="$(PathRoot)/maps/chan">
 <comment>
 Boolean map with value 1 at channel pixels and 0 at
 all other pixels
@@ -4400,44 +4400,44 @@ THEN THIS  MAY RESULT IN INCORRECT RESULTS
 </comment>
 </textvar>
 
-<textvar name="ChanGrad" value="$(PathMaps)/changrad">
+<textvar name="ChanGrad" value="$(PathRoot)/maps/changrad">
 <comment>
 Channel gradient (fraction, dy/dx)
 </comment>
 </textvar>
 
-<textvar name="ChanMan" value="$(PathMaps)/chanman">
+<textvar name="ChanMan" value="$(PathRoot)/maps/chanman">
 <comment>
 Channel Manning's n
 </comment>
 </textvar>
 
-<textvar name="ChanLength" value="$(PathMaps)/chanleng">
+<textvar name="ChanLength" value="$(PathRoot)/maps/chanleng">
 <comment>
 Channel length [meters]
 </comment>
 </textvar>
 
-<textvar name="ChanBottomWidth" value="$(PathMaps)/chanbw">
+<textvar name="ChanBottomWidth" value="$(PathRoot)/maps/chanbw">
 <comment>
 Channel bottom width [meters]
 </comment>
 </textvar>
 
-<textvar name="ChanSdXdY" value="$(PathMaps)/chans">
+<textvar name="ChanSdXdY" value="$(PathRoot)/maps/chans">
 <comment>
 Channel side slope, expressed as gradient
 !! expressed as dx/dy !!! (NOT dy/dx, which would perhaps be more logical)
 </comment>
 </textvar>
 
-<textvar name="FloodPlainWidth" value="$(PathMaps)/chanflpn">
+<textvar name="FloodPlainWidth" value="$(PathRoot)/maps/chanflpn">
 <comment>
 Floodplain Width [meters]
 </comment>
 </textvar>
 
-<textvar name="ChanDepthThreshold" value="$(PathMaps)/chanbnkf">
+<textvar name="ChanDepthThreshold" value="$(PathRoot)/maps/chanbnkf">
 <comment>
 Bankfull channel depth [meters]
 </comment>
@@ -4454,94 +4454,94 @@ lower (2) soil layer
 **************************************************************
 </comment>
 
-<textvar name="MapThetaSat1" value="$(PathSoilHyd)/thetas1_o">
+<textvar name="MapThetaSat1" value="$(PathRoot)/maps/thetas1_o">
 <comment>
 Soil moisture content at saturation [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaSat2" value="$(PathSoilHyd)/thetas2_o">
+<textvar name="MapThetaSat2" value="$(PathRoot)/maps/thetas2_o">
 <comment>
 Soil moisture content at saturation [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaSat3" value="$(PathSoilHyd)/thetas3">
+<textvar name="MapThetaSat3" value="$(PathRoot)/maps/thetas3">
 <comment>
 Soil moisture content at saturation [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaRes1" value="$(PathSoilHyd)/thetar1">
+<textvar name="MapThetaRes1" value="$(PathRoot)/maps/thetar1">
 <comment>
 Residual soil moisture content [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaRes2" value="$(PathSoilHyd)/thetar2">
+<textvar name="MapThetaRes2" value="$(PathRoot)/maps/thetar2">
 <comment>
 Residual soil moisture content [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaRes3" value="$(PathSoilHyd)/thetar3">
+<textvar name="MapThetaRes3" value="$(PathRoot)/maps/thetar3">
 <comment>
 Residual soil moisture content [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapLambda1" value="$(PathSoilHyd)/lambda1_o">
+<textvar name="MapLambda1" value="$(PathRoot)/maps/lambda1_o">
 <comment>
 Pore-size index (Van Genuchten m and n are calculated from this)
 Lambda is acually 1-n
 </comment>
 </textvar>
 
-<textvar name="MapLambda2" value="$(PathSoilHyd)/lambda2_o">
+<textvar name="MapLambda2" value="$(PathRoot)/maps/lambda2_o">
 <comment>
 Pore-size index (Van Genuchten m and n are calculated from this)
 Lambda is acually 1-n
 </comment>
 </textvar>
 
-<textvar name="MapLambda3" value="$(PathSoilHyd)/lambda3">
+<textvar name="MapLambda3" value="$(PathRoot)/maps/lambda3">
 <comment>
 Pore-size index (Van Genuchten m and n are calculated from this)
 Lambda is acually 1-n
 </comment>
 </textvar>
 
-<textvar name="MapGenuAlpha1" value="$(PathSoilHyd)/genua1_o">
+<textvar name="MapGenuAlpha1" value="$(PathRoot)/maps/genua1_o">
 <comment>
 Van Genuchten parameter Alpha
 </comment>
 </textvar>
 
-<textvar name="MapGenuAlpha2" value="$(PathSoilHyd)/genua2_o">
+<textvar name="MapGenuAlpha2" value="$(PathRoot)/maps/genua2_o">
 <comment>
 Van Genuchten parameter Alpha
 </comment>
 </textvar>
 
-<textvar name="MapGenuAlpha3" value="$(PathSoilHyd)/genua3">
+<textvar name="MapGenuAlpha3" value="$(PathRoot)/maps/genua3">
 <comment>
 Van Genuchten parameter Alpha
 </comment>
 </textvar>
 
-<textvar name="MapKSat1" value="$(PathSoilHyd)/ksat1_o">
+<textvar name="MapKSat1" value="$(PathRoot)/maps/ksat1_o">
 <comment>
 Saturated conductivity [cm/day]
 </comment>
 </textvar>
 
-<textvar name="MapKSat2" value="$(PathSoilHyd)/ksat2_o">
+<textvar name="MapKSat2" value="$(PathRoot)/maps/ksat2_o">
 <comment>
 Saturated conductivity [cm/day]
 </comment>
 </textvar>
 
-<textvar name="MapKSat3" value="$(PathSoilHyd)/ksat3">
+<textvar name="MapKSat3" value="$(PathRoot)/maps/ksat3">
 <comment>
 Saturated conductivity [cm/day]
 </comment>
@@ -4558,63 +4558,63 @@ Normal parameter is taken for the lower soil layer
 **************************************************************
 </comment>
 
-<textvar name="MapThetaSat1Forest" value="$(PathSoilHyd)/thetas1_f">
+<textvar name="MapThetaSat1Forest" value="$(PathRoot)/maps/thetas1_f">
 <comment>
 Soil moisture content at saturation [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaSat2Forest" value="$(PathSoilHyd)/thetas2_f">
+<textvar name="MapThetaSat2Forest" value="$(PathRoot)/maps/thetas2_f">
 <comment>
 Soil moisture content at saturation [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaRes1Forest" value="$(PathSoilHyd)/thetar1">
+<textvar name="MapThetaRes1Forest" value="$(PathRoot)/maps/thetar1">
 <comment>
 Residual soil moisture content [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapThetaRes2Forest" value="$(PathSoilHyd)/thetar2">
+<textvar name="MapThetaRes2Forest" value="$(PathRoot)/maps/thetar2">
 <comment>
 Residual soil moisture content [V/V]
 </comment>
 </textvar>
 
-<textvar name="MapLambda1Forest" value="$(PathSoilHyd)/lambda1_f">
+<textvar name="MapLambda1Forest" value="$(PathRoot)/maps/lambda1_f">
 <comment>
 Pore-size index (Van Genuchten m and n are calculated from this)
 Lambda is acually 1-n
 </comment>
 </textvar>
 
-<textvar name="MapLambda2Forest" value="$(PathSoilHyd)/lambda2_f">
+<textvar name="MapLambda2Forest" value="$(PathRoot)/maps/lambda2_f">
 <comment>
 Pore-size index (Van Genuchten m and n are calculated from this)
 Lambda is acually 1-n
 </comment>
 </textvar>
 
-<textvar name="MapGenuAlpha1Forest" value="$(PathSoilHyd)/genua1_f">
+<textvar name="MapGenuAlpha1Forest" value="$(PathRoot)/maps/genua1_f">
 <comment>
 Van Genuchten parameter Alpha
 </comment>
 </textvar>
 
-<textvar name="MapGenuAlpha2Forest" value="$(PathSoilHyd)/genua2_f">
+<textvar name="MapGenuAlpha2Forest" value="$(PathRoot)/maps/genua2_f">
 <comment>
 Van Genuchten parameter Alpha
 </comment>
 </textvar>
 
-<textvar name="MapKSat1Forest" value="$(PathSoilHyd)/ksat1_f">
+<textvar name="MapKSat1Forest" value="$(PathRoot)/maps/ksat1_f">
 <comment>
 Saturated conductivity [cm/day]
 </comment>
 </textvar>
 
-<textvar name="MapKSat2Forest" value="$(PathSoilHyd)/ksat2_f">
+<textvar name="MapKSat2Forest" value="$(PathRoot)/maps/ksat2_f">
 <comment>
 Saturated conductivity [cm/day]
 </comment>
@@ -4641,7 +4641,7 @@ the smallest out of DtSecReservoirs and DtSec is used.
 </comment>
 </textvar>
 
-<textvar name="ReservoirSites" value="$(PathMaps)/res_687">
+<textvar name="ReservoirSites" value="$(PathRoot)/maps/res_687">
 <comment>
 Map with location of reservoirs (number]
 </comment>
@@ -4760,7 +4760,7 @@ Input maps
 **************************************************************
 </comment>
 
-<textvar name="LakeSites" value="$(PathMaps)/lakes_463">
+<textvar name="LakeSites" value="$(PathRoot)/maps/lakes_463">
 <comment>
 Map with location of lakes
 </comment>
@@ -4848,7 +4848,7 @@ Weir constant (fixed) [-]
 </comment>
 </textvar>
 
-<textvar name="PolderSites" value="$(PathMaps)/polders">
+<textvar name="PolderSites" value="$(PathRoot)/maps/polders">
 <comment>
 Map with polder locations
 </comment>
@@ -4965,20 +4965,20 @@ at most downstream pixel)
 </comment>
 </textvar>
 
-<textvar name="ChannelsDynamic" value="$(PathMaps)/chandyn">
+<textvar name="ChannelsDynamic" value="$(PathRoot)/maps/chandyn">
 <comment>
 Boolean map with value 1 at channel pixels where dynamic wave is
 used, and 0 at all other pixels
 </comment>
 </textvar>
 
-<textvar name="ChanBottomLevel" value="$(PathMaps)/chblevel">
+<textvar name="ChanBottomLevel" value="$(PathRoot)/maps/chblevel">
 <comment>
 Channel bottom level [m]
 </comment>
 </textvar>
 
-<textvar name="ChanCrossSections" value="$(PathMaps)/chanxsect">
+<textvar name="ChanCrossSections" value="$(PathRoot)/maps/chanxsect">
 <comment>
 Nominal map with channel cross section IDs
 </comment>

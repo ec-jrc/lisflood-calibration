@@ -135,12 +135,12 @@ if __name__=="__main__":
 			#pdb.set_trace()
 		if (Split-Start).days>365:
 			stationdata.loc[index,'Val_Start'] = Start.strftime("%d/%m/%Y %H:%M")
-			stationdata.loc[index,'Val_End'] = "31/12/"+str(np.int(Split.year)-1)+" 00:00" # Round to December 31st of previous year
+			stationdata.loc[index,'Val_End'] = "01/01/"+str(np.int(Split.year))+" 00:00" # Round to December 31st of previous year
 		else:
 			stationdata.loc[index,'Val_Start'] = "Streamflow record too short for validation"
 			stationdata.loc[index,'EnoughQdata'] = 0
 			
-		stationdata.loc[index,'Cal_Start'] = "01/01/"+str(np.int(Split.year))+" 00:00" # Round to January 1st of year
+		stationdata.loc[index,'Cal_Start'] = "02/01/"+str(np.int(Split.year))+" 00:00" # Round to January 1st of year
 		stationdata.loc[index,'Cal_End'] = End.strftime("%d/%m/%Y %H:%M")
 
 	# Save dataframe with new catchment area and cal val period columns
