@@ -120,7 +120,7 @@ for index, row in stationdata_sorted.iterrows():
             Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","streamflow_simulated_best.tss")
                         #loop here till previous  catchment on the list is done
             timer = 0
-            while not os.path.exists(Qsim_tss) and timer<=142000:
+            while not os.path.exists(Qsim_tss) and timer<=720000:
                 time.sleep(1)
                 timer+=1
                 
@@ -197,17 +197,19 @@ for index, row in stationdata_sorted.iterrows():
         f.write("#!/bin/sh \n")
         f.write(cmd)
         f.close()
-        cmd="qsub -l nodes=1:ppn=32 -q medium -N LF_calib "+Root+"/runLF.sh"
+        sbc=str(row["ID"])
+        catch=file_CatchmentsToProcess[-6:-4]
+        cmd="qsub -l nodes=1:ppn=32 -q medium -N LF_cal"+catch+"_"+sbc+" "+Root+"/runLF.sh"
         
         timerqsub = 0
         
-        while int(subprocess.Popen('qstat | grep LF_calib | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) > int(nmax) and timerqsub<=72000:
-            print 'submitted',int(subprocess.Popen('qstat | grep LF_calib | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
+        while int(subprocess.Popen('qstat | grep LF_cal | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) >= int(nmax) and timerqsub<=900000:
+            #print 'submitted',int(subprocess.Popen('qstat | grep LF_calib | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
             time.sleep(1)
             timerqsub+=1
         
-        if timerqsub>72000:
-            print '20 hrs waiting for job submission, something is wrong'
+        if timerqsub>900000:
+            print '3 days waiting for job submission, something is wrong'
             raise Exception('too much time')
         
         print ">> Calling \""+cmd+"\""
