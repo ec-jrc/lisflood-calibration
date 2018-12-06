@@ -81,8 +81,8 @@ for index, row in stationdata_sorted.iterrows():
 	if len(Series[Series==str(row["ID"])]) == 0: # Only process catchments whose ID is in the CatchmentsToProcess.txt file
 		continue
 	path_subcatch = os.path.join(SubCatchmentPath,row['ID'])
-	
-	print row['ID']+" "+row['Val_Start'] # For debugging
+	Val_Start = datetime.datetime.strptime(row['Val_Start'],"%d/%m/%Y %H:%M")
+	print row['ID']+" "+str(Val_Start) # For debugging
 
 	#if index!=805: # Runs only this catchment
 	#	continue
@@ -115,7 +115,8 @@ for index, row in stationdata_sorted.iterrows():
 	Forcing_End_Step = (ForcingEnd-ForcingStart).days+1 # For LISFLOOD, not for indexing in Python!!!
 
 	# Load observed streamflow
-	streamflow_data = pandas.read_csv(Qtss_csv,sep=",", parse_dates=True, index_col=0, infer_datetime_format=True)
+	#pdb.set_trace()
+	streamflow_data = pandas.read_csv(Qtss_csv,sep=",", index_col=0,parse_dates=True,dayfirst=True)
 	Qobs = streamflow_data[row['ID']]
 	Qobs[Qobs<0] = np.NaN
 	

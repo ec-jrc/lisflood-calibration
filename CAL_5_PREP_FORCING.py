@@ -74,11 +74,12 @@ for index, row in stationdata_sorted.iterrows():
 
 	# Delete all files in catchment directory
 	for root, dirs, files in os.walk(path_subcatch, topdown=False):
+		 
 		for name in files:
 			os.remove(os.path.join(root, name))
-			print "   Deleting "+name
+			#print "   Deleting "+name
 		for name in dirs:
-			print "   Deleting "+os.path.join(root, name)
+			#print "   Deleting "+os.path.join(root, name)
 			os.rmdir(os.path.join(root, name))
 	if not os.path.exists(path_subcatch):
 		os.makedirs(path_subcatch)

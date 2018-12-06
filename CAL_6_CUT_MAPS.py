@@ -105,10 +105,10 @@ for index, row in stationdata_sorted.iterrows():
             #    print fileout,'alreay existing'
             #    continue
                 
-            print filenc[-3:]
+            #print filenc[-3:]
             if filenc[-3:]=='.nc':
                 #pdb.set_trace()
-                print 'creating...',fileout
+                #print 'creating...',fileout
                 try:
                     nc = xr.open_dataset(filenc,chunks={'time':100})
                 except:
@@ -130,7 +130,7 @@ for index, row in stationdata_sorted.iterrows():
                 #print 'fullCmd',fullCmd 
                 #subprocess.Popen(fullCmd,shell=True)
                 
-                print 'finito...'
+                #print 'finito...'
     #            
             #if filenc[-7:]=='lat.map':
             #    print 'pcraster'
@@ -148,12 +148,12 @@ for index, row in stationdata_sorted.iterrows():
     for root,dirs,files in os.walk(path_MeteoData, topdown=False):
         for afile in files:
             filenc=os.path.join(root, afile)
-            print filenc[-3:]
+            #print filenc[-3:]
             if filenc[-3:]=='.nc':
                 #pdb.set_trace()
     #            
                 fileout=os.path.join(path_subcatch_maps,afile)
-                print 'creating...',fileout
+                #print 'creating...',fileout
                 try:
                     nc = xr.open_dataset(filenc,chunks={'time':100})
                 except:
@@ -175,4 +175,4 @@ for index, row in stationdata_sorted.iterrows():
                 #subprocess.Popen(fullCmd,shell=True)
                 nc.close()
                 
-                print 'finito...'
+                #print 'finito...'

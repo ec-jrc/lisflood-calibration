@@ -50,18 +50,40 @@ for index, row in stationdata_sorted.iterrows():
 	
 	# Delete all .xml, .bat, .tmp, and .txt files created for the runs
 	for filename in glob.glob(os.path.join(path_subcatch,"*.xml")):
+		
+		os.system('tar -cvf '+filename+'.tar '+filename)
+		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
 	for filename in glob.glob(os.path.join(path_subcatch,"*.bat")):
+		os.system('tar -cvf '+filename+'.tar '+filename)
+ 		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
+
 	for filename in glob.glob(os.path.join(path_subcatch,"*.tmp")):
 		os.remove(filename)
 	for filename in glob.glob(os.path.join(path_subcatch,"*.txt")):
+		os.system('tar -cvf '+filename+'.tar '+filename)
+		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
+
+	
 	for filename in glob.glob(os.path.join(path_subcatch,"out","lzavin*.map")):
+		os.system('tar -cvf '+filename+'.tar '+filename)
+		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
+
+	
 	for filename in glob.glob(os.path.join(path_subcatch,"out","avgdis*.map")):
+		os.system('tar -cvf '+filename+'.tar '+filename)
+		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
+
+	
 	for filename in glob.glob(os.path.join(path_subcatch,"out","lz*")):
 		os.remove(filename)
 	for filename in glob.glob(os.path.join(path_subcatch,"out","dis*.tss")):
+		os.system('tar -cvf '+filename+'.tar '+filename)
+		os.system('gzip '+filename+'.tar')
 		os.remove(filename)
+
+	
