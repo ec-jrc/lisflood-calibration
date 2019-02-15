@@ -201,7 +201,7 @@ for index, row in stationdata_sorted.iterrows():
                       + "$, $B=" + "{0:.2f}".format(HydroStats.pc_bias2(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)) \
                       + "$%"
             ax2.text(0.025, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax2.transAxes)
-            ax2.plot(Dates_Val, Q_sim_Val, 'r', Dates_Val, Q_obs_Val, 'b')
+            ax2.plot(Dates_Val.to_pydatetime(), Q_sim_Val, 'r', Dates_Val.to_pydatetime(), Q_obs_Val, 'b')
             stationdata_sorted.loc[index, 'KGE_val'] = HydroStats.KGE(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)
             stationdata_sorted.loc[index, 'NSE_val'] = HydroStats.NS(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)
 
