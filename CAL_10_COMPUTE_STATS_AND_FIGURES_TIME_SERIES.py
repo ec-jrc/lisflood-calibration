@@ -128,7 +128,6 @@ for index, row in stationdata_sorted.iterrows():
     ########################################################################
 
     fig = plt.figure()
-
     gs = plt.GridSpec(13, 6)
     plots_grids = {
         'title': (0, slice(None, None)),
@@ -138,14 +137,17 @@ for index, row in stationdata_sorted.iterrows():
         'climatology_val': (slice(9, 13), slice(3, 6)),
     }
 
+    # ticks config
+    months = np.array([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # water year
+
     # TEXT OF CALIBRATION RESULTS
     ax0 = plt.subplot(gs[plots_grids['title']])  # first row
     texts = str(row["ID"]) + ": " + str(row["RiverName"]) + " at " + str(row["Stationnam"])
     texts_filtered = filter(lambda x: x in string.printable, texts)
-    ax0.text(0.5, 0.0, texts_filtered, verticalalignment='top', horizontalalignment='center', transform=ax0.transAxes)
+    ax0.text(0.5, 0.0, texts_filtered, verticalalignment='top', horizontalalignment='center', transform=ax0.transAxes, fontsize=15)
     plt.axis('off')
 
-    fig.autofmt_xdate()
+    # fig.autofmt_xdate()q
 
     # FIGURE OF CALIBRATION PERIOD TIME SERIES
     Dates_Cal = Q.loc[Cal_Start:Cal_End].index
@@ -153,21 +155,17 @@ for index, row in stationdata_sorted.iterrows():
     Q_obs_Cal = Q.loc[Cal_Start:Cal_End].ix[:, 1].values
     ax1 = plt.subplot(gs[plots_grids['calibration']])  # second row
 
-    years = mdates.YearLocator()  # every year
-    months = mdates.MonthLocator()  # every month
-    yearsFmt = mdates.DateFormatter('%Y')
-
     # format the ticks
-    ax1.xaxis.set_major_locator(years)
-    ax1.xaxis.set_major_formatter(yearsFmt)
-    ax1.xaxis.set_minor_locator(months)
+    ax1.xaxis.set_major_locator(mdates.YearLocator())
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    ax1.xaxis.set_minor_locator(mdates.MonthLocator())
 
     max_y = max(np.max(Q_sim_Cal), np.max(Q_obs_Cal))
     max_y += max_y * 0.18
     ax1.set_ylim(top=max_y)
     ax1.plot(Dates_Cal.to_pydatetime(), Q_sim_Cal, 'r', Dates_Cal.to_pydatetime(), Q_obs_Cal, 'b')
-    ax1.set_title('(a) Streamflow time series for calibration period')
-    ax1.set_ylabel(r'Streamflow [m3 / s]')
+    ax1.set_title('(a) Daily discharge - calibration period')
+    ax1.set_ylabel(r'$Discharge [m^3 / s]$')
     statsum = r" " \
               + "KGE$=" + "{0:.2f}".format(HydroStats.KGE(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)) \
               + "$, NSE$=" + "{0:.2f}".format(HydroStats.NS(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)) \
@@ -177,19 +175,22 @@ for index, row in stationdata_sorted.iterrows():
     ax1.text(0.025, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax1.transAxes)
     leg = ax1.legend(['Simulated', 'Observed'], fancybox=True, framealpha=0.8, prop={'size': 10}, labelspacing=0.1, loc=1)
     leg.get_frame().set_edgecolor('white')
+
     stationdata_sorted.loc[index, 'KGE_cal'] = HydroStats.KGE(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)
     stationdata_sorted.loc[index, 'NSE_cal'] = HydroStats.NS(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)
-
     # FIGURE OF VALIDATION PERIOD TIME SERIES
     if row['Val_Start'][:10] != "Streamflow":  # Check if Q record is long enough for validation
         Dates_Val = Q.loc[Val_Start:Val_End].index
-
         Q_sim_Val = Q.loc[Val_Start:Val_End].ix[:, 0].values
         Q_obs_Val = Q.loc[Val_Start:Val_End].ix[:, 1].values
         if len(Q_obs_Val[~np.isnan(Q_obs_Val)]) > (365 * 2):
             ax2 = plt.subplot(gs[plots_grids['validation']])
-            ax2.set_title('(b) Streamflow time series for validation period')
-            ax2.set_ylabel(r'Streamflow [m3 / s]')
+            # format the ticks
+            ax2.xaxis.set_major_locator(mdates.YearLocator())
+            ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+            ax2.xaxis.set_minor_locator(mdates.MonthLocator())
+            ax2.set_title('(b) Daily discharge - validation period')
+            ax2.set_ylabel(r'$Discharge [m^3 / s]$')
             max_y = max(np.max(Q_sim_Val), np.max(Q_obs_Val))
             max_y += max_y * 0.15
             ax2.set_ylim(top=max_y)
@@ -215,19 +216,19 @@ for index, row in stationdata_sorted.iterrows():
         Q_sim_clim_Cal[month - 1] = np.mean(Q_sim_Cal[(Dates_Cal.month == month) & mask])
         Q_obs_clim_Cal_stddev[month - 1] = np.std(Q_obs_Cal[(Dates_Cal.month == month) & mask])
         Q_sim_clim_Cal_stddev[month - 1] = np.std(Q_sim_Cal[(Dates_Cal.month == month) & mask])
+
     ax3 = plt.subplot(gs[plots_grids['climatology_cal']])
-    months = np.array([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # water year
     ax3.fill_between(np.arange(0, 14), (Q_sim_clim_Cal[months - 1] + 0.5 * Q_sim_clim_Cal_stddev[months - 1]).reshape(-1),
                      (Q_sim_clim_Cal[months - 1] - 0.5 * Q_sim_clim_Cal_stddev[months - 1]).reshape(-1), facecolor='red', alpha=0.1, edgecolor='none')
     ax3.fill_between(np.arange(0, 14), (Q_obs_clim_Cal[months - 1] + 0.5 * Q_obs_clim_Cal_stddev[months - 1]).reshape(-1),
                      (Q_obs_clim_Cal[months - 1] - 0.5 * Q_obs_clim_Cal_stddev[months - 1]).reshape(-1), facecolor='blue', alpha=0.1,
                      edgecolor='none')
     ax3.plot(range(0, 14), Q_sim_clim_Cal[months - 1], 'r', range(0, 14), Q_obs_clim_Cal[months - 1], 'b')
-    ax3.set_title('(c) Monthly Q climatology cal period')
-    plt.xticks(range(0, 14), months)
-    plt.xlim([0.5, 12.5])
-    plt.ylabel(r'Streamflow [m3 / s]')
-    plt.xlabel(r'Month')
+    ax3.set_title('(c) Monthly discharge - calibration')
+    ax3.set_xticks(months)
+    ax3.set_xlim([0.5, 12.5])
+    ax3.set_ylabel(r'$Discharge [m^3 / s]$')
+    ax3.set_xlabel(r'Month')
     leg.get_frame().set_edgecolor('white')
 
     # FIGURE OF MONTHLY CLIMATOLOGY FOR VALIDATION PERIOD
@@ -244,7 +245,6 @@ for index, row in stationdata_sorted.iterrows():
                 Q_obs_clim_Val_stddev[month - 1] = np.std(Q_obs_Val[(Dates_Val.month == month) & mask])
                 Q_sim_clim_Val_stddev[month - 1] = np.std(Q_sim_Val[(Dates_Val.month == month) & mask])
             ax4 = plt.subplot(gs[plots_grids['climatology_val']])
-            months = np.array([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # water year
             ax4.fill_between(np.arange(0, 14), (Q_sim_clim_Val[months - 1] + 0.5 * Q_sim_clim_Val_stddev[months - 1]).reshape(-1),
                              (Q_sim_clim_Val[months - 1] - 0.5 * Q_sim_clim_Val_stddev[months - 1]).reshape(-1), facecolor='red', alpha=0.1,
                              edgecolor='none')
@@ -252,12 +252,11 @@ for index, row in stationdata_sorted.iterrows():
                              (Q_obs_clim_Val[months - 1] - 0.5 * Q_obs_clim_Val_stddev[months - 1]).reshape(-1), facecolor='blue', alpha=0.1,
                              edgecolor='none')
             ax4.plot(range(0, 14), Q_sim_clim_Val[months - 1], 'r', range(0, 14), Q_obs_clim_Val[months - 1], 'b')
-            ax4.set_title('(d) Monthly Q climatology val period')
-            plt.xticks(range(0, 14), months)
-            plt.xlim([0.5, 12.5])
-            # plt.ylabel(r'Streamflow [m$^3$ s$^{-1}$]')
-            plt.ylabel(r'Streamflow')
-            plt.xlabel(r'Month')
+            ax4.set_title('(d) Monthly discharge - validation')
+            ax4.set_xticks(months)
+            ax4.set_xlim([0.5, 12.5])
+            ax4.set_ylabel(r'$Discharge [m^3 / s]$')
+            ax4.set_xlabel(r'Month')
 
     # FIGURES OF CALIBRATION EVOLUTION
     front_history = pandas.read_csv(os.path.join(path_subcatch, "front_history.csv"), sep=",", parse_dates=True, index_col=0)
