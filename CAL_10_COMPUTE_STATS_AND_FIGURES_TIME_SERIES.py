@@ -130,11 +130,11 @@ for index, row in stationdata_sorted.iterrows():
     fig = plt.figure()
     gs = plt.GridSpec(13, 6)
     plots_grids = {
-        'title': (0, slice(None, None)),
-        'calibration': (slice(1, 5), slice(None, None)),
-        'validation': (slice(5, 9), slice(None, None)),
-        'climatology_cal': (slice(9, 13), slice(0, 3)),
-        'climatology_val': (slice(9, 13), slice(3, 6)),
+        'title': (0, slice(None, None)),  # first row - Title
+        'calibration': (slice(1, 5), slice(None, None)),  # second row - plot (a) calibration period
+        'validation': (slice(5, 9), slice(None, None)),  # third row - plot (b) validation period
+        'climatology_cal': (slice(9, 13), slice(0, 3)),  # fourth row - plot (c) monthly discharge (calibration)
+        'climatology_val': (slice(9, 13), slice(3, 6)),  # fourth row - plot (d) monthly discharge (validation)
     }
 
     # ticks config
@@ -142,27 +142,25 @@ for index, row in stationdata_sorted.iterrows():
 
     # TEXT OF CALIBRATION RESULTS
     ax0 = plt.subplot(gs[plots_grids['title']])  # first row
-    texts = str(row["ID"]) + ": " + str(row["RiverName"]) + " at " + str(row["Stationnam"])
+    ax0.set_axis_off()
+    texts = '{}: {} at {} ({})'.format(row['ID'], row['RiverName'], row['Stationnam'], row['CountryNam'])
     texts_filtered = filter(lambda x: x in string.printable, texts)
     ax0.text(0.5, 0.0, texts_filtered, verticalalignment='top', horizontalalignment='center', transform=ax0.transAxes, fontsize=15)
-    plt.axis('off')
-
-    # fig.autofmt_xdate()q
 
     # FIGURE OF CALIBRATION PERIOD TIME SERIES
     Dates_Cal = Q.loc[Cal_Start:Cal_End].index
     Q_sim_Cal = Q.loc[Cal_Start:Cal_End].ix[:, 0].values
     Q_obs_Cal = Q.loc[Cal_Start:Cal_End].ix[:, 1].values
     ax1 = plt.subplot(gs[plots_grids['calibration']])  # second row
-
+    max_y_cal = max(Q_sim_Cal.max(), Q_obs_Cal.max()) * 1.3
+    ax1.set_ybound(upper=max_y_cal)
+    ax1.axis('auto')
+    ax1.set_adjustable('datalim')
     # format the ticks
     ax1.xaxis.set_major_locator(mdates.YearLocator())
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
     ax1.xaxis.set_minor_locator(mdates.MonthLocator())
 
-    max_y = max(np.max(Q_sim_Cal), np.max(Q_obs_Cal))
-    max_y += max_y * 0.18
-    ax1.set_ylim(top=max_y)
     ax1.plot(Dates_Cal.to_pydatetime(), Q_sim_Cal, 'r', Dates_Cal.to_pydatetime(), Q_obs_Cal, 'b')
     ax1.set_title('(a) Daily discharge - calibration period')
     ax1.set_ylabel(r'$Discharge [m^3 / s]$')
@@ -172,7 +170,7 @@ for index, row in stationdata_sorted.iterrows():
               + "$, $R=" + "{0:.2f}".format(HydroStats.correlation(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)) \
               + "$, $B=" + "{0:.2f}".format(HydroStats.pc_bias2(s=Q_sim_Cal, o=Q_obs_Cal, warmup=WarmupDays)) \
               + "$%"
-    ax1.text(0.025, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax1.transAxes)
+    ax1.text(0.015, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax1.transAxes)
     leg = ax1.legend(['Simulated', 'Observed'], fancybox=True, framealpha=0.8, prop={'size': 10}, labelspacing=0.1, loc=1)
     leg.get_frame().set_edgecolor('white')
 
@@ -185,22 +183,24 @@ for index, row in stationdata_sorted.iterrows():
         Q_obs_Val = Q.loc[Val_Start:Val_End].ix[:, 1].values
         if len(Q_obs_Val[~np.isnan(Q_obs_Val)]) > (365 * 2):
             ax2 = plt.subplot(gs[plots_grids['validation']])
+            ax2.axis('auto')
+            ax2.set_adjustable('datalim')
             # format the ticks
             ax2.xaxis.set_major_locator(mdates.YearLocator())
             ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
             ax2.xaxis.set_minor_locator(mdates.MonthLocator())
             ax2.set_title('(b) Daily discharge - validation period')
             ax2.set_ylabel(r'$Discharge [m^3 / s]$')
-            max_y = max(np.max(Q_sim_Val), np.max(Q_obs_Val))
-            max_y += max_y * 0.15
-            ax2.set_ylim(top=max_y)
+            max_y_val = max(Q_sim_Val.max(), Q_obs_Val.max()) * 1.3
+            ax2.set_ybound(upper=max_y_val)
+
             statsum = r" " \
                       + "KGE$=" + "{0:.2f}".format(HydroStats.KGE(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)) \
                       + "$, NSE$=" + "{0:.2f}".format(HydroStats.NS(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)) \
                       + "$, $R=" + "{0:.2f}".format(HydroStats.correlation(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)) \
                       + "$, $B=" + "{0:.2f}".format(HydroStats.pc_bias2(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)) \
                       + "$%"
-            ax2.text(0.025, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax2.transAxes)
+            ax2.text(0.015, 0.93, statsum, verticalalignment='top', horizontalalignment='left', transform=ax2.transAxes)
             ax2.plot(Dates_Val.to_pydatetime(), Q_sim_Val, 'r', Dates_Val.to_pydatetime(), Q_obs_Val, 'b')
             stationdata_sorted.loc[index, 'KGE_val'] = HydroStats.KGE(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)
             stationdata_sorted.loc[index, 'NSE_val'] = HydroStats.NS(s=Q_sim_Val, o=Q_obs_Val, warmup=WarmupDays)
@@ -218,11 +218,22 @@ for index, row in stationdata_sorted.iterrows():
         Q_sim_clim_Cal_stddev[month - 1] = np.std(Q_sim_Cal[(Dates_Cal.month == month) & mask])
 
     ax3 = plt.subplot(gs[plots_grids['climatology_cal']])
-    ax3.fill_between(np.arange(0, 14), (Q_sim_clim_Cal[months - 1] + 0.5 * Q_sim_clim_Cal_stddev[months - 1]).reshape(-1),
-                     (Q_sim_clim_Cal[months - 1] - 0.5 * Q_sim_clim_Cal_stddev[months - 1]).reshape(-1), facecolor='red', alpha=0.1, edgecolor='none')
-    ax3.fill_between(np.arange(0, 14), (Q_obs_clim_Cal[months - 1] + 0.5 * Q_obs_clim_Cal_stddev[months - 1]).reshape(-1),
-                     (Q_obs_clim_Cal[months - 1] - 0.5 * Q_obs_clim_Cal_stddev[months - 1]).reshape(-1), facecolor='blue', alpha=0.1,
-                     edgecolor='none')
+    fill_sim_upper = Q_sim_clim_Cal[months - 1] + 0.5 * Q_sim_clim_Cal_stddev[months - 1]
+    fill_sim_lower = Q_sim_clim_Cal[months - 1] - 0.5 * Q_sim_clim_Cal_stddev[months - 1]
+    fill_obs_upper = Q_obs_clim_Cal[months - 1] + 0.5 * Q_obs_clim_Cal_stddev[months - 1]
+    fill_obs_lower = Q_obs_clim_Cal[months - 1] - 0.5 * Q_obs_clim_Cal_stddev[months - 1]
+    fill_sim_upper[fill_sim_upper < 0] = 0
+    fill_sim_lower[fill_sim_lower < 0] = 0
+    fill_obs_upper[fill_obs_upper < 0] = 0
+    fill_obs_lower[fill_obs_lower < 0] = 0
+    ax3.fill_between(np.arange(0, 14),
+                     fill_sim_upper.reshape(-1),
+                     fill_sim_lower.reshape(-1),
+                     facecolor='red', alpha=0.1, edgecolor='none')
+    ax3.fill_between(np.arange(0, 14),
+                     fill_obs_upper.reshape(-1),
+                     fill_obs_lower.reshape(-1),
+                     facecolor='blue', alpha=0.1, edgecolor='none')
     ax3.plot(range(0, 14), Q_sim_clim_Cal[months - 1], 'r', range(0, 14), Q_obs_clim_Cal[months - 1], 'b')
     ax3.set_title('(c) Monthly discharge - calibration')
     ax3.set_xticks(months)
@@ -244,13 +255,24 @@ for index, row in stationdata_sorted.iterrows():
                 Q_sim_clim_Val[month - 1] = np.mean(Q_sim_Val[(Dates_Val.month == month) & mask])
                 Q_obs_clim_Val_stddev[month - 1] = np.std(Q_obs_Val[(Dates_Val.month == month) & mask])
                 Q_sim_clim_Val_stddev[month - 1] = np.std(Q_sim_Val[(Dates_Val.month == month) & mask])
+
             ax4 = plt.subplot(gs[plots_grids['climatology_val']])
-            ax4.fill_between(np.arange(0, 14), (Q_sim_clim_Val[months - 1] + 0.5 * Q_sim_clim_Val_stddev[months - 1]).reshape(-1),
-                             (Q_sim_clim_Val[months - 1] - 0.5 * Q_sim_clim_Val_stddev[months - 1]).reshape(-1), facecolor='red', alpha=0.1,
-                             edgecolor='none')
-            ax4.fill_between(np.arange(0, 14), (Q_obs_clim_Val[months - 1] + 0.5 * Q_obs_clim_Val_stddev[months - 1]).reshape(-1),
-                             (Q_obs_clim_Val[months - 1] - 0.5 * Q_obs_clim_Val_stddev[months - 1]).reshape(-1), facecolor='blue', alpha=0.1,
-                             edgecolor='none')
+            fill_sim_upper = Q_sim_clim_Val[months - 1] + 0.5 * Q_sim_clim_Val_stddev[months - 1]
+            fill_sim_lower = Q_sim_clim_Val[months - 1] - 0.5 * Q_sim_clim_Val_stddev[months - 1]
+            fill_obs_upper = Q_obs_clim_Val[months - 1] + 0.5 * Q_obs_clim_Val_stddev[months - 1]
+            fill_obs_lower = Q_obs_clim_Val[months - 1] - 0.5 * Q_obs_clim_Val_stddev[months - 1]
+            fill_sim_upper[fill_sim_upper < 0] = 0
+            fill_sim_lower[fill_sim_lower < 0] = 0
+            fill_obs_upper[fill_obs_upper < 0] = 0
+            fill_obs_lower[fill_obs_lower < 0] = 0
+            ax4.fill_between(np.arange(0, 14),
+                             fill_sim_upper.reshape(-1),
+                             fill_sim_lower.reshape(-1),
+                             facecolor='red', alpha=0.1, edgecolor='none')
+            ax4.fill_between(np.arange(0, 14),
+                             fill_obs_upper.reshape(-1),
+                             fill_obs_lower.reshape(-1),
+                             facecolor='blue', alpha=0.1, edgecolor='none')
             ax4.plot(range(0, 14), Q_sim_clim_Val[months - 1], 'r', range(0, 14), Q_obs_clim_Val[months - 1], 'b')
             ax4.set_title('(d) Monthly discharge - validation')
             ax4.set_xticks(months)
@@ -260,11 +282,12 @@ for index, row in stationdata_sorted.iterrows():
 
     # FIGURES OF CALIBRATION EVOLUTION
     front_history = pandas.read_csv(os.path.join(path_subcatch, "front_history.csv"), sep=",", parse_dates=True, index_col=0)
-    adjustprops = dict(left=0.1, bottom=0, right=1, top=1, wspace=-0.2, hspace=0.0)
+    adjustprops = dict(left=0.1, bottom=0, right=1, top=0.5, wspace=-0.2, hspace=0.0)
     fig.subplots_adjust(**adjustprops)
+
     plt.draw()
     fig.set_size_inches(22 / 2.54, 30 / 2.54)
-    fig.savefig(os.path.join(path_subcatch, "FIGURES", row['ID'] + '_summary.png'), dpi=300, format='PNG')
+    fig.savefig(os.path.join(path_subcatch, "FIGURES", row['ID'] + '_summary.png'), dpi=300, format='PNG', bbox_inches='tight')
     plt.close("all")
 
 stationdata_sorted.to_csv(os.path.join(path_result, "Qgis3.csv"), ',')
