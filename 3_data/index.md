@@ -88,6 +88,5 @@ DATE,G0001,G0002,G0003,G0004
 4. Prepare static maps (dem, landuse etc.) and netcdf forcing data (meteo input as ERA5 datasets)
 5. Prepare the Qgis csv file. This is a file containing stations' metadata
 6. Prepare the Qtss csv file. This file contains observed discharge data for each station
-7. Make a copy of settings_calibration.txt and edit according your system
-You have to change LISFLOODSettings and RunLISFLOOD parameters in order to use your customized files and configure paths to static data.
+7. Make a copy of settings_calibration.txt and edit according your system. You have to change LISFLOODSettings and RunLISFLOOD parameters in order to use your customized files and configure paths to static data.
 
