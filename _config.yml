@@ -251,7 +251,5 @@ defaults:
           url: 3_first
         - title: "- Execute main calibration script"
           url: 3_execute
-        - title: "- Output"
-          url: 3_output
 
 theme: jekyll-theme-minimal
