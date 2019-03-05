@@ -2,14 +2,19 @@
 
 To calibrate the model for your catchments/subcatchments, you need input data:
 
-- time series of observed discharge data (e.g. ERA5 datasets)
-- time series of input meteo variables for the entire period of calibration
+- time series of observed discharge data
+- time series of input meteo variables for the entire period of calibration (e.g. ERA5 datasets)
  
 Copy those datasets in a folder on your machine. Paths must be configured in a `settings.txt` file.
 
 ## Edit a settings file
 
-In settings file you can set all configuration parameters for calibration. Below you find an example:
+In settings file you can set all configuration parameters for calibration. Like path to scripts to run the lisflood model (or any other hydrological model). 
+So you need to have access and execution rights to the model you want to calibrate.
+ 
+The easy way is to make a copy of settings_calibration.txt (e.g. my_settings.txt) and edit it according your requirements.
+
+Below you find an example of settings file:
 
 ```ini 
 Root=/absolute/path/to/lisflood-calibration/  
@@ -37,8 +42,8 @@ PCRHOME=/ADAPTATION/usr/anaconda2/bin/ # path to pcraster binaries
 PYTHONCMD=/ADAPTATION/usr/anaconda2/bin/python # path to python executable  (in case of several versions)  
 
 [Templates]  
-LISFLOODSettings=%(Root)s/templates/settings_LF.xml # Settings for Lisflood Model see documentation on Lisflood Repo  
-RunLISFLOOD=%(Root)s/templates/runLF_linux_cut.sh  # Script for launching PreRun and Run for every parameters combination during genetic algorithm runs   
+LISFLOODSettings=%(Root)s/templates/settings_LF.xml # Settings for Lisflood Model  
+RunLISFLOOD=%(Root)s/templates/runLF_linux.sh  # Script for launching PreRun and Run of the model, for every parameters combination during genetic algorithm runs   
 
 [DEAP]  
 use_multiprocessing=1  # Flag for using multiprocessing, meaning running several lisflood runs on several cores (each using 1 core)  
@@ -46,3 +51,12 @@ ngen=16  # number of MAX generation to run
 mu=16  # initial population  
 lambda_=32  # size of generation of offsprings 
 ```
+
+## Summary
+
+1. Clone the repository lisflood-calibration or download the code
+2. Make a copy of templates/runLF_linux.sh and edit it (you only need to change paths)
+3. Make a copy of templates/settings_LF.xml and edit it if needed
+4. Prepare static maps (dem, landuse etc.) and netcdf forcing data (meteo input as ERA5 datasets)
+5. Make a copy of settings_calibration.txt and edit according your system. You have to change LISFLOODSettings and RunLISFLOOD parameters in order to use your customized files and configure paths to static data.
+

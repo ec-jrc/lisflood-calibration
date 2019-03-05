@@ -1,6 +1,6 @@
 # About this tool
 
-This is a collection of scripts for calibrating the Lisflood model.
+This is a collection of scripts to calibrate Lisflood model over a set of catchments.
 
 This Readme text explains how to use the scripts with the LISFLOOD hydrological model against streamflow observations in an automated manner for multiple catchments. 
 The scripts loop through the catchments in ascending order of catchment area, calibrating LISFLOOD for each \interstation region" 
