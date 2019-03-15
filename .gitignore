@@ -6,3 +6,4 @@ _site/
 .jekyll-metadata
 *.py[cod]
 __pycache__/
+/Gemfile.lock
