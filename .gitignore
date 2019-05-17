@@ -64,3 +64,6 @@ venv.bak/
 catchments/
 result/
 temp/
+.jekyll-metadata
+Gemfile.lock
+_site/
