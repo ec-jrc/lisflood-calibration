@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Please refer to quick_guide.pdf for usage instructions"""
-
 import os
 import sys
 import pdb
@@ -10,7 +8,12 @@ import datetime
 import time
 import numpy as np
 import re
-from ConfigParser import SafeConfigParser
+ver = sys.version
+ver = ver[:ver.find('(')-1]
+if ver.find('3.') > -1:
+  from configparser import ConfigParser # Python 3.8
+else:
+  from ConfigParser import SafeConfigParser # Python 2.7-15
 import array
 import logging
 import random
@@ -23,14 +26,17 @@ if __name__=="__main__":
 	########################################################################
 
 	iniFile = os.path.normpath(sys.argv[1])
-	print "=================== START ==================="
-	print ">> Reading settings file ("+sys.argv[1]+")..."
+	print("=================== START ===================")
+	print(">> Reading settings file ("+sys.argv[1]+")...")
 
-	parser = SafeConfigParser()
+	if ver.find('3.') > -1:
+		parser = ConfigParser()  # python 3.8
+	else:
+		parser = SafeConfigParser()  # python 2.7-15
 	parser.read(iniFile)
 
 	path_temp = parser.get('Path', 'Temp')
-	path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'),"maps_pcraster")
+	path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'))
 	path_result = parser.get('Path', 'Result')
 
 	ForcingStart = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
@@ -43,7 +49,7 @@ if __name__=="__main__":
 
 	config = {}
 	for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-		config[execname] = getPCrasterPath(pcraster_path,execname)
+		config[execname] = getPCrasterPath(pcraster_path,sys.argv[1],execname)
 
 	pcrcalc = config["pcrcalc"]
 	col2map = config["col2map"]
@@ -55,6 +61,8 @@ if __name__=="__main__":
 	tmp_txt = os.path.join(path_temp,"tmp.txt")
 	tmp2_txt = os.path.join(path_temp,"tmp2.txt")
 	
+	ldd_map = os.path.join(parser.get('Path', 'lddPath'))
+	station_map = os.path.join(parser.get('Path', 'gaugesPath'))
 
 		
 	
@@ -62,7 +70,7 @@ if __name__=="__main__":
 	#   Make stationdata array from the qgis csv
 	########################################################################
 
-	print ">> Reading Qgis2.csv file..."
+	print(">> Reading Qgis2.csv file...")
 	stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
 
 	
@@ -70,17 +78,18 @@ if __name__=="__main__":
 	#   Make map with station locations
 	########################################################################
 
-	print ">> Make map with station locations (outlet.map)..."
+	print(">> Make map with station locations (outlet.map)...")
 
 	if not os.path.exists(path_temp): os.makedirs(path_temp)
 	if not os.path.exists(path_result): os.makedirs(path_result)
 
-	ldd_map = os.path.join(path_maps,"ldd.map")
-	station_map = os.path.join(path_result,"outlet.map")
-	station_txt = os.path.join(path_temp,"station.txt")
+	station_txt = os.path.join(path_temp, "station.txt")
 	with open(station_txt, 'w') as f:
 		for index, row in stationdata.iterrows():
-			print >> f,row['XCorrected'],row['YCorrected'],float(index)
+			f.write(str(row['LisfloodX']) + " ")
+			f.write(str(row['LisfloodY']) + " ")
+			f.write(str(float(index)) + "\n")
+		f.close()
 	pcrasterCommand(col2map + " F0 F1 -N --clone F2 --large"  , {"F0": station_txt, "F1":station_map, "F2":ldd_map})
 
 		
@@ -88,34 +97,32 @@ if __name__=="__main__":
 	# 	Check for station location conflicts (stations with same coordinates)
 	########################################################################	
 	
-	print ">> Check for station conflicts..."
+	print(">> Check for station conflicts...")
 	counter = 0
 	for index, row in stationdata.iterrows():			
-		#pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)==scalar("+str(int(index))+"),scalar(1.0))'", {"F0": tmp_map, "F1":station_map})
-		#pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)==scalar(5555),scalar(1.0))'", {"F0": tmp_map, "F1":station_map})
 		pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)=="+str(int(index))+",scalar(F1))'", {"F0": tmp_map, "F1":station_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0": tmp_map, "F1":tmp_txt})
-		f = file(tmp_txt,"r")
-		counter2 = 0
-		for line in f.readlines():
-			(X,Y,value) = line.split()		
-			counter2 = counter2+1
+		with open(tmp_txt,"r") as f:
+			counter2 = 0
+			for line in f.readlines():
+				(X,Y,value) = line.split()
+				counter2 = counter2+1
 		if counter2==0:
-			print "Station ID "+str(index)+" not found in outlet.map! Is there another station with the same location?"
+			print("Station ID "+str(index)+" not found in outlet.map! Is there another station with the same location?")
 			counter = counter+1
 		elif counter2>1:		
-			print "Station ID "+str(index)+" found multiple times in outlet.map!"
+			print("Station ID "+str(index)+" found multiple times in outlet.map!")
 			counter = counter+1
 		if counter2==1:
 			if int(value)!=index:
-				print "Wrong station ID for station "+str(index)+"; instead of "+str(index)+" we found "+value
+				print("Wrong station ID for station "+str(index)+"; instead of "+str(index)+" we found "+value)
 				counter = counter+1
 			else:
-				print "Station "+str(index)+" OK"			
+				print("Station "+str(index)+" OK")			
 	if counter>0:
-		print "Number of station location conflicts: "+str(counter)
-		print "Fix these! Enter 'c' to continue for now"
-		pdb.set_trace()
+		print("Number of station location conflicts: "+str(counter))
+		print("Fix these! Enter 'c' to continue for now")
+		raise Exception("ERROR")
 	
 	
 	########################################################################
@@ -132,10 +139,10 @@ if __name__=="__main__":
 		sys.stdout.write(".")
 
 		# make map of station location
-		content = "%s %s %s\n" % (row['XCorrected'],row['YCorrected'],1)
-		f1 = open(tmp_txt,"w")
-		f1.write(content)
-		f1.close()
+		content = "%s %s %s\n" % (row['LisfloodX'],row['LisfloodY'],1)
+		with open(tmp_txt,"w") as f1:
+			f1.write(content)
+			f1.close()
 		pcrasterCommand(col2map + " F0 F1 -N --clone F2 --large" ,{"F0": tmp_txt, "F1":tmp_map, "F2":ldd_map})
 
 		# compute catchment mask
@@ -146,11 +153,11 @@ if __name__=="__main__":
 		# compute number of upstream pixels for station
 		pcrasterCommand(pcrcalc + " 'F0 = if(defined(F1),F2)'", {"F0": tmp2_map, "F1":tmp_map, "F2":accuflux_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0": tmp2_map, "F1":tmp2_txt})
-		f = file(tmp2_txt,"r")
-		for line in f.readlines():
-			(X,Y,value) = line.split()
-			stationdata.loc[index,'CatchmentArea'] = float(value)
-		f.close()
+		with open(tmp2_txt,"r") as f:
+			for line in f.readlines():
+				(X,Y,value) = line.split()
+				stationdata.loc[index,'CatchmentArea'] = float(value)
+			f.close()
 
 
 	########################################################################
@@ -161,7 +168,7 @@ if __name__=="__main__":
 
 	interstation_regions_map = os.path.join(path_result,"interstation_regions.map")
 	pcrasterCommand(pcrcalc + " 'F0 = scalar(F1)*0-1'", {"F0": interstation_regions_map, "F1":ldd_map}) # initialize interstation_regions_map
-	stationdata_sorted = stationdata.sort_index(by=['CatchmentArea'],ascending=False)
+	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=False)
 	for index, row in stationdata_sorted.iterrows():
 		sys.stdout.write(".")
 		catchment_map = os.path.join(path_temp,"catchmask%05d.map" % float(index))
@@ -198,7 +205,7 @@ if __name__=="__main__":
 		sys.stdout.write(".")
 
 		# make map of station location
-		content = "%s %s %s\n" % (row['XCorrected'],row['YCorrected'],1)
+		content = "%s %s %s\n" % (row['LisfloodX'],row['LisfloodY'],1)
 		f1 = open(tmp_txt,"w")
 		f1.write(content)
 		f1.close()
@@ -207,11 +214,11 @@ if __name__=="__main__":
 		# read sampling frequency for catchment from sampling_frequency.map
 		pcrasterCommand(pcrcalc + " 'F0 = if(defined(F1) then F2)'", {"F0":tmp2_map,"F1":tmp_map, "F2":sampling_frequency_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0": tmp2_map, "F1":tmp2_txt})
-		f = file(tmp2_txt,"r")
-		for line in f.readlines():
-			(X, Y, value) = line.split()
-			stationdata.loc[index,'SamplingFrequency'] = float(value)
-		f.close()
+		with open(tmp2_txt,"r") as f:
+			for line in f.readlines():
+				(X, Y, value) = line.split()
+				stationdata.loc[index,'SamplingFrequency'] = float(value)
+			f.close()
 
 	tmp3_map = os.path.join(path_temp,"tmp3.map")
 	inlets_map = os.path.join(path_result,"inlets.map")
@@ -225,8 +232,8 @@ if __name__=="__main__":
 		catchment_map = os.path.join(path_temp,"catchmask%05d.map" % float(index))
 		pcrasterCommand(pcrcalc + " 'F0 = if(defined(F1) then F2)'", {"F0":tmp2_map,"F1":catchment_map,"F2":station_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0": tmp2_map, "F1":tmp_txt})
-		text2 = row['ID'] # directly connected subcatchments
-		f3 = file(tmp_txt,"r")
+		text2 = str(index) # directly connected subcatchments
+		f3 = open(tmp_txt,"r")
 
 		commas = 20
 
@@ -239,7 +246,7 @@ if __name__=="__main__":
 			# if SamplingFrequency of subcatchment is 1 higher than catchment, 
 			# then they are directly connected
 			if int(row['SamplingFrequency']+1) == int(stationdata.loc[subcatchment,'SamplingFrequency']):
-				text2 += ","+stationdata.loc[subcatchment,'ID']
+				text2 += ","+str(subcatchment)
 				commas -= 1
 
 				# inflow location is one pixel downstream
@@ -253,22 +260,21 @@ if __name__=="__main__":
 					pcrasterCommand(pcrcalc + " 'F0 = scalar(F1!=0)+scalar(F2!=0)'", {"F0": tmp3_map, "F1":inlets_map, "F2":tmp2_map})
 					pcrasterCommand(pcrcalc + " 'F0 = if(F0!=0 then F0)'", {"F0": tmp3_map}) # replace 0 with mv
 					pcrasterCommand(map2col + " F0 F1", {"F0": tmp3_map, "F1":tmp_txt}) # output pixel value to text file
-					f = file(tmp_txt,"r")
-					for line in f.readlines():
-						(X,Y,value) = line.split()
-						if float(value) > 1: # this means there is overlap, therefore move inlet further downstream
-							pcrasterCommand(pcrcalc + " 'F0 = upstream(F1,scalar(F2))*"+str(subcatchment)+"'", {"F0": tmp3_map, "F1":ldd_map, "F2":tmp2_map}) # move directly connected stations 1 pixel downstream
-							pcrasterCommand(pcrcalc + " 'F0 = F1'", {"F0": tmp2_map, "F1":tmp3_map})
-					f.close()
+					with open(tmp_txt,"r") as f:
+						for line in f.readlines():
+							(X,Y,value) = line.split()
+							if float(value) > 1: # this means there is overlap, therefore move inlet further downstream
+								pcrasterCommand(pcrcalc + " 'F0 = upstream(F1,scalar(F2))*"+str(subcatchment)+"'", {"F0": tmp3_map, "F1":ldd_map, "F2":tmp2_map}) # move directly connected stations 1 pixel downstream
+								pcrasterCommand(pcrcalc + " 'F0 = F1'", {"F0": tmp2_map, "F1":tmp3_map})
+						f.close()
 
 				pcrasterCommand(pcrcalc + " 'F0 = F0+F1'", {"F0": inlets_map,"F1": tmp2_map}) # add inlet to inlets map
 				pcrasterCommand(pcrcalc + " 'F0 = if(F0!=0 then F0)'", {"F0": tmp2_map}) # replace 0 with mv
 				pcrasterCommand(map2col + " F0 F1", {"F0": tmp2_map, "F1":tmp_txt}) # output pixel location to text file
-				f = file(tmp_txt,"r")
-				for line in f.readlines():
-					(X,Y,value) = line.split()
-				f.close()
-				#text2 += ":%f;%f"%(float(X),float(Y))
+				with open(tmp_txt,"r") as f:
+					for line in f.readlines():
+						(X,Y,value) = line.split()
+					f.close()
 		f3.close()
 		for cc in range(commas): # Add commas because the number of commas must be the same for each
 			text2 += ","
@@ -277,7 +283,7 @@ if __name__=="__main__":
 	f2.close()	
 	
 	# save dataframe with catchment area and cal val period columns
-	print "\n>> Saving Qgis file including CatchmentArea, columns (Qgis2.csv)..."
-	stationdata_sorted = stationdata.sort_index(by=['CatchmentArea'],ascending=True)
+	print("\n>> Saving Qgis file including CatchmentArea, columns (Qgis2.csv)...")
+	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
 	stationdata_sorted.to_csv(os.path.join(path_result,"Qgis2.csv"),',')
-	print "==================== END ===================="
+	print("==================== END ====================")

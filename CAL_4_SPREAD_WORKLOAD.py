@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Please refer to quick_guide.pdf for usage instructions"""
-
 import os
 import sys
 import pdb
@@ -10,7 +8,12 @@ import datetime
 import time
 import numpy as np
 import re
-from ConfigParser import SafeConfigParser
+ver = sys.version
+ver = ver[:ver.find('(')-1]
+if ver.find('3.') > -1:
+  from configparser import ConfigParser # Python 3.8
+else:
+  from ConfigParser import SafeConfigParser # Python 2.7-15
 import array
 import logging
 import random
@@ -23,10 +26,13 @@ if __name__=="__main__":
 	########################################################################
 
 	iniFile = os.path.normpath(sys.argv[1])
-	print "=================== START ==================="
-	print ">> Reading settings file ("+sys.argv[1]+")..."
+	print("=================== START ===================")
+	print(">> Reading settings file ("+sys.argv[1]+")...")
 
-	parser = SafeConfigParser()
+	if ver.find('3.') > -1:
+		parser = ConfigParser()  # python 3.8
+	else:
+		parser = SafeConfigParser()  # python 2.7-15
 	parser.read(iniFile)
 
 	path_temp = parser.get('Path', 'Temp')
@@ -41,7 +47,7 @@ if __name__=="__main__":
 
 	config = {}
 	for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-		config[execname] = getPCrasterPath(pcraster_path,execname)
+		config[execname] = getPCrasterPath(pcraster_path,sys.argv[1],execname)
 
 	pcrcalc = config["pcrcalc"]
 	col2map = config["col2map"]
@@ -53,9 +59,9 @@ if __name__=="__main__":
 	#   Make stationdata array from the qgis csv
 	########################################################################
 	
-	print ">> Reading Qgis2.csv file..."
+	print(">> Reading Qgis2.csv file...")
 	stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
-	stationdata_sorted = stationdata.sort_index(by=['CatchmentArea'],ascending=False)
+	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=False)
 	
 	stationdata['SPREAD_WORKLOAD_ID'] = np.nan
 	
@@ -64,7 +70,7 @@ if __name__=="__main__":
 	tmp_txt = os.path.join(path_temp,"tmp.txt")
 	tmp2_txt = os.path.join(path_temp,"tmp2.txt")
 	
-	station_map = os.path.join(path_result,"outlet.map")
+	station_map = os.path.join(parser.get('Path', 'gaugesPath'))
 	SPREAD_WORKLOAD_ID_map = os.path.join(path_result,"SPREAD_WORKLOAD_ID.map")
 	pcrasterCommand(pcrcalc + " 'F0 = scalar(cover(F1,0.0))*0.0'", {"F0": SPREAD_WORKLOAD_ID_map, "F1":station_map})
 	 	
@@ -78,12 +84,12 @@ if __name__=="__main__":
 		catchment_map = os.path.join(path_temp,"catchmask%05d.map" % float(index))					
 		pcrasterCommand(pcrcalc + " 'F0 = if(defined(F1),F2)'", {"F0": tmp_map, "F1":catchment_map, "F2":station_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0":tmp_map, "F1":tmp2_txt})
-		f = file(tmp2_txt,"r")
-		for line in f.readlines():
-			(X,Y,value) = line.split()
-			stationdata.loc[int(value),'SPREAD_WORKLOAD_ID'] = SPREAD_WORKLOAD_ID			
-			print "catchment "+str(value)+" gets a SPREAD_WORKLOAD_ID of "+str(SPREAD_WORKLOAD_ID)
-		f.close()
+		with open(tmp2_txt,"r") as f:
+			for line in f.readlines():
+				(X,Y,value) = line.split()
+				stationdata.loc[int(value),'SPREAD_WORKLOAD_ID'] = SPREAD_WORKLOAD_ID
+				print("catchment "+str(value)+" gets a SPREAD_WORKLOAD_ID of "+str(SPREAD_WORKLOAD_ID))
+			f.close()
 		pcrasterCommand(pcrcalc + " 'F0 = F0+cover(scalar(F1),0)*"+str(SPREAD_WORKLOAD_ID)+"'", {"F0": SPREAD_WORKLOAD_ID_map, "F1":catchment_map})		
 		SPREAD_WORKLOAD_ID = SPREAD_WORKLOAD_ID+1		
 
@@ -119,16 +125,18 @@ if __name__=="__main__":
 		if len(df_sub)>0:			
 			CatchmentsToProcess = []
 			for index, row in df_sub.iterrows():			
-				CatchmentsToProcess = CatchmentsToProcess+stationdata.loc[stationdata['SPREAD_WORKLOAD_ID']==index,'ID'].tolist()
+				CatchmentsToProcess = CatchmentsToProcess + stationdata.loc[stationdata['SPREAD_WORKLOAD_ID']==index].index.tolist()
 			PC_str = "0"+str(int(PC))
 			PC_str = PC_str[-2:]
-			print "Making CatchmentsToProcess_"+PC_str+".txt file"
+			print("Making CatchmentsToProcess_"+PC_str+".txt file")
 			CatchmentsToProcess = pandas.DataFrame(CatchmentsToProcess)
 			CatchmentsToProcess.to_csv("CatchmentsToProcess_"+PC_str+".txt",index=False,header=False)
-	CatchmentsToProcess = stationdata['ID'].tolist()
+	CatchmentsToProcess = stationdata.index.tolist()
 	CatchmentsToProcess = pandas.DataFrame(CatchmentsToProcess)
 	CatchmentsToProcess.to_csv("CatchmentsToProcess_All.txt",index=False,header=False)
+	for c in CatchmentsToProcess:
+		print(c)
 	
 	# Write stationdata dataframe to Qgis3.csv in results directory
 	stationdata.to_csv(os.path.join(path_result,"Qgis3.csv"),',')
-	print "==================== END ===================="
+	print("==================== END ====================")

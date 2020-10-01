@@ -1,6 +1,8 @@
 import sys
 import os
 
+
+
 def pcrasterCommand(cmd = '', files = None, workdir = None, var2export = {},DebugMe = False):
     """ BPAN: this is copied from simone's script.
     His version is not working on windows, so I kicked out the environment parts, and just replaced by a os.system
@@ -30,7 +32,7 @@ def pcrasterCommand(cmd = '', files = None, workdir = None, var2export = {},Debu
     BPAN: DEBUG will show all pcraster commands to the screen, DebugMe only the one where variable is passed as True
     '''
     DEBUG = False
-    if DebugMe: print cmd
+    if DebugMe: print(cmd)
     if files is not None:
         cmd_orig = cmd
         from random import choice #(**)
@@ -93,29 +95,26 @@ def pcrasterCommand(cmd = '', files = None, workdir = None, var2export = {},Debu
         cmd = cmd.replace("'","")
         cmd = cmd.replace('/', '\\')
 
-    if DEBUG or DebugMe: print "PCRCOMMAND => " + cmd
+    if DEBUG or DebugMe: print("PCRCOMMAND => " + cmd)
     if DEBUG or DebugMe: executedCmd = os.system(cmd)
 
 
-
-    ####else:     executedCmd = os.system(cmd + " 2>>stdout.txt") # COMMENTED OUT BY HYLKE BECAUSE PREVENTS RUNNING IN PARALLEL
     else: executedCmd = os.system(cmd)
-    if DEBUG or DebugMe: print "END"
+    if DEBUG or DebugMe: print("END")
 
     return cmd
 
-def getPCrasterPath(pcraster_path,alias = ""):
+def getPCrasterPath(pcraster_path,settingsFile,alias = ""):
+  
     '''get the path for a pcrastercommand'''
     alias = alias.strip().lower()
-    #pcraster_path = PCRHOME
     # Checking platform
     if (sys.platform.upper()=="WIN32"):
         execsuf = ".exe"
     #    pcraster_path = "C:/PcRaster/apps"
     else:
         execsuf = ""
-        ##pcraster_path = c.get("pcrasterdir")       # directory where pcrastercommands can be found
-    pcraster_path = "/ADAPTATION/usr/anaconda2/bin/"
+
     if alias=="pcrcalc": return os.path.join(pcraster_path,"pcrcalc" + execsuf)
     elif alias=="map2asc": return os.path.join(pcraster_path,"map2asc" + execsuf)
     elif alias=="asc2map": return os.path.join(pcraster_path,"asc2map" + execsuf)

@@ -1,37 +1,57 @@
 [DEFAULT]
-Root = /FLOODS/lisflood/CalibrationTest
-ForcingStart = 1/1/1986 00:00
-ForcingEnd = 31/12/2017 00:00
+Root = /perm/rd/nedd/EFAS/efasCalib/output
+ObservationsStart = 1/1/1990 00:00
+ObservationsEnd = 01/07/2018 00:00
+ForcingStart = 2/1/1990 06:00
+ForcingEnd = 31/12/2017 06:00
 SubsetMeteoData = 0
-WarmupDays = 366
+WarmupDays = 1095
 MinQlength = 4
-No_of_calibration_PCs = 21
-MaxPercArea=0.1
+No_of_calibration_PCs = 1
+No_of_calibration_lists = 1
+MaxPercArea = 0.1
+calibrationFreq = 6-hourly
+# 6-hourly # daily
 
 [CSV]
-Qgis = /FLOODS/lisflood/CalibrationTest/Qgis_worldOutlet_Calib20180810_AllUps_w_Scores.csv
-Qtss = /FLOODS/lisflood/CalibrationTest/Qts_World_2018_08.csv
+Qgis = /perm/rd/nedd/EFAS/efasCalib/src/Qgis1c.csv
+Qtss = /perm/rd/nedd/EFAS/efasCalib/src/ecQts.csv
 
 [Path]
-Temp = %(Root)s/temp
-Result = %(Root)s/result
-Templates = %(Root)s/templates       
-SubCatchmentPath = %(Root)s/catchments
-ParamRanges = %(Root)s/ParamRanges_LISFLOOD.csv
-CatchmentDataPath = /FLOODS/lisflood/CalibrationTest/static_data
-MeteoData = /FLOODS/glofas/meteo/ERA5/
-PCRHOME = /ADAPTATION/usr/anaconda2/bin/
-PYTHONCMD = /ADAPTATION/usr/anaconda2/bin/python
+Temp = %(Root)s/temp/
+Result = %(Root)s/result/
+Templates = /perm/rd/nedd/EFAS/efasCalib/src/templates/
+SubCatchmentPath = %(Root)s/catchments/
+ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/ParamRanges_LISFLOOD.csv
+CatchmentDataPath = /perm/rd/nedd/EFAS/efasCalib/input/maps/static/
+MeteoData = /perm/rd/nedd/EFAS/efasCalib/input/maps/forcings/day/
+WaterUseData = /perm/rd/nedd/EFAS/efasCalib/input/maps/water_abstraction/
+lddPath =  %(CatchmentDataPath)s/ec_ldd.map
+gaugesPath = %(CatchmentDataPath)s/ec_outlets.map
+upareaPath = %(CatchmentDataPath)s/ec_upArea.map
+PCRHOME = /usr/local/apps/pcraster/4.1.0/bin/
+PYTHONCMD = /perm/rd/nedd/python/virtualEnv_2.7.15-01/bin/python
+lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood/
 
 [Templates]
-LISFLOODSettings = %(Root)s/templates/settings_LF.xml
-RunLISFLOOD = %(Root)s/templates/runLF_linux_cut.sh
+LISFLOODSettings = /perm/rd/nedd/EFAS/efasCalib/src/templates/settings_LF_CUT.xml
+RunLISFLOOD = /perm/rd/nedd/EFAS/efasCalib/src/templates/runLF.sh
 
 [DEAP]
 use_multiprocessing = 1
-ngen = 16
-mu = 16
-lambda_ = 32
+numCPUs = 36
+minGen = 6
+maxGen = 16
+mu = 18
+lambda_ = 36
+pop = 72
+# NOTES:
+# minGen = Run at least this number of generations.
+# maxGen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
+# mu = # of best children chosen to feed into the next generation (JRC decided to make it 2x calibration parameters)
+#      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
+# Lamda = # of children spawned at every generation (= # threads to run in parallel)
+#         This must always be twice mu
 
 
 
