@@ -99,7 +99,7 @@ resample = config["resample"]
 #   Preparation for calibration
 ########################################################################
 
-stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
 stationdata['ObsID'] = stationdata.index
 
 with open(sys.argv[2], "r") as f:
@@ -138,7 +138,7 @@ if fastDebug:
         Cal_Start = datetime.strptime(row['StartDate_nrt_6'], '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
     elif row['CAL_TYPE'] == 'NRT_24h':
         Cal_Start = datetime.strptime(row['StartDate_nrt_24'], '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
-    Cal_End = (datetime.strptime(Cal_Start, '%Y-%m-%d %H:%M') + timedelta(days=7)).strftime('%Y-%m-%d %H:%M')
+    Cal_End = (datetime.strptime(Cal_Start, '%Y-%m-%d %H:%M') + timedelta(days=25)).strftime('%Y-%m-%d %H:%M')
     ForcingStart = datetime.strptime(Cal_Start, '%Y-%m-%d %H:%M')
     ForcingEnd = datetime.strptime(Cal_End, '%Y-%m-%d %H:%M')
 else:
@@ -176,9 +176,12 @@ else:
         streamflow_data = pandas.DataFrame(np.load(Qtss_csv.replace(".csv", ".npy"), allow_pickle=True))
         streamflow_datetimes = np.load(Qtss_csv.replace(".csv", "_dates.npy"), allow_pickle=True).astype('string_')
         try:
-            streamflow_data.index = [datetime.strptime(i, "%Y-%m-%dT%H:%M:%S.000000000") for i in streamflow_datetimes]
+            streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%d/%m/%Y %H:%M") for i in streamflow_datetimes]
         except ValueError:
-            streamflow_data.index = [datetime.strptime(i, "%d/%m/%Y %H:%M") for i in streamflow_datetimes]
+            try:
+                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d %H:%M:%S") for i in streamflow_datetimes]
+            except ValueError:
+                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d") for i in streamflow_datetimes]
         streamflow_data.columns = np.load(Qtss_csv.replace(".csv", "_catchments.npy"), allow_pickle=True)
     else:
         streamflow_data = pandas.read_csv(Qtss_csv, sep=",", index_col=0)
@@ -188,6 +191,7 @@ else:
         np.save(Qtss_csv.replace(".csv", "_catchments.npy"), streamflow_data.columns.values)
     observed_streamflow = streamflow_data[str(row['ObsID'])]
     observed_streamflow = observed_streamflow[ForcingStart:ForcingEnd] # Keep only the part for which we run LISFLOOD
+    observed_streamflow = observed_streamflow[Cal_Start:Cal_End]
     print("PLACE BREAKPOINT HERE")
 
 # DD Use a multiprocessing shared Value type to keep track of the generations so we can access it in the RunModel function
@@ -340,27 +344,35 @@ def RunModel(Individual, mapLoadOnly=None):
     # to minimise disk IO in between two Lisflood runs by keeping as much as possible into memory.
     # DD sync the loaded maps into the lisf1 object so lisflood won't have to reread the files from disk
     try:
+        if mapLoadOnly:
+           # Preload maps in memory for both runs
+           cmd = "cp " + templatePathPreRun + " " + templatePathPreRun.replace(".xml", "_i.xml")
+           p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+           print(p.communicate()[0])
+           p.wait()
+           lisf1.main(templatePathPreRun.replace(".xml", "_i.xml"), '-i')
+           return
         if mapLoadOnly is None:
             try:
                 del lisf1.binding['Catchments']
                 del lisf1.binding['1']
-            except KeyError:
+            except (KeyError, AttributeError):
                 pass
-        lisf1.main(lisfloodRoot + "dummy.txt", templatePathPreRun, '-v', '-t')
+        lisf1.main(templatePathPreRun) #os.path.realpath(__file__),
         if mapLoadOnly is None:
             try:
                 del lisf1.binding['Catchments']
                 del lisf1.binding['1']
-            except KeyError:
+            except (KeyError, AttributeError):
                 pass
-            lisf1.main(lisfloodRoot + "dummy.txt", templatePathRun, '-v', '-t')
+            lisf1.main(templatePathRun)
         elif genConvergenceTimeSeries and not mapLoadOnly:
             try:
                 del lisf1.binding['Catchments']
                 del lisf1.binding['1']
-            except KeyError:
+            except (KeyError, AttributeError):
                 pass
-            lisf1.main(lisfloodRoot + "dummy.txt", templatePathRun, '-v', '-t')
+            lisf1.main(templatePathRun, '-v', '-t')
             Qsim_tss = os.path.join(path_subcatch, "out", 'dis' + run_rand_id + '.tss')
             simulated_streamflow = pandas.read_csv(Qsim_tss, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
             simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
@@ -383,7 +395,7 @@ def RunModel(Individual, mapLoadOnly=None):
     if os.path.isfile(Qsim_tss)==False:
         print("run_rand_id: "+str(run_rand_id))
         raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
-    simulated_streamflow = pandas.read_csv(Qsim_tss,sep=r"\s+",index_col=0,skiprows=4,header=None,skipinitialspace=True)
+    simulated_streamflow = pandas.read_csv(Qsim_tss,sep=r"\s+",index_col=0,skiprows=0,header=None,skipinitialspace=True)
     simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan
     simulated_streamflow.index = [datetime.strptime(Cal_Start_Local, "%Y-%m-%d %H:%M") + timedelta(hours=6*(i-1)) for i in simulated_streamflow.index]
 
@@ -477,7 +489,7 @@ def RunModel(Individual, mapLoadOnly=None):
     for i in [str(ip) + "," for ip in fKGEComponents]:
         paramsHistory += i
     if use_multiprocessing:
-        paramsHistory += str(HydroStats.sae(s=Qsim, o=Qobs, warmup=WarmupDays)) + ","
+        # paramsHistory += str(HydroStats.sae(s=Qsim, o=Qobs, warmup=WarmupDays)) + ","
         paramsHistory += str(gen.value) + ","
         paramsHistory += str(runNumber.value)
     paramsHistory += "\n"
@@ -573,7 +585,7 @@ def main():
         # Attempt to open a previous parameter history
         try:
             # Open the paramsHistory file from previous runs
-            paramsHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
+            paramsHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[4:]
             print("Restoring previous calibration state")
             def updatePopulationFromHistory(pHistory):
                 n = len(pHistory)
@@ -764,14 +776,18 @@ def main():
         pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
         pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
         # Select the best pareto candidate
-        bestParetoIndex \
-            = pHistory["paretoRank"].nsmallest(1).index
+        bestParetoIndex = pHistory["paretoRank"].nsmallest(1).index
         # Save the pareto front
         paramvals = np.zeros(shape=(1,len(ParamRanges)))
         paramvals[:] = np.NaN
         for ipar, par in enumerate(ParamRanges.index):
             paramvals[0][ipar] = pHistory.ix[bestParetoIndex][par]
-        pareto_front = pandas.DataFrame({'effover': pHistory["Kling Gupta Efficiency"].ix[bestParetoIndex], 'R': pHistory["Kling Gupta Efficiency"].ix[bestParetoIndex]}, index=[0])
+        pareto_front = pandas.DataFrame(
+            {
+                'effover': pHistory["Kling Gupta Efficiency"].ix[bestParetoIndex],
+                'R': pHistory["Kling Gupta Efficiency"].ix[bestParetoIndex]
+            }, index=[0]
+        )
         for ii in range(len(ParamRanges)):
             pareto_front["param_"+str(ii).zfill(2)+"_"+ParamRanges.index[ii]] = paramvals[0,ii]
         pareto_front.to_csv(os.path.join(path_subcatch,"pareto_front.csv"),',')
@@ -838,41 +854,55 @@ def main():
    
     templatePathPreRun = os.path.join(path_subcatch, os.path.basename(LISFLOODSettings_template[:-4] + '-PreRun' + run_rand_id + '.xml'))
     templatePathRun = os.path.join(path_subcatch, os.path.basename(LISFLOODSettings_template[:-4] + '-Run' + run_rand_id + '.xml'))
-    try:
-        del lisf1.binding['Catchments']
-        del lisf1.binding['1']
-    except KeyError:
-        pass
-    lisf1.main(lisfloodRoot + "dummy.txt", templatePathPreRun, '-v', '-t')
-    del lisf1.binding['Catchments']
-    del lisf1.binding['1']
+    # # BLAAT temporarily disabled for handling python3 for 1arcmin
+    # try:
+    #     del lisf1.binding['Catchments']
+    #     del lisf1.binding['1']
+    # except (KeyError, AttributeError):
+    #     pass
+    # Preload maps in memory for both runs
+    cmd = "cp " + templatePathPreRun + " " + templatePathPreRun.replace(".xml", "_i.xml")
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(p.communicate()[0])
+    p.wait()
+    lisf1.main(templatePathPreRun.replace(".xml", "_i.xml"), '-i')
+
+    ## FIRST LISFLOOD RUN ###
+    lisf1.main(templatePathPreRun)
+    # sys.exit(0) # BLAAT PROFILING
+    # try:
+    #     del lisf1.binding['Catchments']
+    #     del lisf1.binding['1']
+    # except (KeyError, AttributeError):
+    #     pass
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = "cp " + path_subcatch + "/out/avgdis" + run_rand_id + ".end.nc " + path_subcatch + "/out/avgdis" + run_rand_id + ".end.nc.bak"
+    cmd = "cp " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc.bak"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
-    cmd = "cp " + path_subcatch + "/out/lzavin" + run_rand_id + ".end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + ".end.nc.bak"
+    cmd = "cp " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc.bak"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
-    lisf1.main(lisfloodRoot + "dummy.txt", templatePathRun, '-v', '-t')
+    ### SECOND LISFLOOD RUN ###
+    lisf1.main(templatePathRun)
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = "mv " + path_subcatch + "/out/avgdis" + run_rand_id + ".end.nc.bak " + path_subcatch + "/out/avgdis" + run_rand_id + ".simulated_best.end.nc"
+    cmd = "mv " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc.bak " + path_subcatch + "/out/avgdis" + run_rand_id + ".simulated_bestend.nc"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
-    cmd = "mv " + path_subcatch + "/out/lzavin" + run_rand_id + ".end.nc.bak " + path_subcatch + "/out/lzavin" + run_rand_id + ".simulated_best.end.nc"
+    cmd = "mv " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc.bak " + path_subcatch + "/out/lzavin" + run_rand_id + ".simulated_bestend.nc"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
-    cmd = "rm " + path_subcatch + "/out/avgdis" + run_rand_id + ".end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + ".end.nc"
+    cmd = "rm " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
 
     os.chdir(currentdir)
     print("BLAAT")
-    cmd = "ls -lrt " + path_subcatch + "/out"
+    cmd = "ls -thrall " + path_subcatch + "/out"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()

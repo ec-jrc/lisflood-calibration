@@ -67,15 +67,16 @@ def main():
     #   Loop through catchments and perform calibration
     ########################################################################
 
-    print(">> Reading Qgis2.csv file...")
-    stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+    print(">> Reading Qmeta2.csv file...")
+    stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
     stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
 
     CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)
 
     for index, row in stationdata_sorted.iterrows():
         
-        Series = CatchmentsToProcess.ix[:,0]
+        Series = CatchmentsToProcess.loc[:,0]
+        #print('cal_start',row['Cal_Start'])
         if len(Series[Series==index]) == 0: # Only process catchments whose ObsID is in the CatchmentsToProcess.txt file
             continue
         print("=================== "+str(index)+" ====================")

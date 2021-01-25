@@ -14,7 +14,7 @@ calibrationFreq = 6-hourly
 # 6-hourly # daily
 
 [CSV]
-Qgis = /perm/rd/nedd/EFAS/efasCalib/src/Qgis1c.csv
+Qmeta = /perm/rd/nedd/EFAS/efasCalib/src/Qmeta1.csv
 Qtss = /perm/rd/nedd/EFAS/efasCalib/src/ecQts.csv
 
 [Path]
@@ -29,9 +29,13 @@ WaterUseData = /perm/rd/nedd/EFAS/efasCalib/input/maps/water_abstraction/
 lddPath =  %(CatchmentDataPath)s/ec_ldd.map
 gaugesPath = %(CatchmentDataPath)s/ec_outlets.map
 upareaPath = %(CatchmentDataPath)s/ec_upArea.map
-PCRHOME = /usr/local/apps/pcraster/4.1.0/bin/
+PCRHOME = /usr/local/apps/pcraster/4.3.0/bin/
 PYTHONCMD = /perm/rd/nedd/python/virtualEnv_2.7.15-01/bin/python
-lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood/
+PYTHON3CMD=/usr/local/apps/python3/3.6.10-01/bin/python3
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood/
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-code-55-warmstart/src/
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-code-61-e2etests/src/
+lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-develop/src/
 
 [Templates]
 LISFLOODSettings = /perm/rd/nedd/EFAS/efasCalib/src/templates/settings_LF_CUT.xml

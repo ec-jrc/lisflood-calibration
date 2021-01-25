@@ -312,7 +312,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
         # DD Construct CDF of observation
         olen = len(o)
         osorted = np.sort(o)
-        ocdf = np.array(xrange(olen)) / float(olen)
+        ocdf = np.array(range(olen)) / float(olen)
         # Interpolate to the requested percentile
         othr = np.interp(lowFlowPercentileThreshold,ocdf,osorted)
         if usePeaksOnly:
@@ -326,7 +326,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
     else:
         B = np.mean(s) / np.mean(o)
         y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
-
+        se = sae(s, o, warmup=warmup)
     aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2)
     if aKGE < -100:
         aKGE = -100
@@ -351,7 +351,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
         B = (((1 - weightedLogWeight) * B)**6.0 + (weightedLogWeight * Bl)**6.0)**(1.0/6.0)
         y = (((1 - weightedLogWeight) * y)**6.0 + (weightedLogWeight * yl)**6.0)**(1.0/6.0)
 
-    return (aKGE, r, B, y)
+    return (aKGE, r, B, y, se)
 
 def vr(s,o,warmup):
     """
