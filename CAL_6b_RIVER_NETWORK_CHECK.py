@@ -62,8 +62,8 @@ path_result = parser.get('Path', 'Result')
 switch_SubsetMeteoData = int(parser.get('DEFAULT', 'SubsetMeteoData'))
 
 # Extract all station locations
-print(">> Reading Qgis2.csv file...")
-stationdata = pd.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col='ObsID')
+print(">> Reading Qmeta2.csv file...")
+stationdata = pd.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col='ObsID')
 stationdata['ObsID'] = stationdata.index
 stationLocations = stationdata[["ObsID","LisfloodX","LisfloodY"]].values.tolist()
 
@@ -127,9 +127,17 @@ for inflow in inflows:
               + str(inflowers) + " VS " \
               + str(inflowArrayFiltered) \
             )
+            #   os.system("aguila ${f} &")
             print('\n')
         else:
           continue
+
+      # # Same but for very large ascii files. The memory mapping is faster
+      # f = open(ic)
+      # s = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+      # if s.find(" " + str(catchment) + " -> ") != -1:
+      #   print(str(s))
+      # f.close()
 
     # Check coordinates in the cut map too
     inflowCut = str(inflow).replace(".map", "_cut.map")
@@ -151,6 +159,14 @@ for inflow in inflows:
       # And chek that the found coordinates match the uncut map
       if inflowMapCoordinates != inflowMapCoordinatesCut:
         warnings.warn("Mismatched inflow and inflow_cut: " + str(catchment))
+      # # also check that the original and cut map have the same amount of non-nan points
+      # DD Doesn't work because the inflowMapCut is corrupt and polluted by random floats
+      # mask = pcr.setclone(inflowCut)
+      # inflowMapCut = pcr.readmap(inflowCut)
+      # inflowArrayCut = np.round(pcr.pcr2numpy(inflowMapCut, np.nan))
+      # inflowArrayCut = inflowArrayCut[~np.isnan(inflowArrayCut)]
+      # if len(inflowArray) != len(inflowArrayCut):
+      #   print("Mismatched inflow map and its cut version: " + str(catchment))
 
     # Do the same for other maps in the map folder, but not outlets as they have only a single pixel in them anyway
     path_subcatch = os.path.join(SubCatchmentPath, str(catchment))
@@ -171,3 +187,8 @@ for inflow in inflows:
           coordinates.append((int(float(line[2])), int(float(line[4]))))
         if inflowMapCoordinates != coordinates:
           warnings.warn("Mismatched inflow and " + b + " map: " + str(catchment))
+
+
+
+
+

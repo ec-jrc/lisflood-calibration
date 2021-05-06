@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Please refer to quick_guide.pdf for usage instructions"""
+
 import os
 import sys
 import pdb
@@ -38,10 +40,10 @@ if __name__=="__main__":
 	path_temp = parser.get('Path', 'Temp')
 	path_result = parser.get('Path', 'Result')
 	
-	No_of_calibration_PCs = float(parser.get('DEFAULT','No_of_calibration_PCs'))
+	No_of_calibration_PCs = float(parser.get('DEFAULT','No_of_calibration_PCs'))+ 5 #BLAAT
 
 	Qtss_csv = parser.get('CSV', 'Qtss')
-	Qgis_csv = parser.get('CSV', 'Qgis')
+	Qmeta_csv = parser.get('CSV', 'Qmeta')
 
 	pcraster_path = parser.get('Path', 'PCRHOME')
 
@@ -56,11 +58,11 @@ if __name__=="__main__":
 
 
 	########################################################################
-	#   Make stationdata array from the qgis csv
+	#   Make stationdata array from the Qmeta csv
 	########################################################################
 	
-	print(">> Reading Qgis2.csv file...")
-	stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+	print(">> Reading Qmeta2.csv file...")
+	stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
 	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=False)
 	
 	stationdata['SPREAD_WORKLOAD_ID'] = np.nan
@@ -137,6 +139,6 @@ if __name__=="__main__":
 	for c in CatchmentsToProcess:
 		print(c)
 	
-	# Write stationdata dataframe to Qgis3.csv in results directory
-	stationdata.to_csv(os.path.join(path_result,"Qgis3.csv"),',')
+	# Write stationdata dataframe to Qmeta3.csv in results directory
+	stationdata.to_csv(os.path.join(path_result,"Qmeta3.csv"),',')
 	print("==================== END ====================")

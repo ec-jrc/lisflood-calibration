@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Please refer to quick_guide.pdf for usage instructions"""
+
 import os
 import sys
 from mpl_toolkits.mplot3d import Axes3D
@@ -44,8 +46,11 @@ parser.read(iniFile)
 
 ObservationsStart = datetime.datetime.strptime(parser.get('DEFAULT', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
 ObservationsEnd = datetime.datetime.strptime(parser.get('DEFAULT', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
+#forcing_start=parser.get('DEFAULT', 'ForcingStart')
 ForcingStart = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
 ForcingEnd = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
+#ForcingStart = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%m/%d/%Y")  # Start of forcing
+#ForcingEnd = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%m/%d/%Y")  # Start of forcing
 
 WarmupDays = int(parser.get('DEFAULT', 'WarmupDays'))
 
@@ -56,7 +61,7 @@ path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'),"maps")
 path_result = parser.get('Path', 'Result')
 
 Qtss_csv = parser.get('CSV', 'Qtss')
-Qgis_csv = parser.get('CSV', 'Qgis')
+Qmeta_csv = parser.get('CSV', 'Qmeta')
 calibrationFreq = parser.get('DEFAULT', 'calibrationFreq')
 
 
@@ -64,8 +69,8 @@ calibrationFreq = parser.get('DEFAULT', 'calibrationFreq')
 #   Loop through catchments and perform calibration
 ########################################################################
 
-print ">> Reading Qgis2.csv file..."
-stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+print ">> Reading Qmeta2.csv file..."
+stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
 stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
 
 CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)
@@ -76,6 +81,9 @@ stationdata_sorted['NSE_cal'] = np.nan
 stationdata_sorted['NSE_val'] = np.nan
 
 for index, row in stationdata_sorted.iterrows():
+	# if not row["ObsID"] == 2910: # Runs only this catchment
+	# 	continue
+
 	Series = CatchmentsToProcess.ix[:,0]
 	if len(Series[Series==row["ObsID"]]) == 0: # Only process catchments whose ID is in the CatchmentsToProcess.txt file
 		continue
@@ -137,9 +145,11 @@ for index, row in stationdata_sorted.iterrows():
 		Qobs = Qobs.resample('24H', label="right", closed="right").mean()
 
 	# Make dataframe with aligned Qsim and Qobs columns
+	# Q = pandas.concat([Qsim, Qobs], axis=1)#.reset_index()
 	Q = pd.concat({"Sim": Qsim, "Obs": Qobs}, axis=1)  # .reset_index()
 
 	# Filter out nans
+	# Q = Q.dropna() # not great as it results in connecting lines between periods of missing data
 	Q[np.isnan(Q['Obs'])] = np.nan  # better as it leaves the gaps in the plot.
 	
 	########################################################################
@@ -223,6 +233,7 @@ for index, row in stationdata_sorted.iterrows():
 	simPlot = plt.plot(xrange(14),Q_sim_clim_Cal[months-1],color='blueviolet', linewidth=3)
 	obsPlot = plt.plot(xrange(14),Q_obs_clim_Cal[months-1],color='deepskyblue', linewidth=1)
 	ax3.set_title('(c) Monthly Q climatology cal.\ period')
+	#leg2 = ax3.legend(['121', '122','343','334'], loc='best', fancybox=True, framealpha=0.5,prop={'size':12},labelspacing=0.1)
 	plt.xticks(range(0,14), months)
 	plt.xlim([0.5,12.5])
 	plt.ylabel(r'Streamflow [m3 / s]')
@@ -250,6 +261,7 @@ for index, row in stationdata_sorted.iterrows():
 			ax4.set_title('(d) Monthly Q climatology val.\ period')
 			plt.xticks(range(0,14), months)
 			plt.xlim([0.5,12.5])
+			#plt.ylabel(r'Streamflow [m$^3$ s$^{-1}$]')
 			plt.ylabel(r'Streamflow')
 			plt.xlabel(r'Month')
 	
@@ -258,22 +270,55 @@ for index, row in stationdata_sorted.iterrows():
 	
 	ax10 = plt.subplot(gs[10:13,0:2])
 	x = front_history['gen'].values
+	#plt.fill_between(x,front_history["effavg_R"].values-0.5*front_history["effstd_R"].values, front_history["effavg_R"].values+0.5*front_history["effstd_R"].values, facecolor='0.8',edgecolor='none')
+	#plt.hold(True)
 	plt.plot(x,front_history['effavg_R'].values,'black')
 	ax10.set_title('(e) KGE evolution')
 	ax = plt.gca()
 	plt.ylabel(r"KGE")
 	plt.xlabel(r"Generation")
+	#p = plt.Rectangle((0, 0), 0, 0, facecolor='0.8',edgecolor='none')
+	#ax.add_patch(p)
+	#leg2 = ax10.legend(['Mean', 'Std.\ dev.'], loc=4, fancybox=True, framealpha=0.8,prop={'size':12},labelspacing=0.1)
+	#leg2.get_frame().set_edgecolor('white')
+	##leg2.draw_frame(False)
+	
+	"""
+	ax11 = plt.subplot(gs[10:13,2:4])
+	plt.fill_between(x,front_history["effavg_R"].values-0.5*front_history["effstd_R"].values, front_history["effavg_R"].values+0.5*front_history["effstd_R"].values, facecolor='0.8',edgecolor='none')
+	plt.hold(True)
+	plt.plot(x,front_history['effavg_R'].values,'black')
+	ax11.set_title('(f) Pareto front KGE')
+	ax = plt.gca()
+	plt.ylabel(r"KGE [$-$]")
+	plt.xlabel(r"Generation")
+	
+	ax12 = plt.subplot(gs[10:13,4:6])
+	plt.fill_between(x,front_history["effavg_B"].values-0.5*front_history["effstd_B"].values, front_history["effavg_B"].values+0.5*front_history["effstd_B"].values, facecolor='0.8',edgecolor='none')
+	plt.hold(True)
+	plt.plot(x,front_history['effavg_B'].values,'black')
+	ax12.set_title('(g) Pareto front $|B|$')
+	ax = plt.gca()
+	plt.ylabel(r"$|B|$ [\%]")
+	plt.xlabel(r"Generation")
+	"""
 	
 	adjustprops = dict(left=0.1, bottom=0, right=1, top=1, wspace=-0.2, hspace=0.0)
 	fig.subplots_adjust(**adjustprops)
 
 	plt.draw()
 	
+	#gs.tight_layout(fig,rect=[0,0.03,1,0.95]) #pad=0.1, w_pad=0.1, h_pad=0.1
+	
 	fig.set_size_inches(22/2.54,30/2.54)
 	
 	fig.savefig(os.path.join(path_subcatch,"FIGURES",str(row['ObsID'])+'_summary.pdf'), format='PDF')
 	fig.savefig(os.path.join(path_subcatch,"FIGURES",str(row['ObsID'])+'_summary.png'), dpi=300, format='PNG')
+	#plt.savefig(os.path.join(path_subcatch,"FIGURES",str(row['ObsID'])+'_summary.png'))
 	
 	plt.close("all")
 	
-stationdata_sorted.to_csv(os.path.join(path_result,"Qgis3.csv"),',')
+	#plt.show()
+	#pdb.set_trace()
+	
+stationdata_sorted.to_csv(os.path.join(path_result,"Qmeta3.csv"),',')

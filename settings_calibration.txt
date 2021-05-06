@@ -23,19 +23,22 @@ Result = %(Root)s/result/
 Templates = /perm/rd/nedd/EFAS/efasCalib/src/templates/
 SubCatchmentPath = %(Root)s/catchments/
 ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/ParamRanges_LISFLOOD.csv
+#ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/ParamRanges_LISFLOOD_380_Efas4.csv
 CatchmentDataPath = /perm/rd/nedd/EFAS/efasCalib/input/maps/static/
 MeteoData = /perm/rd/nedd/EFAS/efasCalib/input/maps/forcings/day/
 WaterUseData = /perm/rd/nedd/EFAS/efasCalib/input/maps/water_abstraction/
 lddPath =  %(CatchmentDataPath)s/ec_ldd.map
 gaugesPath = %(CatchmentDataPath)s/ec_outlets.map
 upareaPath = %(CatchmentDataPath)s/ec_upArea.map
-PCRHOME = /usr/local/apps/pcraster/4.3.0/bin/
+PCRHOME = /usr/local/apps/pcraster/4.2.1/bin/
 PYTHONCMD = /perm/rd/nedd/python/virtualEnv_2.7.15-01/bin/python
 PYTHON3CMD=/usr/local/apps/python3/3.6.10-01/bin/python3
-#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood/
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-efas4/
 #lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-code-55-warmstart/src/
 #lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-code-61-e2etests/src/
 lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-develop/src/
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-2.12.5/Lisflood/
+#lisfloodPath = /perm/rd/nedd/EFAS/efasCalib/input/src/lisflood-cinzia/
 
 [Templates]
 LISFLOODSettings = /perm/rd/nedd/EFAS/efasCalib/src/templates/settings_LF_CUT.xml
@@ -43,7 +46,7 @@ RunLISFLOOD = /perm/rd/nedd/EFAS/efasCalib/src/templates/runLF.sh
 
 [DEAP]
 use_multiprocessing = 1
-numCPUs = 36
+numCPUs = 6
 minGen = 6
 maxGen = 16
 mu = 18

@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
+"""Please refer to quick_guide.pdf for usage instructions"""
+
 import os
 import sys
+#import numpy as np
 import pandas
+#import re
 import pdb
+#import time
 from ConfigParser import SafeConfigParser
 import glob
+#import datetime
 
 
 ########################################################################
@@ -29,8 +35,8 @@ SubCatchmentPath = parser.get('Path','SubCatchmentPath')
 #   Loop through catchments and delete useless files
 ########################################################################
 
-print ">> Reading Qgis2.csv file..."
-stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+print ">> Reading Qmeta2.csv file..."
+stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
 stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
 
 CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)

@@ -23,8 +23,8 @@
         <setoption choice="1" name="groundwaterSmooth"/>
 
         <setoption choice="0" name="wateruse"/>
-        <setoption choice="1" name="TransientWaterDemandChange"/>
-        <setoption choice="0" name="useWaterDemandAveYear"/>
+	<setoption choice="1" name="TransientWaterDemandChange"/>
+	<setoption choice="0" name="useWaterDemandAveYear"/>
         <setoption choice="0" name="wateruseRegion"/>
 
         <setoption choice="1" name="drainedIrrigation"/>
@@ -36,13 +36,13 @@
         <setoption choice="1" name="SplitRouting"/>
 
         # use inflow data
-        <setoption choice="%inflowflag" name="inflow"/>
+        <setoption choice="1" name="inflow"/>
 
         # option to compute indicators
         <setoption choice="0" name="indicator"/>
 
         # option to initialize Lisflood
-        <setoption choice="%InitLisflood" name="InitLisflood"/>
+        <setoption choice="1" name="InitLisflood"/>
 
         # option to read/write NetCDF
         <setoption choice="1" name="readNetcdfStack"/>
@@ -63,23 +63,17 @@
         <setoption choice="0" name="repMeteoUpsGauges"/>
 
         # report reservoirs and lakes
-        <setoption choice="0" name="repsimulateLakes"/>
+        <setoption choice="1" name="repsimulateLakes"/>
         <setoption choice="0" name="repsimulateReservoirs"/>
 
         #-----------------------------------------------------------
         # report maps
         #-----------------------------------------------------------
         # report state maps
-        <setoption choice="0" name="repStateMaps"/>
+        <setoption choice="1" name="repStateMaps"/>
 
         # report end maps
         <setoption choice="0" name="repEndMaps"/>
-        <setoption choice="0" name="repTopSoilMoistureMaps"/>
-        <setoption choice="0" name="repSurfaceSoilMoistureMaps"/>
-        <setoption choice="0" name="repDischargeMaps"/>
-        <setoption choice="0" name="repSurfaceRunoffMaps"/>
-        <setoption choice="0" name="repsimulateLakes"/>
-        <setoption choice="0" name="repsimulateReservoirs"/>
 
         # report maps
         <setoption choice="0" name="repDischargeMaps"/>
@@ -87,12 +81,9 @@
         <setoption choice="0" name="repRainMaps"/>
         <setoption choice="0" name="repSnowMaps"/>
         <setoption choice="0" name="repSnowCoverMaps"/>
-        <setoption choice="0" name="repRainMaps"/>
         <setoption choice="0" name="repSnowMeltMaps"/>
-
         <setoption choice="0" name="repThetaMaps"/>
         <setoption choice="0" name="repThetaForestMaps"/>
-        <setoption choice="0" name="repThetaIrrigationMaps"/>
         <setoption choice="0" name="repLZMaps"/>
         <setoption choice="0" name="repUZMaps"/>
         <setoption choice="0" name="repGwPercUZLZMaps"/>
@@ -102,19 +93,10 @@
         <setoption choice="0" name="repPFMaps"/>
         <setoption choice="0" name="repPFForestMaps"/>
         <setoption choice="0" name="repWaterDepthMaps"/>
-        <setoption choice="0" name="repStressDays"/>
-        <setoption choice="0" name="repMBTs"/>
-        <setoption choice="0" name="repInternalCom"/>
+
         <setoption choice="0" name="repTotalAbs"/>
         <setoption choice="0" name="repTotalWUse"/>
         <setoption choice="0" name="repWIndex"/>
-        
-        # Report input maps for debugging
-        <setoption choice="0"  name="repETRefMaps"/>
-        <setoption choice="0"  name="repESRefMaps"/>
-        <setoption choice="0"  name="repEWRefMaps"/>
-        <setoption choice="0"  name="repPrecipitationMaps"/>
-        <setoption choice="0"  name="repTavgMaps"/>
 
     </lfoptions>
 
@@ -145,17 +127,7 @@
                 **************************************************************
             </comment>
 
-            <textvar name="NetCDFTimeChunks" value="-1">
-                <comment>
-                    -1 to use a single chunk
-                    auto to let xarray decide
-                    any int to let you decide
-                </comment>
-            </textvar>
-
-            <textvar name="MapsCaching" value="True"/>
-
-            <textvar name="PathRoot" value="%SubCatchmentPath">
+            <textvar name="PathRoot" value="/perm/ma/macw/lisflood/2737">
                 <comment>
                     Root directory
                 </comment>
@@ -179,7 +151,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="Gauges" value="%gaugeloc">
+            <textvar name="Gauges" value="$(PathRoot)/maps/ec_outlets.nc">
                 <comment>
                     -7.85 41.15 -7.75 41.15 -7.35 41.15 -7.25 41.15 -7.15 41.15 -7.05 41.15 -5.85 41.75 # Duoro
                     6.15 51.85
@@ -203,15 +175,13 @@
                 </comment>
             </textvar>
 
-            <textvar name="Latitude" value="$(PathRoot)/maps/ec_lat">
-                <comment>
-                    latitude map to be used for snow/ice modelling
-                </comment>
+<!--            <textvar name="Latitude" value="$(PathRoot)/maps/ec_lat">-->
+<!--                <comment>-->
+<!--                    latitude map to be used for snow/ice modelling-->
+<!--                </comment>-->
+<!--            </textvar>-->
+             <textvar name="proj4_params" value="+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs">
             </textvar>
-
-            <textvar name="proj4_params" value="+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs">
-            </textvar>
-
             <textvar name="PathOut" value="$(PathRoot)/out">
                 <comment>
                     Output path
@@ -254,7 +224,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="PathMapsLandUseChange" value="$(PathRoot)/maps">
+            <textvar name="PathMapsLandUseChange" value="$(PathRoot)">
                 <comment>
                     Maps for transient land use changes
                     rcp85_20062125
@@ -302,17 +272,13 @@
                 **************************************************************
             </comment>
 
-
             <textvar name="CalendarConvention" value="proleptic_gregorian">
                 <comment>
-                    Calendar convention necessary to know how to compute date/time increments.
-                    setting must be consistent with the time dimension of meteorologic forcing (input) files.
-                    Allowed values: "gregorian" ort "standard", "proleptic_gregorian", "noleap" or "365_day", "all_leap", "366_day", "360_day", "julian", "none"
-                    Reference: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.pdf
+                    Calendar convention
                 </comment>
             </textvar>
 
-            <textvar name="CalendarDayStart" value="%ForcingStart">
+            <textvar name="CalendarDayStart" value="02/01/1990 06:00">
                 <comment>
                     Calendar day number of 1st day in model run
                     Day of the year of first map (e.g. xx000.001) even if the model start from map e.g. 500
@@ -321,17 +287,16 @@
                 </comment>
             </textvar>
 
-            <textvar name="DtSec" value="21600">
+            <textvar name="DtSec" value="86400">
                 <comment>
-                    value="86400" for daily
-                    value="21600" for 6-hourly
                     timestep [seconds]
+                    21600 for 6hourly timestep
+                    86400 for daily timestep
                 </comment>
             </textvar>
 
             <textvar name="DtSecChannel" value="3600">
                 <comment>
-                    14400 6 times, as in operational GloFAS
                     17280 5 times subrouting
                     21600 4 times
                     Sub time step used for kinematic wave channel routing [seconds]
@@ -339,30 +304,27 @@
                 </comment>
             </textvar>
 
-            <textvar name="StepStart" value="%CalStart">
+            <textvar name="StepStart" value="01/01/2016 06:00">
                 <comment>
                     Number of first time step in simulation
                 </comment>
             </textvar>
 
-            <textvar name="StepEnd" value="%CalEnd">
+            <textvar name="StepEnd" value="02/02/2016 06:00">
                 <comment>
-                    Reforecasts_2017        1/1/1996        1
-                    Reforecasts_2017        31/12/2009      5114
-                    Reforecasts_2017        1/1/2010        5115
-                    Reforecasts_2017        31/12/2015      7305
-                    Reforecasts_2017        31/12/2016      7671
-              </comment>
-            </textvar>
-
-            <textvar name="ReportSteps" value="1..99999">
-                <comment>
-                    Time steps at which to write model state maps (i.e. only
-                    those maps that would be needed to define initial conditions
-                    for succeeding model run)
+                    Number of last time step in simulation
                 </comment>
             </textvar>
 
+            <textvar name="ReportSteps" value="1..9999">
+                <comment>
+                    1..9999
+                    Time steps at which to write model state maps (i.e. only
+                    those maps that would be needed to define initial conditions
+                    for succeeding model run)
+
+                </comment>
+            </textvar>
         </group>
 
         <group>
@@ -398,14 +360,14 @@
 
         </group>
 
-        <group>
+<group>
             <comment>
                 **************************************************************
                 CALIBRATION PARAMETERS
                 with .nc format: than working with smaller sub-areas is possible
                 **************************************************************
             </comment>
-            <textvar name="UpperZoneTimeConstant" value="%UpperZoneTimeConstant">
+            <textvar name="UpperZoneTimeConstant" value="$(PathParams)/params_UpperZoneTimeConstant.nc">
                 <comment>
                     default: 10
                     $(PathParams)/params_UpperZoneTimeConstant.nc
@@ -414,7 +376,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="LowerZoneTimeConstant" value="%LowerZoneTimeConstant">
+            <textvar name="LowerZoneTimeConstant" value="$(PathParams)/params_LowerZoneTimeConstant.nc">
                 <comment>
                     default: 100
                     $(PathParams)/params_LowerZoneTimeConstant.nc
@@ -424,15 +386,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="QSplitMult" value="%QSplitMult">
-                <comment>
-                    default: 2
-                    Multiplyer to tune average discharge
-                    This will let the model turn on/off split routing during the calibration
-                </comment>
-            </textvar>
-
-            <textvar name="GwPercValue" value="%GwPercValue">
+            <textvar name="GwPercValue" value="$(PathParams)/params_GwPercValue.nc">
                 <comment>
                     default: 0.5
                     $(PathParams)/params_GwPercValue.nc
@@ -441,7 +395,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="GwLoss" value="%GwLoss">
+            <textvar name="GwLoss" value="$(PathParams)/params_GwLoss.nc">
                 <comment>
                     default: 0.0
                     $(PathParams)/params_GwLoss.nc
@@ -451,13 +405,13 @@
                 </comment>
             </textvar>
 
-            <textvar name="LZThreshold" value="%LZThreshold">
+            <textvar name="LZThreshold" value="$(PathParams)/params_LZThreshold.nc">
                 <comment>
                     threshold value below which there is no outflow to the channel
                 </comment>
             </textvar>
 
-            <textvar name="b_Xinanjiang" value="%b_Xinanjiang">
+            <textvar name="b_Xinanjiang" value="$(PathParams)/params_b_Xinanjiang.nc">
                 <comment>
                     default: 0.7
                     $(PathParams)/params_b_Xinanjiang.nc
@@ -465,7 +419,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="PowerPrefFlow" value="%PowerPrefFlow">
+            <textvar name="PowerPrefFlow" value="$(PathParams)/params_PowerPrefFlow.nc">
                 <comment>
                     default: 3.5
                     $(PathParams)/params_PowerPrefFlow.nc
@@ -474,7 +428,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="CalChanMan" value="%CalChanMan1">
+            <textvar name="CalChanMan" value="$(PathParams)/params_CalChanMan1.nc">
                 <comment>
                     default: 2.0
                     $(PathParams)/params_CalChanMan1.nc
@@ -482,7 +436,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="SnowMeltCoef" value="%SnowMeltCoef">
+            <textvar name="SnowMeltCoef" value="$(PathParams)/params_SnowMeltCoef.nc">
                 <comment>
                     default: 4.0
                     $(PathParams)/params_SnowMeltCoef.nc
@@ -491,7 +445,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="CalChanMan2" value="%CalChanMan2">
+            <textvar name="CalChanMan2" value="$(PathParams)/params_CalChanMan2.nc">
                 <comment>
                     default: 3.0
                     $(PathParams)/params_CalChanMan2.nc
@@ -499,7 +453,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="LakeMultiplier" value="%LakeMultiplier">
+            <textvar name="LakeMultiplier" value="$(PathParams)/params_LakeMultiplier.nc">
                 <comment>
                     default: 1.0
                     $(PathParams)/params_LakeMultiplier.nc
@@ -507,7 +461,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="adjust_Normal_Flood" value="%adjust_Normal_Flood">
+            <textvar name="adjust_Normal_Flood" value="$(PathParams)/params_adjust_Normal_Flood.nc">
                 <comment>
                     default: 0.8
                     $(PathParams)/params_adjust_Normal_Flood.nc
@@ -517,7 +471,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="ReservoirRnormqMult" value="%ReservoirRnormqMult">
+            <textvar name="ReservoirRnormqMult" value="$(PathParams)/params_ReservoirRnormqMult.nc">
                 <comment>
                     default: 1.0
                     $(PathParams)/params_ReservoirRnormqMult.nc
@@ -534,7 +488,12 @@
                     set to 1
                 </comment>
             </textvar>
-
+            <textvar name="QSplitMult" value="2.0">
+                <comment>
+                PBchange
+                Multiplier applied to average Q to split into a second line of routing
+                </comment>
+            </textvar>
             <textvar name="ChanBottomWMult" value="1.0">
                 <comment>
                     PBchange
@@ -568,7 +527,7 @@
                 **************************************************************
             </comment>
 
-            <textvar name="timestepInit" value="1">
+            <textvar name="timestepInit" value="01/01/1990 06:00">
                 <comment>
                     if init. condition are stored as netCDF with different time steps
                     this variable indicates which time step to use
@@ -901,31 +860,31 @@
                 </comment>
             </textvar>
 
-            <textvar name="PrefixWaterUseDomestic" value="dom_1990-2018">
+            <textvar name="PrefixWaterUseDomestic" value="dom_2014">
                 <comment>
                     prefix domestic water use maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixWaterUseLivestock" value="liv_1990-2018">
+            <textvar name="PrefixWaterUseLivestock" value="liv_2014">
                 <comment>
                     prefix livestock water use maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixWaterUseEnergy" value="ene_1990-2018">
+            <textvar name="PrefixWaterUseEnergy" value="ene_2014">
                 <comment>
                     prefix energy water use maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixWaterUseIndustry" value="ind_1990-2018">
+            <textvar name="PrefixWaterUseIndustry" value="ind_2014">
                 <comment>
                     prefix industry water use maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixVarWaterFraction" value="varW">
+            <textvar name="PrefixVarWaterFraction" value="varw">
                 <comment>
                     prefix variable water fraction
                 </comment>
@@ -1067,7 +1026,7 @@
 
             </comment>
 
-            <textvar name="IrrigationEfficiency" value="$(PathRoot)/maps/ad_irrigation_efficiency_baseline">
+            <textvar name="IrrigationEfficiency" value="0.75">
                 <comment>
                     0.75
                     Field application irrigation efficiency max 1, ~0.90 drip irrigation, ~0.75 sprinkling
@@ -1106,7 +1065,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="EnergyConsumptiveUseFraction" value="$(PathRoot)/maps/energyconsumptiveuse">
+            <textvar name="EnergyConsumptiveUseFraction" value="$(PathRoot)/maps/energyconsumptiveuse.nc">
                 <comment>
                     # Consumptive Use (1-Recycling ratio) for energy water use (0-1)
                     # Source: Torcellini et al. (2003) "Consumptive Use for US Power Production"
@@ -1124,7 +1083,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="LeakageFraction" value="$(PathRoot)/maps/ad_leakage">
+            <textvar name="LeakageFraction" value="0.2">
                 <comment>
                     0.2
                     $(PathRoot)/maps/leakage.map
@@ -1191,7 +1150,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="LandUseMask" value="$(PathRoot)/maps/lusemask">
+            <textvar name="LandUseMask" value="$(PathRoot)/maps/lusemask.nc">
                 <comment>
                     Land Use Mask
                 </comment>
@@ -1230,7 +1189,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="WUseRegion" value="$(PathRoot)/maps/wregion">
+            <textvar name="WUseRegion" value="$(PathRoot)/maps/wregion.nc">
                 <comment>
                 </comment>
             </textvar>
@@ -1253,13 +1212,21 @@
                 - calibrate on GwLossFraction if necessary
             </comment>
 
+            <!-- moved to calibration parameters section
+<textvar name="LZThreshold" value="$(PathRoot)/maps/lzthreshold.nc">
+<comment>
+threshold value below which there is no outflow to the channel
+</comment>
+</textvar>
+-->
+
             <textvar name="LZSmoothRange" value="5">
                 <comment>
                     length of the window used to smooth the LZ zone [number of cell length]
                 </comment>
             </textvar>
 
-            <textvar name="GroundwaterBodies" value="$(PathRoot)/maps/statcic/ad_gwbodies">
+            <textvar name="GroundwaterBodies" value="$(PathRoot)/maps/ad_gwbodies.nc">
                 <comment>
                     $(PathRoot)/maps/gwbodiesNew.map
                     map of aquifers (0/1), used to smoothen LZ near extraction areas
@@ -1277,13 +1244,13 @@
 
             </comment>
 
-            <textvar name="FracMaxWater" value="$(PathRoot)/maps/fracmaxwater">
+            <textvar name="FracMaxWater" value="$(PathRoot)/maps/fracmaxwater.nc">
                 <comment>
                     Fraction of maximum extend of water
                 </comment>
             </textvar>
 
-            <textvar name="LakeMask" value="$(PathRoot)/maps/lakemask">
+            <textvar name="LakeMask" value="$(PathRoot)/maps/lakemask.nc">
                 <comment>
                     Mask with Lakes from GLWD database
                 </comment>
@@ -1324,7 +1291,7 @@
                 </comment>
             </textvar>
 
-            <textvar name="UpAreaTrans" value="$(PathRoot)/maps/upArea">
+            <textvar name="UpAreaTrans" value="$(PathRoot)/maps/upArea.nc">
                 <comment>
                     upstream area
                 </comment>
@@ -1559,21 +1526,11 @@ LFBINDING: MORE LOW-LEVEL CONTROL OVER MODEL IN- AND OUTPUT
 
         <textvar name="numCPUs_parallelKinematicWave" value="$(numCPUs_parallelKinematicWave)"/>
 
-        <textvar name="NetCDFTimeChunks" value="$(NetCDFTimeChunks)"/>
-
-        <textvar name="MapsCaching" value="$(MapsCaching)"/>
-
         <textvar name="proj4_params" value="$(proj4_params)">
             <comment>
                 This is necessary when using projected coordinates (x,y)
             </comment>
         </textvar>
-
-<textvar name="MaskMap" value="$(MaskMap)">
-<comment>
-Clone map
-</comment>
-</textvar>
 
         <textvar name="MaskMap" value="$(MaskMap)">
             <comment>
@@ -1587,11 +1544,11 @@ Clone map
             </comment>
         </textvar>
 
-        <textvar name="Latitude" value="$(Latitude)">
-            <comment>
-                latitude map to be used for snow/ice modelling
-            </comment>
-        </textvar>
+<!--        <textvar name="Latitude" value="$(Latitude)">-->
+<!--            <comment>-->
+<!--                latitude map to be used for snow/ice modelling-->
+<!--            </comment>-->
+<!--        </textvar>-->
 
         <group>
 
@@ -1601,7 +1558,7 @@ Clone map
                 **************************************************************
             </comment>
 
-            <textvar name="CalendarConvention" value="$(CalendarConvention)/">
+            <textvar name="CalendarConvention" value="$(CalendarConvention)">
                 <comment>
                     Calendar convention
                 </comment>
@@ -1987,7 +1944,6 @@ Clone map
                 <comment>
                     PBchange
                     Multiplier applied to average Q to split into a second line of routing
-                    This tunes the average discharge
                 </comment>
             </textvar>
             <textvar name="ChanBottomWMult" value="$(ChanBottomWMult)">
@@ -2069,13 +2025,8 @@ Clone map
                 **************************************************************
             </comment>
 
-            <textvar name="LZAvInflowMap" value="$(PathOut)/lzavin%run_rand_idend">
+            <textvar name="LZAvInflowMap" value="$(PathRoot)/maps/ec_lzavin">
                 <comment>
-                    NOTE DD: The name of the lzavin files MUST contain a dot . because 
-                    the add1.py/writenet function uses the dot to distinguish whether
-                    multiple time steps must be written out in netCDF, or if it's just
-                    the one plane that doesn't need the time variable to be added in
-                    the netCDF file.  
                     $(PathRoot)/maps/lzavin.map
                     $(PathInit)/lzavin.map
                     Reported map of average percolation rate from upper to
@@ -2083,7 +2034,7 @@ Clone map
                 </comment>
             </textvar>
 
-            <textvar name="AvgDis" value="$(PathOut)/avgdis%run_rand_idend">
+            <textvar name="AvgDis" value="$(PathRoot)/maps/ec_avgdis">
                 <comment>
                     $(PathRoot)/maps/avgdis.map
                     $(PathInit)/avgdis.map
@@ -2799,6 +2750,7 @@ Clone map
                     </comment>
                 </textvar>
 
+
                 <textvar name="CrossSection2State" value="$(PathOut)/ch2cr">
                     <comment>
                         Reported interception storage
@@ -2822,7 +2774,6 @@ Clone map
                         Reported days since last rain
                     </comment>
                 </textvar>
-
                 <textvar name="CumInterceptionForestState" value="$(PathOut)/cumf">
                     <comment>
                         Reported interception storage
@@ -2867,7 +2818,6 @@ Clone map
                         Reported days since last rain
                     </comment>
                 </textvar>
-
                 <textvar name="CumInterceptionIrrigationState" value="$(PathOut)/cumi">
                     <comment>
                         Reported interception storage
@@ -3031,7 +2981,7 @@ Clone map
                     </comment>
                 </textvar>
 
-                <textvar name="LakeStorageM3" value="$(PathOut)/lakest.end">
+                <textvar name="LakeStorageM3" value="$(PathOut)/lakest">
                     <comment>
                         Reported lake storage
                     </comment>
@@ -3073,27 +3023,23 @@ Clone map
                         Reported days since last rain
                     </comment>
                 </textvar>
-
                 <textvar name="CumInterceptionForestEnd" value="$(PathOut)/cumf.end">
                     <comment>
                         Reported interception storage
                     </comment>
                 </textvar>
-
                 <textvar name="Theta1ForestEnd" value="$(PathOut)/thfa.end">
                     <comment>
                         Reported volumetric soil moisture content for
                         soil layer 1 [V/V]
                     </comment>
                 </textvar>
-
                 <textvar name="Theta2ForestEnd" value="$(PathOut)/thfb.end">
                     <comment>
                         Reported volumetric soil moisture content for both
                         soil layer 2 [V/V]
                     </comment>
                 </textvar>
-
                 <textvar name="Theta3ForestEnd" value="$(PathOut)/thfc.end">
                     <comment>
                         Reported volumetric soil moisture content for both
@@ -3119,20 +3065,17 @@ Clone map
                         Reported days since last rain
                     </comment>
                 </textvar>
-
                 <textvar name="CumInterceptionIrrigationEnd" value="$(PathOut)/cumi.end">
                     <comment>
                         Reported interception storage
                     </comment>
                 </textvar>
-
                 <textvar name="Theta1IrrigationEnd" value="$(PathOut)/thia.end">
                     <comment>
                         Reported volumetric soil moisture content for
                         soil layer 1 [V/V]
                     </comment>
                 </textvar>
-
                 <textvar name="Theta2IrrigationEnd" value="$(PathOut)/thib.end">
                     <comment>
                         Reported volumetric soil moisture content for both
@@ -3204,26 +3147,26 @@ Clone map
                     SWITCHED ON (DEFAULT: ALL SWITCHED OFF)
                 </comment>
 
-<textvar name="Theta1Maps" value="$(PathOut)/thtop">
-<comment>
-Reported volumetric soil moisture content for
-soil layer 1 [V/V]
-</comment>
-</textvar>
+                <textvar name="Theta1Maps" value="$(PathOut)/tha">
+                    <comment>
+                        Reported volumetric soil moisture content for
+                        soil layer 1 [V/V]
+                    </comment>
+                </textvar>
 
-<textvar name="Theta2Maps" value="$(PathOut)/thsub">
-<comment>
-Reported volumetric soil moisture content for
-soil layer 2 [V/V]
-</comment>
-</textvar>
+                <textvar name="Theta2Maps" value="$(PathOut)/thb">
+                    <comment>
+                        Reported volumetric soil moisture content for
+                        soil layer 2 [V/V]
+                    </comment>
+                </textvar>
 
-<textvar name="Theta3Maps" value="$(PathOut)/thbot">
-<comment>
-Reported volumetric soil moisture content for
-soil layer 3 [V/V]
-</comment>
-</textvar>
+                <textvar name="Theta3Maps" value="$(PathOut)/thc">
+                    <comment>
+                        Reported volumetric soil moisture content for
+                        soil layer 3 [V/V]
+                    </comment>
+                </textvar>
 
                 <textvar name="ThetaMaps" value="$(PathOut)/th">
                     <comment>
@@ -3317,40 +3260,40 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="CumInterceptionMaps" value="$(PathOut)/cumi">
+                <textvar name="CumInterceptionMaps" value="$(PathOut)/cum">
                     <comment>
                         Reported interception storage
                     </comment>
                 </textvar>
 
 
-                <textvar name="DSLRForestMaps" value="$(PathOut)/dslF">
+                <textvar name="DSLRForestMaps" value="$(PathOut)/dslrf">
                     <comment>
                         Reported days since last rain
                     </comment>
                 </textvar>
 
-                <textvar name="CumInterceptionForestMaps" value="$(PathOut)/cumF">
+                <textvar name="CumInterceptionForestMaps" value="$(PathOut)/cumf">
                     <comment>
                         Reported interception storage
                     </comment>
                 </textvar>
 
-                <textvar name="Theta1ForestMaps" value="$(PathOut)/thFt">
+                <textvar name="Theta1ForestMaps" value="$(PathOut)/thfa">
                     <comment>
                         Reported volumetric soil moisture content for
                         soil layer 1 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="Theta2ForestMaps" value="$(PathOut)/thFs">
+                <textvar name="Theta2ForestMaps" value="$(PathOut)/thfb">
                     <comment>
                         Reported volumetric soil moisture content for both
                         soil layer 2 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="Theta3ForestMaps" value="$(PathOut)/thFb">
+                <textvar name="Theta3ForestMaps" value="$(PathOut)/thfc">
                     <comment>
                         Reported volumetric soil moisture content for both
                         soil layer 3 [V/V]
@@ -3600,21 +3543,21 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="Theta1IrrigationMaps" value="$(PathOut)/thIt">
+                <textvar name="Theta1IrrigationMaps" value="$(PathOut)/thia">
                     <comment>
                         Reported volumetric soil moisture content for
                         soil layer 1 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="Theta2IrrigationMaps" value="$(PathOut)/thIs">
+                <textvar name="Theta2IrrigationMaps" value="$(PathOut)/thib">
                     <comment>
                         Reported volumetric soil moisture content for both
                         soil layer 2 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="Theta3IrrigationMaps" value="$(PathOut)/thIb">
+                <textvar name="Theta3IrrigationMaps" value="$(PathOut)/thic">
                     <comment>
                         Reported volumetric soil moisture content for both
                         soil layer 3 [V/V]
@@ -3681,13 +3624,13 @@ soil layer 3 [V/V]
                 **************************************************************
             </comment>
 
-            <textvar name="DisTS" value="$(PathOut)/dis%run_rand_id.tss">
+            <textvar name="DisTS" value="$(PathOut)/dis.tss">
                 <comment>
                     Reported discharge [cu m/s]
                 </comment>
             </textvar>
 
-            <textvar name="ChanqTS" value="$(PathOut)/chanq%run_rand_id.tss">
+            <textvar name="ChanqTS" value="$(PathOut)/chanqWin.tss">
                 <comment>
                     Reported discharge over last routing sub-step [cu m/s]
                 </comment>
@@ -4172,6 +4115,7 @@ soil layer 3 [V/V]
 
                 <textvar name="Ldd" value="$(PathRoot)/maps/ec_ldd">
                     <comment>
+                        $(PathRoot)/maps/ldd.map
                         local drain direction map (1-9)
                     </comment>
                 </textvar>
@@ -4292,6 +4236,7 @@ soil layer 3 [V/V]
 
                 <textvar name="DirectRunoffFraction" value="$(PathMapsLanduse)/fracsealed">
                     <comment>
+                        $(PathMapsLanduse)/fracsealed.map
                         urban area (0-1)
                     </comment>
                 </textvar>
@@ -4304,54 +4249,63 @@ soil layer 3 [V/V]
 
                 <textvar name="ForestFraction" value="$(PathMapsLanduse)/fracforest">
                     <comment>
+                        $(PathMapsLanduse)/fracforest.map
                         forest fraction of a pixel (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="ForestFractionMaps" value="$(PathMapsLandUseChange)/fracforest">
                     <comment>
+                        $(PathMapsLandUseChange)/
                         stack of forest fraction maps (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="WaterFraction" value="$(PathMapsLanduse)/fracwater">
                     <comment>
+                        $(PathMapsLanduse)/fracwater.map
                         forest fraction of a pixel (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="WaterFractionMaps" value="$(PathMapsLandUseChange)/fracwater">
                     <comment>
+                        $(PathMapsLandUseChange)/
                         stack of water fraction maps (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="OtherFraction" value="$(PathMapsLanduse)/fracother">
                     <comment>
+                        $(PathMapsLanduse)/fracother.map
                         forest fraction of a pixel (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="OtherFractionMaps" value="$(PathMapsLandUseChange)/fracother">
                     <comment>
+                        $(PathMapsLandUseChange)/
                         stack of other fraction maps (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="IrrigationFraction" value="$(PathMapsLanduse)/fracirrigated">
                     <comment>
+                        $(PathMapsLanduse)/fracirrigated.map
                         irrigated area fraction of a pixel (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="IrrigationFractionMaps" value="$(PathMapsLandUseChange)/fracirrigated">
                     <comment>
+                        $(PathMapsLandUseChange)/
                         stack of Irrigation fraction maps (0-1)
                     </comment>
                 </textvar>
 
                 <textvar name="DrainedFraction" value="0.1">
                     <comment>
+                        $(PathMapsLanduse)/fracDrained.map
                         drained fraction from irrigated area (0-1)
                     </comment>
                 </textvar>
@@ -4386,8 +4340,10 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="EFlowThreshold" value="$(PathRoot)/maps/ad_dis_nat_10">
+                <textvar name="EFlowThreshold" value="$(PathRoot)/maps/ad_dis_nat_10.nc">
                     <comment>
+                        1.0
+                        $(PathRoot)/maps/eflow.map
                         EFlowThreshold is map with m3/s discharge, e.g. the 10th percentile discharge of the baseline
                         run
                     </comment>
@@ -4408,6 +4364,7 @@ soil layer 3 [V/V]
 
                 <textvar name="MapN" value="$(PathMapsTables)/mannings_o">
                     <comment>
+                        $(PathMapsTables)/manngs_2000_250m.map
                         table with Manning's roughness for each CORINE landcover class
                     </comment>
                 </textvar>
@@ -4427,6 +4384,7 @@ soil layer 3 [V/V]
 
                 <textvar name="MapForestN" value="$(PathMapsTables)/mannings_f">
                     <comment>
+                        $(PathMapsTables)/manngs_2000_250m.map
                         table with Manning's roughness for each CORINE landcover class
                     </comment>
                 </textvar>
@@ -4475,7 +4433,7 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="ChanMan" value="$(PathRoot)/maps/ec_chanman">
+                <textvar name="ChanMan" value="$(PathRoot)/maps/ec_chanman.nc">
                     <comment>
                         Channel Manning's n
                     </comment>
@@ -4487,7 +4445,7 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="ChanBottomWidth" value="$(PathRoot)/maps/ec_chanbw">
+                <textvar name="ChanBottomWidth" value="$(PathRoot)/maps/ec_chanbw.nc">
                     <comment>
                         Channel bottom width [meters]
                     </comment>
@@ -4500,13 +4458,13 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="FloodPlainWidth" value="$(PathRoot)/maps/ec_chanflpn">
+                <textvar name="FloodPlainWidth" value="$(PathRoot)/maps/chanflpn.nc">
                     <comment>
                         Floodplain Width [meters]
                     </comment>
                 </textvar>
 
-                <textvar name="ChanDepthThreshold" value="$(PathRoot)/maps/ec_chanbnkf">
+                <textvar name="ChanDepthThreshold" value="$(PathRoot)/maps/ec_chanbnkf.nc">
                     <comment>
                         Bankfull channel depth [meters]
                     </comment>
@@ -4827,7 +4785,7 @@ soil layer 3 [V/V]
                     **************************************************************
                 </comment>
 
-                <textvar name="LakeSites" value="$(PathRoot)/maps/ec_lakes">
+                <textvar name="LakeSites" value="$(PathRoot)/maps/ec_lakes.nc">
                     <comment>
                         Map with location of lakes
                     </comment>
@@ -5181,19 +5139,16 @@ soil layer 3 [V/V]
                         Reported pF upper soil layer [-]
                     </comment>
                 </textvar>
-
                 <textvar name="PF2AvUpsTS" value="$(PathOut)/pFSubUps.tss">
                     <comment>
                         Reported pF lower soil layer [-]
                     </comment>
                 </textvar>
-
                 <textvar name="PF1ForestAvUpsTS" value="$(PathOut)/pFForestTopUps.tss">
                     <comment>
                         Reported pF upper soil layer [-]
                     </comment>
                 </textvar>
-
                 <textvar name="PF2ForestAvUpsTS" value="$(PathOut)/pFForestSubUps.tss">
                     <comment>
                         Reported pF lower soil layer [-]
@@ -5567,6 +5522,7 @@ soil layer 3 [V/V]
                         Peter's addition
                         **************************************************************
                     </comment>
+
 
                     <textvar name="actETPUpsTS" value="$(PathOut)/actEvapo.tss">
                         <comment>

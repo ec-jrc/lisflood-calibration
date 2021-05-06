@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Please refer to quick_guide.pdf for usage instructions"""
+
 import os
 import sys
 import pdb
@@ -43,7 +45,7 @@ if __name__=="__main__":
 	ForcingEnd = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
 
 	Qtss_csv = parser.get('CSV', 'Qtss')
-	Qgis_csv = parser.get('CSV', 'Qgis')
+	Qmeta_csv = parser.get('CSV', 'Qmeta')
 
 	pcraster_path = parser.get('Path', 'PCRHOME')
 
@@ -67,11 +69,11 @@ if __name__=="__main__":
 		
 	
 	########################################################################
-	#   Make stationdata array from the qgis csv
+	#   Make stationdata array from the Qmeta csv
 	########################################################################
 
-	print(">> Reading Qgis2.csv file...")
-	stationdata = pandas.read_csv(os.path.join(path_result,"Qgis2.csv"),sep=",",index_col=0)
+	print(">> Reading Qmeta2.csv file...")
+	stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
 
 	
 	########################################################################
@@ -100,6 +102,8 @@ if __name__=="__main__":
 	print(">> Check for station conflicts...")
 	counter = 0
 	for index, row in stationdata.iterrows():			
+		#pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)==scalar("+str(int(index))+"),scalar(1.0))'", {"F0": tmp_map, "F1":station_map})
+		#pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)==scalar(5555),scalar(1.0))'", {"F0": tmp_map, "F1":station_map})
 		pcrasterCommand(pcrcalc + " 'F0 = if(scalar(F1)=="+str(int(index))+",scalar(F1))'", {"F0": tmp_map, "F1":station_map})
 		pcrasterCommand(map2col + " F0 F1"  , {"F0": tmp_map, "F1":tmp_txt})
 		with open(tmp_txt,"r") as f:
@@ -275,6 +279,7 @@ if __name__=="__main__":
 					for line in f.readlines():
 						(X,Y,value) = line.split()
 					f.close()
+				#text2 += ":%f;%f"%(float(X),float(Y))
 		f3.close()
 		for cc in range(commas): # Add commas because the number of commas must be the same for each
 			text2 += ","
@@ -283,7 +288,7 @@ if __name__=="__main__":
 	f2.close()	
 	
 	# save dataframe with catchment area and cal val period columns
-	print("\n>> Saving Qgis file including CatchmentArea, columns (Qgis2.csv)...")
+	print("\n>> Saving Qmeta file including CatchmentArea, columns (Qmeta2.csv)...")
 	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
-	stationdata_sorted.to_csv(os.path.join(path_result,"Qgis2.csv"),',')
+	stationdata_sorted.to_csv(os.path.join(path_result,"Qmeta2.csv"),',')
 	print("==================== END ====================")

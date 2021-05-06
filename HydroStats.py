@@ -32,6 +32,7 @@ Functions:
     
 """
 
+# import required modules
 import numpy as np
 from random import randrange
 import matplotlib.pyplot as plt
@@ -47,7 +48,15 @@ def filter_nan(s,o):
     data = np.array([s.flatten(),o.flatten()])
     data = np.transpose(data)
     data = data[~np.isnan(data).any(1)]
+
+    #mask = ~np.isnan(s) & ~np.isnan(o)
+    #o_nonan = o[mask]
+    #s_nonan = s[mask]
+
+    #return o_nonan,s_nonan
     return data[:,0],data[:,1]
+
+
 
 def RSR(s,o,warmup):
     """
@@ -326,7 +335,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
     else:
         B = np.mean(s) / np.mean(o)
         y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
-        se = sae(s, o, warmup=warmup)
+        se = sae(s, o, warmup=0)
     aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2)
     if aKGE < -100:
         aKGE = -100
