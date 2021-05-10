@@ -65,6 +65,7 @@ ForcingEnd = datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%
 #ForcingEnd = '02/01/2018 00:00'  # Start of forcing
 
 WarmupDays = int(parser.get('DEFAULT', 'WarmupDays'))
+numDigits = int(parser.get('DEFAULT', 'numDigitsTests'))
 
 CatchmentDataPath = parser.get('Path','CatchmentDataPath')
 SubCatchmentPath = parser.get('Path','SubCatchmentPath')
@@ -371,15 +372,15 @@ def RunModel(Individual, mapLoadOnly=None):
     
     def roundn(x, n):
         numDig = n - int(math.floor(math.log10(abs(x)))) - 1
-        return round(x*10**numDigits) / 10**numDigits
+        return round(x*10**numDig) / 10**numDig
 
     def floorn(x, n):
         numDig = n - int(math.floor(math.log10(abs(x)))) - 1
-        return math.floor(x*10**numDigits) / 10**numDigits
+        return math.floor(x*10**numDig) / 10**numDig
 
     def ceiln(x, n):
         numDig = n - int(math.floor(math.log10(abs(x)))) - 1
-        return math.ceil(x*10**numDigits) / 10**numDigits
+        return math.ceil(x*10**numDig) / 10**numDig
 
     if not testConvergence:
       # Convert scaled parameter values ranging from 0 to 1 to usncaled parameter values
@@ -392,12 +393,17 @@ def RunModel(Individual, mapLoadOnly=None):
         for ii in range(len(ParamRanges)):
           Parameters[ii] = 0.5 * (float(ParamRanges.iloc[ii, 1]) - float(ParamRanges.iloc[ii, 0])) + float(ParamRanges.iloc[ii, 0])
       else:
-        numDigits = 5
+
         Parameters = [None] * len(ParamRanges)
         for ii in range(len(ParamRanges)):
           ref = 0.5 * (float(ParamRanges.iloc[ii, 1]) - float(ParamRanges.iloc[ii, 0])) + float(ParamRanges.iloc[ii, 0])
-          Parameters[ii] = Individual[ii] * (10**(1-numDigits)+ceiln(ref, numDigits) - floorn(ref, numDigits)) + floorn(ref, numDigits)
-          # print(ceiln(ref, numDigits), floorn(ref, numDigits), ceiln(ref, numDigits) - floorn(ref, numDigits), Individual[ii] * (ceiln(ref, numDigits) - floorn(ref, numDigits)), Parameters[ii])
+          # refRange = ceiln(ref, numDigits) - floorn(ref, numDigits)
+          # if refRange == 0:
+          #     refRange = 10**(1-numDigits)
+          # Parameters[ii] = Individual[ii] * refRange + floorn(ref, numDigits)
+          Parameters[ii] = ref * (1+10**-numDigits)
+          print('BLAAT: ',numDigits, ref, Parameters[ii])
+          # print(ceiln(ref, numDigits), floorn(ref, numDigits), refRange, Individual[ii] * refRange, Parameters[ii])
 
     # Note: The following code must be identical to the code near the end where LISFLOOD is run
     # using the "best" parameter set. This code:
@@ -1080,7 +1086,7 @@ def main():
         pHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
         # Keep only the best 10% of the runs for the selection of the parameters for the next generation
         pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-        pHistory = pHistory.head(int(round(len(pHistory) * 0.1)))
+        pHistory = pHistory.head(int(max(2,round(len(pHistory) * 0.1))))
         n = len(pHistory)
         minOffset = 0.1
         maxOffset = 1.0
