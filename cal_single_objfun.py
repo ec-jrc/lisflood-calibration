@@ -40,8 +40,6 @@ import math
 
 # DD test to check the calibration algo is converging to the simulated streamflow of the model. This eliminates problems
 # stemming from forcings and observations
-testConvergence = True
-fastDebug = False
 
 ########################################################################
 #   Read settings file
@@ -55,6 +53,9 @@ else:
     parser = SafeConfigParser()  # python 2.7-15
 parser.read(iniFile)
 # print('iniFile',iniFile)
+
+testConvergence = bool(int(parser.get('DEFAULT', 'testConvergence')))
+fastDebug = bool(int(parser.get('DEFAULT', 'fastDebug')))
 
 ObservationsStart = datetime.strptime(parser.get('DEFAULT', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
 ObservationsEnd = datetime.strptime(parser.get('DEFAULT', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
@@ -77,7 +78,6 @@ print(sys.path)
 import lisf1
 
 path_temp = parser.get('Path', 'Temp')
-path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'),"maps")
 path_result = parser.get('Path', 'Result')
 
 Qtss_csv = parser.get('CSV', 'Qtss')
@@ -402,7 +402,6 @@ def RunModel(Individual, mapLoadOnly=None):
           #     refRange = 10**(1-numDigits)
           # Parameters[ii] = Individual[ii] * refRange + floorn(ref, numDigits)
           Parameters[ii] = ref * (1+10**-numDigits)
-          print('BLAAT: ',numDigits, ref, Parameters[ii])
           # print(ceiln(ref, numDigits), floorn(ref, numDigits), refRange, Individual[ii] * refRange, Parameters[ii])
 
     # Note: The following code must be identical to the code near the end where LISFLOOD is run
