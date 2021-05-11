@@ -7,42 +7,21 @@ import subprocess
 sys.path.insert(0, '/home/ma/macw/git/lisflood-calibration')
 
 import CAL_7_PERFORM_CAL as calib
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
-import math
-import pandas as pd
-import importlib
-
-if ver.find('3.') > -1:
-  parser = ConfigParser()  # python 3.8
-else:
-  parser = SafeConfigParser()  # python 2.7-15
-parser.read(sys.argv[1])
-
-SubCatchmentPath = parser.get('Path', 'SubCatchmentPath')
-numDigits = parser.get('DEFAULT', 'numDigitsTests')
-
-with open(sys.argv[2], "r") as catchmentFile:
-  catchmentIndex = int(catchmentFile.readline().replace("\n", ""))
 
 
-def roundn(x, n):
-  numDigits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return round(x * 10 ** numDigits) / 10 ** numDigits
+def roundn(x, n, num_digits=4):
+  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
+  return round(x * 10 ** num_digits) / 10 ** num_digits
 
 
-def floorn(x, n):
-  numDigits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return math.floor(x * 10 ** numDigits) / 10 ** numDigits
+def floorn(x, n, num_digits=4):
+  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
+  return math.floor(x * 10 ** num_digits) / 10 ** num_digits
 
 
-def ceiln(x, n):
-  numDigits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return math.ceil(x * 10 ** numDigits) / 10 ** numDigits
+def ceiln(x, n, num_digits=4):
+  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
+  return math.ceil(x * 10 ** num_digits) / 10 ** num_digits
 
 
 def runCmd(cmd):
@@ -55,9 +34,9 @@ def runCmd(cmd):
   return (res.returncode, out)
 
 # For checking CAL_7_PERFORM_CAL.py and cal_single_objfun.py functioning bypassing uncertainty with deap
-def test_calib_launcher(target1, target2, tol):
+def test_calib_launcher(cfg, catchment_index, target1, target2, tol):
   # assert tail -1 front_history.csv | cut -d "," -f6
-  with open(os.path.join(SubCatchmentPath, str(catchmentIndex), 'front_history.csv')) as f:
+  with open(os.path.join(cfg.subcatchment_path, str(catchment_index), 'front_history.csv')) as f:
     # KGE = float(subprocess.check_output("tail -1 " + f.name + " | cut -d ',' -f6", stderr=subprocess.STDOUT, shell=True)[0:-1])
     # DD: Better alternative with error handling
     ret, KGE = runCmd("tail -1 " + f.name + " | cut -d ',' -f6")
@@ -66,28 +45,28 @@ def test_calib_launcher(target1, target2, tol):
   assert assertion, "Target not reached! abs({} - {}) = {} is > {} or {} < {}".format(KGE, target1, abs(KGE-target1), tol, KGE, target2)
 
 
-def saveOutput(data):
-  destCatchFolder = os.path.join(SubCatchmentPath, str(catchmentIndex))
-  destFolder = os.path.join(destCatchFolder, 'convExperiments', "{}_{}_{}_{}_{}_{}_{}_{}".format(*data))
-  ret, res = runCmd("mkdir -p {}".format(destFolder))
-  ret, res = runCmd("mv {}/settings*.xml {}/".format(destCatchFolder, destFolder))
-  ret, res = runCmd("mv {}/out {}/".format(destCatchFolder, destFolder))
-  ret, res = runCmd("mv {}/*.csv {}/".format(destCatchFolder, destFolder))
-  ret, res = runCmd("cp {}/convergenceTester.csv {}/.".format(destFolder, destCatchFolder))
+def saveOutput(cfg, catchment_index, data):
+  subcatch_dir = os.path.join(cfg.subcatchment_path, str(catchment_index))
+  exp_dir = os.path.join(subcatch_dir, 'convExperiments', "{}_{}_{}_{}_{}_{}_{}_{}".format(*data))
+  ret, res = runCmd("mkdir -p {}".format(exp_dir))
+  ret, res = runCmd("mv {}/settings*.xml {}/".format(subcatch_dir, exp_dir))
+  ret, res = runCmd("mv {}/out {}/".format(subcatch_dir, exp_dir))
+  ret, res = runCmd("mv {}/*.csv {}/".format(subcatch_dir, exp_dir))
+  ret, res = runCmd("cp {}/convergenceTester.csv {}/.".format(exp_dir, subcatch_dir))
 
 
-def deleteOutput():
-  destCatchFolder = os.path.join(SubCatchmentPath, str(catchmentIndex))
-  ret, res = runCmd("rm -f {}/settings*.xml".format(destCatchFolder))
-  ret, res = runCmd("rm -rf {}/out".format(destCatchFolder))
-  ret, res = runCmd("find {} -name '*.csv' -not -name 'convergenceTester.csv' -delete".format(destCatchFolder))
+def deleteOutput(cfg, catchment_index):
+  subcatch_dir = os.path.join(cfg.subcatchment_path, str(catchment_index))
+  ret, res = runCmd("rm -f {}/settings*.xml".format(subcatch_dir))
+  ret, res = runCmd("rm -rf {}/out".format(subcatch_dir))
+  ret, res = runCmd("find {} -name '*.csv' -not -name 'convergenceTester.csv' -delete".format(subcatch_dir))
   # ret, res = runCmd("for f in $(find {} -name '*.csv -a -not -wholename 'convergenceTester.csv'); do rm -rf $f; done".format(destCatchFolder))
 
 
 # fast test
-def test_calib_aggregation():
+def test_calib_aggregation(cfg, catchment_index):
   # assert tail -1 front_history.csv | cut -d "," -f6
-  with open(os.path.join(SubCatchmentPath, str(catchmentIndex), 'front_history.csv')) as f:
+  with open(os.path.join(cfg.subcatchment_path, str(catchment_index), 'front_history.csv')) as f:
     subprocess.run(["ls", "foo bar"], check=True)
     line = subprocess.check_output(["tail -1 ", f.name, " | cut -d ',' -f6"])  # ['tail', '-1', filename])
     print(line)
@@ -116,12 +95,18 @@ def inplacements(inFile, strings, precise=False):
   file.write(settings)
   file.close()
 
-ret, res = runCmd("mkdir -p {}/out".format(os.path.join(SubCatchmentPath, str(catchmentIndex))))
+
+cfg = calib.Config(sys.argv[1])
+
+with open(sys.argv[2], "r") as catchmentFile:
+  catchment_index = int(catchmentFile.readline().replace("\n", ""))
+
+ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(catchment_index))))
 
 # Run a second time to run the actual calib
-if not os.path.isfile(os.path.join(SubCatchmentPath, str(catchmentIndex), 'pareto_front.csv')) or os.path.getsize(os.path.join(SubCatchmentPath, str(catchmentIndex), 'pareto_front.csv')) == 0:
-  calib.main(sys.argv[1:])
+if not os.path.isfile(os.path.join(cfg.subcatchment_path, str(catchment_index), 'pareto_front.csv')) or os.path.getsize(os.path.join(cfg.subcatchment_path, str(catchment_index), 'pareto_front.csv')) == 0:
+  calib.calibrate_subcatchment(cfg, catchment_index)
 
-test_calib_launcher(target1=0.9999, target2=0.99, tol=1e-4)
+test_calib_launcher(cfg, catchment_index, target1=0.9999, target2=0.99, tol=1e-4)
 
-deleteOutput()
+deleteOutput(cfg, catchment_index)
