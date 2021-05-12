@@ -13,7 +13,6 @@ No_of_calibration_lists = 1
 MaxPercArea = 0.1
 calibrationFreq = 6-hourly
 # 6-hourly # daily
-numDigitsTests = 4
 testConvergence = 1
 fastDebug = 0
 
@@ -29,7 +28,6 @@ Result = %(Root)s/result/
 Templates = %(Src)s/templates/
 SubCatchmentPath = %(Root)s/catchments/
 ParamRanges = %(Src)s/ParamRanges_LISFLOOD.csv
-CatchmentDataPath = /perm/rd/nedd/EFAS/efasCalib/input/maps/static/
 MeteoData = /perm/rd/nedd/EFAS/efasCalib/input/maps/forcings/day/
 WaterUseData = /perm/rd/nedd/EFAS/efasCalib/input/maps/water_abstraction/
 lddPath =  %(CatchmentDataPath)s/ec_ldd.map
@@ -42,7 +40,6 @@ lisfloodPath = /perm/ma/macw/lisflood-ci/local/lisflood_env/bin/lisflood
 
 [Templates]
 LISFLOODSettings = %(Src)s/templates/settings_LF_CUT.xml
-RunLISFLOOD = %(Src)s/templates/runLF.sh
 
 [DEAP]
 use_multiprocessing = 1
