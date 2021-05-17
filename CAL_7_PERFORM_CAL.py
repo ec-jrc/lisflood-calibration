@@ -115,7 +115,7 @@ def prepare_inflows(cfg, path_subcatch, index):
 
         print(subcatchment+" ")
                         
-        Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out","chanq_simulated_best.tss")
+        Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
                 
         if not os.path.exists(Qsim_tss) or os.path.getsize(Qsim_tss) == 0:
             raise Exception("ERROR: Missing " + Qsim_tss)
@@ -132,7 +132,7 @@ def prepare_inflows(cfg, path_subcatch, index):
             print("Could not find streamflow_simulated_best.tss for upstream catchment "+subcatchment+", hence cannot run this catchment...")
             raise Exception("Stopping...")
                 
-        simulated_streamflow=simulated_streamflow_tmp
+        simulated_streamflow = simulated_streamflow_tmp
         print('got it')
         if cnt==1: 
             big_one = simulated_streamflow  # type: object
@@ -213,7 +213,7 @@ class LisfloodSettingsTemplate():
 
         out_xml = self.template_xml
 
-        template_xml = template_xml.replace('%run_rand_id', run_rand_id)
+        out_xml = out_xml.replace('%run_rand_id', run_rand_id)
         out_xml = out_xml.replace('%CalStart', cal_start_local) # Date of Cal starting
         out_xml = out_xml.replace('%CalEnd', cal_end_local)  # Time step of forcing at which to end simulation
 
@@ -224,10 +224,10 @@ class LisfloodSettingsTemplate():
                 out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
             out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
 
-        out_xml_init = out_xml
-        out_xml_init = out_xml_init.replace('%InitLisflood',"1")
+        out_xml_prerun = out_xml
+        out_xml_prerun = out_xml_prerun.replace('%InitLisflood',"1")
         with open(self.outfix+'-PreRun'+run_rand_id+'.xml', "w") as f:
-            f.write(template_xml_new)
+            f.write(out_xml_prerun)
 
         out_xml_run = out_xml
         out_xml_run = out_xml_run.replace('%InitLisflood',"0")

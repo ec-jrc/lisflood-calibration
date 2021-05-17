@@ -372,7 +372,7 @@ class HydrologicalModel():
 
         return cal_start_local, cal_end_local
 
-    def get_parameters(self):
+    def get_parameters(self, Individual):
         cfg = self.cfg
         Parameters = [None] * len(cfg.param_ranges)
         for ii in range(len(ParamRanges)):
@@ -515,12 +515,12 @@ class HydrologicalModel():
 
         cal_start_local, cal_end_local = self.get_start_end_local(mapLoadOnly)
 
-        parameters = self.get_parameters()
+        parameters = self.get_parameters(Individual)
 
         self.lis_template.write_template(self.obsid, run_rand_id, cal_start_local, cal_end_local, cfg.param_ranges, parameters):
 
-        prerun_file = self.lis_template('-Prerun')
-        run_file = self.lis_template('-Run')
+        prerun_file = self.lis_template.settings_path('-Prerun')
+        run_file = self.lis_template.settings_path('-Run')
 
         try:
             if mapLoadOnly:
@@ -875,249 +875,101 @@ def run_calibration(cfg, obsid, station_data, model):
     return
 
 
-def generate_outlet_streamflow(cfg):
+def stage_inflows(path_subcatch):
 
-    inflow_tss = os.path.join(path_subcatch,"inflow","chanq.tss")
-    inflow_tss_last_run = os.path.join(path_subcatch,"inflow","chanq_last_run.tss")
-    inflow_tss_cal = os.path.join(path_subcatch,"inflow","chanq_cal.tss")
-
-    paramvals = pandas.read_csv(os.path.join(path_subcatch,"pareto_front.csv"),sep=",")
-
-    name_params= paramvals.columns
-    names=name_params[3:]
-    print('names',names)
-    Parameters=list()
-    for indx in range(0,len(names)):
-        print('name[idx]', names[indx],'paramvals',paramvals[names[indx]])
-        Parameters.append(paramvals[names[indx]].values[0])
-
-    print('param', Parameters)
-
-    # Select the "best" parameter set and run LISFLOOD for the entire forcing period
-    #Parameters = paramvals[best,:]
-
-    print(">> Running LISFLOOD using the \"best\" parameter set")
-    # Note: The following code must be identical to the code near the end where LISFLOOD is run
-    # using the "best" parameter set. This code:
-    # 1) Modifies the settings file containing the unscaled parameter values amongst other things
-    # 2) Makes a .bat file to run LISFLOOD
-    # 3) Runs LISFLOOD and loads the simulated streamflow
-    # Random number is appended to settings and .bat files to avoid simultaneous editing
+    inflow_tss = os.path.join(path_subcatch, "inflow", "chanq.tss")
+    inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanq_last_run.tss")
+    inflow_tss_cal = os.path.join(path_subcatch, "inflow", "chanq_cal.tss")
     if os.path.isfile(inflow_tss) or os.path.isfile(inflow_tss_cal):
         print(inflow_tss)
         print(inflow_tss_cal)
         print(inflow_tss_last_run)
-        os.rename(inflow_tss,inflow_tss_cal)
-        os.rename(inflow_tss_last_run,inflow_tss)
+        os.rename(inflow_tss, inflow_tss_cal)
+        os.rename(inflow_tss_last_run, inflow_tss)
 
 
-    run_rand_id = str(int(random.random()*10000000000)).zfill(12)
-    template_xml_new = template_xml
-    for ii in range(0,len(ParamRanges)):
-        ## DD Special Rule for the SAVA
-        if str(row['ObsID']) == '851' and (ParamRanges.index[ii] == "adjust_Normal_Flood" or ParamRanges.index[ii] == "ReservoirRnormqMult"):
-            template_xml_new = template_xml_new.replace('%adjust_Normal_Flood',"0.8")
-            template_xml_new = template_xml_new.replace('%ReservoirRnormqMult',"1.0")
-            # os.system("cp %s %s" % (ParamRangesPath.replace(".csv", "851Only.csv"), ParamRangesPath))
-        template_xml_new = template_xml_new.replace("%"+ParamRanges.index[ii],str(Parameters[ii]))        
-    template_xml_new = template_xml_new.replace('%gaugeloc',gaugeloc) # Gauge location
+def read_parameters(path_subcatch):
 
-    # DD DEBUG check timestep vs calendar functionality BLAAT
-    template_xml_new = template_xml_new.replace('%ForcingStart',ForcingStart.strftime('%Y-%m-%d %H:%M')) # Date of forcing start
-    template_xml_new = template_xml_new.replace('%CalStart', ForcingStart.strftime('%Y-%m-%d %H:%M')) # Time step of forcing at which to start simulation
-    template_xml_new = template_xml_new.replace('%CalEnd', ForcingEnd.strftime('%Y-%m-%d %H:%M')) # Time step of forcing at which to end simulation
-    template_xml_new = template_xml_new.replace('%SubCatchmentPath',path_subcatch) # Directory with data for subcatchments
-    template_xml_new = template_xml_new.replace('%run_rand_id',run_rand_id)
-    template_xml_new = template_xml_new.replace('%inflowflag',inflowflag)
-    #template_xml_new = template_xml_new.replace('%simulateLakes',simulateLakes)
-    #template_xml_new = template_xml_new.replace('%simulateReservoirs',simulateReservoirs)
+    paramvals = pandas.read_csv(os.path.join(path_subcatch, "pareto_front.csv"),sep=",")
 
-    template_xml_new2 = template_xml_new
-    template_xml_new = template_xml_new.replace('%InitLisflood',"1")
-    f = open(os.path.join(path_subcatch,os.path.basename(LISFLOODSettings_template[:-4]+'-PreRun'+run_rand_id+'.xml')), "w")
-    #f = open(os.path.join(path_subcatch,LISFLOODSettings_template[:-4]+'-PreRun'+run_rand_id+'.xml'), "w")
-    f.write(template_xml_new)
-    f.close()
-    template_xml_new2 = template_xml_new2.replace('%InitLisflood',"0")
-    #f = open(os.path.join(path_subcatch,LISFLOODSettings_template[:-4]+'-Run'+run_rand_id+'.xml'), "w")
-    f = open(os.path.join(path_subcatch,os.path.basename(LISFLOODSettings_template[:-4]+'-Run'+run_rand_id+'.xml')), "w")
-    f.write(template_xml_new2)
-    f.close()
-    # # DD disable reporting endmaps after second run
-    # template_xml_new2 = template_xml_new2.replace('%repEndMaps', "0")
-    # # f = open(os.path.join(path_subcatch,LISFLOODSettings_template[:-4]+'-Run'+run_rand_id+'.xml'), "w")
-    # f = open(
-    #     os.path.join(path_subcatch, os.path.basename(LISFLOODSettings_template[:-4] + '-Run' + run_rand_id + '.xml')),
-    #     "w")
-    # f.write(template_xml_new2)
-    # f.close()
+    name_params= paramvals.columns
+    names=name_params[3:]
+    print('names',names)
+    parameters=list()
+    for indx in range(0,len(names)):
+        print('name[idx]', names[indx],'paramvals',paramvals[names[indx]])
+        parameters.append(paramvals[names[indx]].values[0])
+
+    print('param', parameters)
+
+    return parameters
 
 
-
-    # template_bat_new = template_bat
-    # template_bat_new = template_bat_new.replace('%prerun',os.path.join(path_subcatch,os.path.basename(LISFLOODSettings_template[:-4]+'-PreRun'+run_rand_id+'.xml')))
-    # template_bat_new = template_bat_new.replace('%run',os.path.join(path_subcatch,os.path.basename(LISFLOODSettings_template[:-4]+'-Run'+run_rand_id+'.xml')))
-    #template_bat_new = template_bat_new.replace('%prerun',LISFLOODSettings_template[:-4]+'-PreRun'+run_rand_id+'.xml')
-    #template_bat_new = template_bat_new.replace('%run',LISFLOODSettings_template[:-4]+'-Run'+run_rand_id+'.xml')
-    # f = open(os.path.join(path_subcatch,RunLISFLOOD_template[:-3]+run_rand_id+'.bat'), "w")
-    # f.write(template_bat_new)
-    # f.close()
-
-    currentdir = os.getcwd()
-    # print(currentdir)
-    # os.chdir(path_subcatch)
-    # print("path_subcatch",path_subcatch)
-    # print(RunLISFLOOD_template[:-3]+run_rand_id+'.bat')
-    # shutil.move(RunLISFLOOD_template[:-3]+run_rand_id+'.bat', path_subcatch)
-    # st = os.stat(path_subcatch+'/runLF'+run_rand_id+'.bat')
-    # os.chmod(path_subcatch+'/runLF'+run_rand_id+'.bat', st.st_mode | stat.S_IEXEC)
-    # print(path_subcatch+'/runLF'+run_rand_id+'.bat')
-    # p = Popen(path_subcatch+'/runLF'+run_rand_id+'.bat', stdout=PIPE, stderr=PIPE, bufsize=16*1024*1024)
-    # output, errors = p.communicate()
-    # f = open("log"+run_rand_id+".txt",'w')
-    # content = "OUTPUT:\n"+output+"\nERRORS:\n"+errors
-    # f.write(content)
-    # f.close()
-    templatePathPreRun = os.path.join(path_subcatch, os.path.basename(LISFLOODSettings_template[:-4] + '-PreRun' + run_rand_id + '.xml'))
-    templatePathRun = os.path.join(path_subcatch, os.path.basename(LISFLOODSettings_template[:-4] + '-Run' + run_rand_id + '.xml'))
-    # # BLAAT temporarily disabled for handling python3 for 1arcmin
-    # try:
-    #     del lisf1.binding['Catchments']
-    #     del lisf1.binding['1']
-    # except (KeyError, AttributeError):
-    #     pass
-    # Preload maps in memory for both runs
-    cmd = "cp " + templatePathPreRun + " " + templatePathPreRun.replace(".xml", "_i.xml")
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
-    if ver.find('3.6') > -1:
-        print("") #lisf1.main(templatePathPreRun.replace(".xml", "_i.xml"), '-i')
-    else:
-        optionTemplate = os.path.join(lisfloodRoot, 'OptionTserieMaps.xml')
-        # lisf1.main(optionTemplate, templatePathPreRun.replace(".xml", "_i.xml"), '-i')
+def read_tss(tss_file):
+    df = pandas.read_csv(tss_file, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
+    return df
 
 
-    ## FIRST LISFLOOD RUN ###
-    if ver.find('3.6') > -1:
-        lisf1.main(templatePathPreRun)
-    else:
-        lisf1.main(optionTemplate, templatePathPreRun)
-        # os._exit(0) # BLAAT PROFILING
-    # try:
-    #     del lisf1.binding['Catchments']
-    #     del lisf1.binding['1']
-    # except (KeyError, AttributeError):
-    #     pass
-    # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = "cp " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc.bak"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
-    cmd = "cp " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc.bak"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
-    # # DD BLAAT PROFILING OF EACH RUN SEPARATELY
-    # cmd = "find " + path_subcatch + "/out/ -name 'avgdis*.simulated_bestend*'"# + run_rand_id + "end.nc " + path_subcatch + "/out/avgdis*"# + run_rand_id + "end.nc.bak"
-    # p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    # avgdiss = p.communicate()[0].decode('utf-8')
-    # p.wait()
-    # if len(avgdiss) > 0:
-    #     avgdis = avgdiss.split()[0]
-    #     cmd = "cp " + avgdis + " " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc"
-    #     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    #     print(p.communicate()[0])
-    #     p.wait()
-    # cmd = "find " + path_subcatch + "/out/ -name 'lzavin*.simulated_bestend*'"# + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin*"# + run_rand_id + "end.nc.bak"
-    # p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    # lzavins = p.communicate()[0].decode('utf-8')
-    # p.wait()
-    # if len(lzavins) > 0:
-    #     lzavin = lzavins.split()[0]
-    #     cmd = "cp " + lzavin + " " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc"
-    #     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    #     print(p.communicate()[0])
-    #     p.wait()
-    # input("Press a key when you have finished moving files:\n" + str(run_rand_id))
+def simulated_best_tss2csv(path_subcatch, forcing_start, dataname, outname):
+
+    tss_file = os.path.join(path_subcatch, "out", dataname + run_rand_id + '.tss')
+
+    tss = read_tss(tss_file)
+
+    tss[1][tss[1]==1e31] = np.nan
+    tss_values = tss[1].values
+
+    df = pandas.DataFrame(data=tss_values, index=pandas.date_range(forcing_start, periods=len(tss_values), freq='6H'))
+    df.to_csv(os.path.join(path_subcatch, outname+"_simulated_best.csv"), ', ', header="")
+
+    try:
+        os.remove(os.path.join(path_subcatch, outname+"_simulated_best.tss"))
+    except:
+        pass
+    os.rename(tss_file, os.path.join(path_subcatch, outname+"_simulated_best.tss"))
+
+
+def generate_outlet_streamflow(cfg, obsid, station_data, lis_template):
+
+    # Select the "best" parameter set and run LISFLOOD for the entire forcing period
+    #Parameters = paramvals[best,:]
+
+    stage_inflows(path_subcatch)
+
+    print(">> Running LISFLOOD using the \"best\" parameter set")
+    parameters = read_parameters(path_subcatch)
+
+    run_rand_id = str(int(random.random()*1e10)).zfill(12)
+
+    cal_start_local = cfg.forcing_start.strftime('%Y-%m-%d %H:%M')
+    cal_end_local = cfg.forcing_end.strftime('%Y-%m-%d %H:%M')
+    lis_template.write_template(obsid, run_rand_id, cal_start_local, cal_end_local, cfg.param_ranges, parameters):
+
     ### SECOND LISFLOOD RUN ###
-    if ver.find('3.6')>-1:
-        lisf1.main(templatePathRun)
-    else:
-        lisf1.main(optionTemplate, templatePathRun)
+
+    prerun_file = self.lis_template.settings_path('-Prerun')
+    lisf1.main(prerun_file)
+
+    # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
+    cmd = "cp " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc " + path_subcatch + "/out/avgdis" + run_rand_id + ".simulated_bestend.nc"
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(p.communicate()[0])
+    p.wait()
+    cmd = "cp " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + ".simulated_bestend.nc"
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(p.communicate()[0])
+    p.wait()
+
+    ### SECOND LISFLOOD RUN ###
+
+    run_file = self.lis_template.settings_path('-Run')
+    lisf1.main(run_file)
+
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = "mv " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc.bak " + path_subcatch + "/out/avgdis" + run_rand_id + ".simulated_bestend.nc"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
-    cmd = "mv " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc.bak " + path_subcatch + "/out/lzavin" + run_rand_id + ".simulated_bestend.nc"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
     cmd = "rm " + path_subcatch + "/out/avgdis" + run_rand_id + "end.nc " + path_subcatch + "/out/lzavin" + run_rand_id + "end.nc"
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.communicate()[0])
     p.wait()
 
-    os.chdir(currentdir)
-    print("BLAAT")
-    cmd = "ls -thrall " + path_subcatch + "/out"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
-
-    # Save simulated streamflow to disk
-    Qsim_tss = os.path.join(path_subcatch, "out", 'dis' + run_rand_id + '.tss')
-    timer = 0
-    simulated_streamflow = pandas.read_csv(Qsim_tss,sep=r"\s+",index_col=0,skiprows=4,header=None,skipinitialspace=True)
-    # if not isinstance(simulated_streamflow.index[0], np.int): # DD: WARNING this code doesn't work when the type is int64
-    #     simulated_streamflow = simulated_streamflow.iloc[4:]
-    simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan
-    Qsim = simulated_streamflow[1].values
-    print(">> Saving \"best\" simulated streamflow (streamflow_simulated_best.csv)")
-    Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(ForcingStart, periods=len(Qsim), freq='6H'))
-    Qsim.to_csv(os.path.join(path_subcatch,"streamflow_simulated_best.csv"),',',header="")
-    try:
-        os.remove(os.path.join(path_subcatch, "out", 'streamflow_simulated_best.tss'))
-    except:
-        pass
-    os.rename(Qsim_tss, os.path.join(path_subcatch,"out",'streamflow_simulated_best.tss'))
-
-    # DD Modification for efas-ec 2.12.6
-    # Save instantaneous discharge in channel to disk to use as inflow for the next catchment
-    chanQ_tss = os.path.join(path_subcatch, "out", 'chanq' + run_rand_id + '.tss')
-    timer = 0
-    chanQpd = pandas.read_csv(chanQ_tss,sep=r"\s+",index_col=0,skiprows=4,header=None,skipinitialspace=True)
-    if not isinstance(chanQpd.index[0], np.int):
-        chanQpd = chanQpd.iloc[4:]
-    chanQpd[1][chanQpd[1]==1e31] = np.nan
-    chanQ = chanQpd[1].values
-    print(">> Saving \"inflow\")")
-    chanQ = pandas.DataFrame(data=chanQ, index=pandas.date_range(ForcingStart, periods=len(chanQ), freq='6H'))
-    chanQ.to_csv(os.path.join(path_subcatch, "chanq_simulated_best.csv"), ',', header="")
-    try:
-        os.remove(os.path.join(path_subcatch, "out", 'chanq_simulated_best.tss'))
-    except:
-        pass
-    os.rename(chanQ_tss, os.path.join(path_subcatch, "out", 'chanq_simulated_best.tss'))
-
-    # Delete all .xml, .bat, .tmp, and .txt files created for the runs
-    #for filename in glob.glob(os.path.join(path_subcatch,"*.xml")):
-    #    os.remove(filename)
-    #for filename in glob.glob(os.path.join(path_subcatch,"*.bat")):
-    #    os.remove(filename)
-    #for filename in glob.glob(os.path.join(path_subcatch,"*.tmp")):
-    #    os.remove(filename)
-    #for filename in glob.glob(os.path.join(path_subcatch,"*.txt")):
-    #   os.remove(filename)
-    #for filename in glob.glob(os.path.join(path_subcatch,"out","lzavin*.map")):
-    #    os.remove(filename)
-    #for filename in glob.glob(os.path.join(path_subcatch,"out","dis*.tss")):
-    #    os.remove(filename)
-
-#@profile
-def main(cfg):
-
-
-if __name__=="__main__":
-    main()
+    simulated_best_tss2csv(path_subcatch, forcing_start, 'dis', 'streamflow')
+    simulated_best_tss2csv(path_subcatch, forcing_start, 'chanq', 'chanq')
