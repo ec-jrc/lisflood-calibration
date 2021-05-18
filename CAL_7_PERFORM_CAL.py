@@ -24,6 +24,8 @@ class DEAPParameters():
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
 
+        self.cxpb = 0.6
+        self.mutpb = 0.4
 
 class Config():
 
@@ -250,13 +252,15 @@ def calibrate_subcatchment(cfg, obsid, station_data):
 
     lis_template = LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
 
-    model = HydrologicalModel(cfg, obsid, station_data, lis_template)
-    
+    lock_mgr = LockManager()
+
+    model = HydrologicalModel(cfg, obsid, station_data, lis_template, lock_mgr)
+
     # Performing calibration with external call, to avoid multiprocessing problems
     import cal_single_objfun
 
     if os.path.exists(os.path.join(path_subcatch,"pareto_front.csv"))==False:
-        cal_single_objfun.run_calibration(cfg, obsid, station_data, model)
+        cal_single_objfun.run_calibration(cfg, obsid, station_data, model, lock_mgr)
 
     cal_single_objfun.generate_outlet_streamflow(cfg, obsid, station_data, model)
 

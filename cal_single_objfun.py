@@ -31,47 +31,6 @@ from deap import creator
 from deap import tools
 
 
-def initialise_deap(deap_param, model):
-
-    creator.create("FitnessMin", base.Fitness, weights=(1.0,))
-    creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
-
-    toolbox = base.Toolbox()
-    # history = tools.History()
-
-    # Attribute generator
-    toolbox.register("attr_float", random.uniform, 0, 1)
-
-    # Structure initializers
-    toolbox.register("Individual", tools.initRepeat, creator.Individual, toolbox.attr_float, len(ParamRanges))
-    toolbox.register("population", tools.initRepeat, list, toolbox.Individual)
-
-    def checkBounds(min, max):
-        def decorator(func):
-            def wrappper(*args, **kargs):
-                offspring = func(*args, **kargs)
-                for child in offspring:
-                    for i in range(len(child)):
-                        if child[i] > max:
-                            child[i] = max
-                        elif child[i] < min:
-                            child[i] = min
-                return offspring
-            return wrappper
-        return decorator
-
-    toolbox.register("evaluate", model.run) #profiler) #RunModel) #DD Debug for profiling
-    toolbox.register("mate", tools.cxBlend, alpha=0.15)
-    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.3, indpb=0.3)
-    toolbox.register("select", tools.selNSGA2)
-    toolbox.decorate("mate", checkBounds(0, 1))
-    toolbox.decorate("mutate", checkBounds(0, 1))
-    # toolbox.decorate("mate", history.decorator)
-    # toolbox.decorate("mutate", history.decorator)
-
-    return toolbox
-
-
     # #https://stackoverflow.com/questions/9754034/can-i-create-a-shared-multiarray-or-lists-of-lists-object-in-python-for-multipro?lq=1
     # # DD Use a multiprocessing shared Array type to keep track of other metrics of each run besides the KGE, e.g. for different early-stopping mechanism
     # totSumError = mp.Array('f', (maxGen+1) * max(pop,lambda_))
@@ -183,43 +142,6 @@ def calibration_start_end(cfg, station_data):
     return cal_start, cal_end
 
 
-def read_observed_streamflow(cfg, obsid):
-    # Load observed streamflow # DD Much faster IO with npy despite being more complicated (<1s vs 22s)
-    if os.path.exists(cfg.Qtss_csv.replace(".csv", ".npy")) and os.path.getsize(cfg.Qtss_csv) > 0:
-        streamflow_data = pandas.DataFrame(np.load(cfg.Qtss_csv.replace(".csv", ".npy"), allow_pickle=True))
-        streamflow_datetimes = np.load(cfg.Qtss_csv.replace(".csv", "_dates.npy"), allow_pickle=True).astype('string_')
-        try:
-            streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%d/%m/%Y %H:%M") for i in streamflow_datetimes]
-        except ValueError:
-            try:
-                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d %H:%M:%S") for i in streamflow_datetimes]
-            except ValueError:
-                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d") for i in streamflow_datetimes]
-        streamflow_data.columns = np.load(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), allow_pickle=True)
-    else:
-        streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
-        # streamflow_data.index = pandas.date_range(start=ObservationsStart, end=ObservationsEnd, periods=len(streamflow_data))
-        # streamflow_data = pandas.read_csv(Qtss_csv, sep=",", index_col=0, parse_dates=True) # DD WARNING buggy unreliable parse_dates! Don't use it!
-        np.save(cfg.Qtss_csv.replace(".csv", ".npy"), streamflow_data)
-        np.save(cfg.Qtss_csv.replace(".csv", "_dates.npy"), streamflow_data.index)
-        np.save(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), streamflow_data.columns.values)
-    observed_streamflow = streamflow_data[str(obsid)]
-    observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%Y-%m-%d %H:%M'):cfg.forcing_end.strftime('%Y-%m-%d %H:%M')] # Keep only the part for which we run LISFLOOD
-    observed_streamflow = observed_streamflow[Cal_Start:Cal_End]
-
-    return observed_streamflow
-
-
-def read_benchmark_streamflow(cfg, obsid):
-    # Load observed streamflow # DD Much faster IO with npy despite being more complicated (<1s vs 22s)
-    streamflow_data = pandas.read_csv(cfg.subcatchment_path + "/" + str(obsid) + "/convergenceTester.csv", sep=",", index_col=0, header=None)
-    # streamflow_data.index = pandas.date_range(start=ObservationsStart, end=ObservationsEnd, periods=len(streamflow_data))
-    #streamflow_data.index = pandas.date_range(start=ForcingStart, end=ForcingEnd, periods=len(streamflow_data))
-    streamflow_data.index = pandas.date_range(start=streamflow_data.index[0], end=streamflow_data.index[-1], periods=len(streamflow_data))
-    observed_streamflow = streamflow_data[cfg.forcing_start:cfg.forcing_end]
-    return observed_streamflow
-
-
 class HydrologicalModelTest(HydrologicalModel):
     
     def __init__(self, cfg, obsid, station_data, lis_template):
@@ -227,6 +149,18 @@ class HydrologicalModelTest(HydrologicalModel):
         self.observed_streamflow = read_benchmark_streamflow(cfg, obsid)
 
         super().__init__(self, cfg, station_data, lis_template)
+
+    def read_observed_streamflow(self):
+        cfg = self.cfg
+        obsid = self.obsid
+
+        # Load observed streamflow # DD Much faster IO with npy despite being more complicated (<1s vs 22s)
+        streamflow_data = pandas.read_csv(cfg.subcatchment_path + "/" + str(obsid) + "/convergenceTester.csv", sep=",", index_col=0, header=None)
+        # streamflow_data.index = pandas.date_range(start=ObservationsStart, end=ObservationsEnd, periods=len(streamflow_data))
+        #streamflow_data.index = pandas.date_range(start=ForcingStart, end=ForcingEnd, periods=len(streamflow_data))
+        streamflow_data.index = pandas.date_range(start=streamflow_data.index[0], end=streamflow_data.index[-1], periods=len(streamflow_data))
+        observed_streamflow = streamflow_data[cfg.forcing_start:cfg.forcing_end]
+        return observed_streamflow
 
     def get_parameters(self):
         cfg = self.cfg
@@ -257,32 +191,21 @@ class HydrologicalModelTest(HydrologicalModel):
             Qsim = simulated_streamflow[cal_start_local:cal_end_local]
             Qobs = observed_streamflow[cal_start_local:cal_end_local]
             # apply only to 24h station to aggregate to daily
-            # # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
-            # Qsim = simulated_streamflow
-            # Qsim.index = pandas.date_range(ForcingStart, ForcingEnd, freq="360min")
-            # Qsim = Qsim.resample('24H', label="right", closed="right").mean()
-            # Qsim = np.array(Qsim)  # [1].values + 0.001
-            # # Same for Qobs
-            # Qobs = observed_streamflow[ForcingStart:ForcingEnd]
-            # Qobs.index = pandas.date_range(ForcingStart, ForcingEnd, freq="360min")
-            # Qobs = Qobs.resample('24H', label="right", closed="right").mean()
-            # Qobs = np.array(Qobs)  # [1].values + 0.001
-            # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
             Qsim.index = pandas.date_range(cal_start_local, cal_end_local, freq="360min")
             Qsim = Qsim.resample('24H', label="right", closed="right").mean()
             # Same for Qobs
             Qobs.index = pandas.date_range(cal_start_local, cal_end_local, freq="360min")
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
-            Qsim.to_csv(os.path.join(path_subcatch, "qsim" + str(run_rand_id) + ".csv"))
-            Qobs.to_csv(os.path.join(path_subcatch, "qobs" + str(run_rand_id) + ".csv"))
-        if self.station_data["CAL_TYPE"].find("_24h") > -1:
+
             Qsim = np.array(Qsim)  # [1].values + 0.001
             Qobs = np.array(Qobs)  # [1].values + 0.001
-            # Trim nans
-            Qsim = Qsim[~np.isnan(Qobs)]
-            Qobs = Qobs[~np.isnan(Qobs)]
+
+        # Trim nans
+        Qsim = Qsim[~np.isnan(Qobs)]
+        Qobs = Qobs[~np.isnan(Qobs)]
 
         return Qsim, Qobs
+
 
 class HydrologicalModelBenchmark(HydrologicalModel):
     
@@ -338,7 +261,7 @@ class HydrologicalModelBenchmark(HydrologicalModel):
 
 class HydrologicalModel():
 
-    def __init__(self, cfg, obsid, station_data, lis_template):
+    def __init__(self, cfg, obsid, station_data, lis_template, lock_mgr):
 
         self.cfg = cfg
         self.obsid = obsid
@@ -351,15 +274,35 @@ class HydrologicalModel():
 
         self.observed_streamflow = read_observed_streamflow(cfg, obsid)
 
-        # DD Use a multiprocessing shared Value type to keep track of the generations so we can access it in the RunModel function
-        if cfg.use_multiprocessing == True:
-            self.gen = mp.Value('i')
-            with self.gen.get_lock():
-                self.gen.value = -1
+        self.lock_mgr = lock_mgr
 
-            self.runNumber = mp.Value("i")
-            with self.runNumber.get_lock():
-                self.runNumber.value = -1
+    def read_observed_streamflow(self):
+        cfg = self.cfg
+        obsid = self.obsid
+        # Load observed streamflow # DD Much faster IO with npy despite being more complicated (<1s vs 22s)
+        if os.path.exists(cfg.Qtss_csv.replace(".csv", ".npy")) and os.path.getsize(cfg.Qtss_csv) > 0:
+            streamflow_data = pandas.DataFrame(np.load(cfg.Qtss_csv.replace(".csv", ".npy"), allow_pickle=True))
+            streamflow_datetimes = np.load(cfg.Qtss_csv.replace(".csv", "_dates.npy"), allow_pickle=True).astype('string_')
+            try:
+                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%d/%m/%Y %H:%M") for i in streamflow_datetimes]
+            except ValueError:
+                try:
+                    streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d %H:%M:%S") for i in streamflow_datetimes]
+                except ValueError:
+                    streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d") for i in streamflow_datetimes]
+            streamflow_data.columns = np.load(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), allow_pickle=True)
+        else:
+            streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
+            # streamflow_data.index = pandas.date_range(start=ObservationsStart, end=ObservationsEnd, periods=len(streamflow_data))
+            # streamflow_data = pandas.read_csv(Qtss_csv, sep=",", index_col=0, parse_dates=True) # DD WARNING buggy unreliable parse_dates! Don't use it!
+            np.save(cfg.Qtss_csv.replace(".csv", ".npy"), streamflow_data)
+            np.save(cfg.Qtss_csv.replace(".csv", "_dates.npy"), streamflow_data.index)
+            np.save(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), streamflow_data.columns.values)
+        observed_streamflow = streamflow_data[str(obsid)]
+        observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%Y-%m-%d %H:%M'):cfg.forcing_end.strftime('%Y-%m-%d %H:%M')] # Keep only the part for which we run LISFLOOD
+        observed_streamflow = observed_streamflow[Cal_Start:Cal_End]
+
+        return observed_streamflow
 
     def get_start_end_local(self, mapLoadOnly):
         cfg = self.cfg
@@ -373,10 +316,10 @@ class HydrologicalModel():
         return cal_start_local, cal_end_local
 
     def get_parameters(self, Individual):
-        cfg = self.cfg
-        Parameters = [None] * len(cfg.param_ranges)
-        for ii in range(len(ParamRanges)):
-            Parameters[ii] = Individual[ii]*(float(ParamRanges.iloc[ii,1])-float(ParamRanges.iloc[ii,0]))+float(ParamRanges.iloc[ii,0])
+        param_ranges = self.cfg.param_ranges
+        Parameters = [None] * len(param_ranges)
+        for ii in range(len(param_ranges)):
+            Parameters[ii] = Individual[ii]*(float(param_ranges.iloc[ii,1])-float(param_ranges.iloc[ii,0]))+float(param_ranges.iloc[ii,0])
 
         return parameters
 
@@ -450,7 +393,7 @@ class HydrologicalModel():
 
         cfg = self.cfg
 
-        lock.acquire()
+        self.lock_mgr.lock()
         with open(os.path.join(cfg.path_subcatch, "runs_log.csv"), "a") as myfile:
             myfile.write(str(run_rand_id)+","+str(KGE)+"\n")
 
@@ -490,24 +433,38 @@ class HydrologicalModel():
             paramsHistory += i
         if cfg.use_multiprocessing:
             # paramsHistory += str(HydroStats.sae(s=Qsim, o=Qobs, warmup=WarmupDays)) + ","
-            paramsHistory += str(self.gen.value) + ","
-            paramsHistory += str(self.runNumber.value)
+            paramsHistory += str(self.lock_mgr.get_gen()) + ","
+            paramsHistory += str(self.lock_mgr.get_run())
         paramsHistory += "\n"
         paramsHistoryFile.write(paramsHistory)
         paramsHistoryFile.close()
-        lock.release()
+        self.lock_mgr.unlock()
 
-    def update_run_number(self):
-        # retrieve the array in shared memory
-        pop = self.cfg.deap_param.pop
-        lambda_ = self.cfg.deap_param.lambda_
-        if self.cfg.use_multiprocessing:
-            with self.runNumber.get_lock():
-                self.runNumber.value += 1
-                if self.runNumber.value == max(pop, lambda_):
-                    self.runNumber.value = 0
+    def init_run(self):
 
-    def run(self, Individual, mapLoadOnly=False):
+        # dummy Individual, doesn't matter here
+        param_ranges = self.cfg.param_ranges
+        Individual = 0.5*np.ones(len(param_ranges))
+
+        cfg = self.cfg
+
+        run_rand_id = str(int(random.random()*1e10)).zfill(12)
+
+        cal_start_local, cal_end_local = self.get_start_end_local(mapLoadOnly)
+
+        parameters = self.get_parameters(Individual)
+
+        self.lis_template.write_template(self.obsid, run_rand_id, cal_start_local, cal_end_local, cfg.param_ranges, parameters):
+
+        prerun_file = self.lis_template.settings_path('-Prerun')
+
+        try:
+            lisf1.main(prerun_file, '-i')
+        except:
+            traceback.print_exc()
+            raise Exception("")
+
+    def run(self, Individual):
 
         cfg = self.cfg
 
@@ -523,13 +480,8 @@ class HydrologicalModel():
         run_file = self.lis_template.settings_path('-Run')
 
         try:
-            if mapLoadOnly:
-                # Preload maps in memory for both runs
-                lisf1.main(prerun_file, '-i')
-                return
-            else:
-                lisf1.main(prerun_file) #os.path.realpath(__file__),
-                lisf1.main(run_file)  # os.path.realpath(__file__),
+            lisf1.main(prerun_file) #os.path.realpath(__file__),
+            lisf1.main(run_file)  # os.path.realpath(__file__),
         except:
             traceback.print_exc()
             raise Exception("")
@@ -545,7 +497,7 @@ class HydrologicalModel():
 
         KGE = fKGEComponents[0]
 
-        self.update_run_number()
+        self.lock_mgr.increment_run()
 
         self.update_parameter_history(run_rand_id, parameters, fKGEComponents)
 
@@ -553,283 +505,237 @@ class HydrologicalModel():
 
         return KGE, # If using just one objective function, put a comma at the end!!!
 
-def generate_benchmark(cfg):
 
-    observed_streamflow = 0.0
+class LockManager():
+    def __init__(self):
+        
+        self.counters = {}
+        self.counters['gen'] = mp.Value('i')
+        self.set_gen(-1)
+        self.counters['run'] = mp.Value('i')
+        self.set_run(-1)
+        
+        self.lock = mp.Lock()
 
-    minParams = ParamRanges[str(ParamRanges.head().columns.values[0])].values
-    maxParams = ParamRanges[str(ParamRanges.head().columns.values[1])].values
-    defaultParams = ParamRanges[str(ParamRanges.head().columns.values[2])].values
+    def lock(self):
+        self.lock.acquire()
 
-    ## DD uncomment to generate a synthetic run with default parameters to converge to
-    RunModel((defaultParams - minParams) / (maxParams - minParams), mapLoadOnly=False)
-    print("Finished generating default run. Please relaunch the calibration. It will now try to converge to this default run.")
+    def unlock(self):
+        self.lock.release()
+
+    def increment_gen(self):
+        self._increment('gen')
+        self._set('run', 0)
+
+    def increment_run(self):
+        self._increment('run')
+
+    def set_gen(self, value):
+        self._set('gen', value)
+        self._set('run', 0)
+
+    def set_run(self, value):
+        self._set('run', value)
+
+    def get_gen(self, value):
+        self._value('gen')
+
+    def get_run(self, value):
+        self._value('run')
+
+    def _increment(self, name):
+        with self.counters[name].get_lock():
+            self.counters[name].value += 1
+
+    def _set(self, name, value):
+        with self.counters[name].get_lock():
+            self.counters[name].value = value
+
+    def _value(self, name):
+        return counters[name]
 
 
-def run_calibration(cfg, obsid, station_data, model):
-       
-    toolbox = initialise_deap(cfg.deap_param, model)
+def initialise_deap(deap_param, model):
 
-    observed_streamflow = load_observed_streamflow(cfg, obsid)
+    creator.create("FitnessMin", base.Fitness, weights=(1.0,))
+    creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
-    t = time.time()
+    toolbox = base.Toolbox()
+    # history = tools.History()
 
-    # DD Run Lisflood a first time before forking to load the stacks into memory
-    minParams = ParamRanges[str(ParamRanges.head().columns.values[0])].values
-    maxParams = ParamRanges[str(ParamRanges.head().columns.values[1])].values
-    defaultParams = ParamRanges[str(ParamRanges.head().columns.values[2])].values
+    # Attribute generator
+    toolbox.register("attr_float", random.uniform, 0, 1)
 
-    RunModel((defaultParams-minParams)/(maxParams-minParams), mapLoadOnly=True)
+    # Structure initializers
+    toolbox.register("Individual", tools.initRepeat, creator.Individual, toolbox.attr_float, len(ParamRanges))
+    toolbox.register("population", tools.initRepeat, list, toolbox.Individual)
 
-    if use_multiprocessing==True:
-        global lock
-        lock = mp.Lock()
-        pool_size = numCPUs #mp.cpu_count() * 1 ## DD just restrict the number of CPUs to use manually
-        pool = mp.Pool(processes=pool_size, initargs=(lock,))
-        toolbox.register("map", pool.map)
+    def checkBounds(min, max):
+        def decorator(func):
+            def wrappper(*args, **kargs):
+                offspring = func(*args, **kargs)
+                for child in offspring:
+                    for i in range(len(child)):
+                        if child[i] > max:
+                            child[i] = max
+                        elif child[i] < min:
+                            child[i] = min
+                return offspring
+            return wrappper
+        return decorator
 
-    #cxpb = 0.9 # For someone reason, if sum of cxpb and mutpb is not one, a lot less Pareto optimal solutions are produced
-    # DD: These values are used as percentage probability, so they should add up to 1, to determine whether to mutate or cross. The former finds the parameter for the next generation by taking the average of two parameters. This could lead to convergence to a probability set by the first generation as a biproduct of low first-generation parameter spread (they are generated using a uniform-distribution random generator.
-    #mutpb = 0.1
-    cxpb = 0.6
-    mutpb = 0.4
+    toolbox.register("evaluate", model.run) #profiler) #RunModel) #DD Debug for profiling
+    toolbox.register("mate", tools.cxBlend, alpha=0.15)
+    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.3, indpb=0.3)
+    toolbox.register("select", tools.selNSGA2)
+    toolbox.decorate("mate", checkBounds(0, 1))
+    toolbox.decorate("mutate", checkBounds(0, 1))
+    # toolbox.decorate("mate", history.decorator)
+    # toolbox.decorate("mutate", history.decorator)
 
-    # Initialise statistics arrays
-    effmax = np.zeros(shape=(maxGen + 1, 1)) * np.NaN
-    effmin = np.zeros(shape=(maxGen + 1, 1)) * np.NaN
-    effavg = np.zeros(shape=(maxGen + 1, 1)) * np.NaN
-    effstd = np.zeros(shape=(maxGen + 1, 1)) * np.NaN
+    return toolbox
 
-    # Start generational process setting all stopping conditions to false
-    conditions = {"maxGen": False, "StallFit": False}
 
-    # Start a new hall of fame
-    halloffame = tools.ParetoFront()
+def check_termination_conditions(gen, deap_parameters, effmax, conditions):
 
-    # Attempt to open a previous parameter history
-    try:
-        # Open the paramsHistory file from previous runs
-        paramsHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[4:]
-        print("Restoring previous calibration state")
-        def updatePopulationFromHistory(pHistory):
-            n = len(pHistory)
-            paramvals = np.zeros(shape=(n, len(ParamRanges)))
-            paramvals[:] = np.NaN
-            invalid_ind = []
-            fitnesses = []
-            for ind in range(n):
-                for ipar, par in enumerate(ParamRanges.index):
-                    # # scaled to unscaled conversion
-                    # paramvals[ind][ipar] = pHistory.iloc[ind][par] * (float(ParamRanges.iloc[ipar,1]) - \
-                    #   float(ParamRanges.iloc[ipar,0]))+float(ParamRanges.iloc[ipar,0])
-                    # unscaled to scaled conversion
-                    paramvals[ind][ipar] = (pHistory.iloc[ind][par] - float(ParamRanges.iloc[ipar, 0])) / \
-                      (float(ParamRanges.iloc[ipar, 1]) - float(ParamRanges.iloc[ipar, 0]))
-                # Create a fresh individual with the restored parameters
-                # newInd = toolbox.Individual() # creates an individual with random numbers for the parameters
-                newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
-                invalid_ind.append(newInd)
-                # WARNING: Change the following line when using multi-objective functions
-                # also load the old KGE the individual had (works only for single objective function)
-                fitnesses.append((pHistory.iloc[ind][len(ParamRanges) + 1],))
-            # update the score of each
-            for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit
-            return invalid_ind
+    min_gen = deap_parameters.minGen
+    max_gen = deap_parameters.maxGen
 
-        # Initiate the generations counter
-        with gen.get_lock():
-            gen.value = 0
+    # Terminate the optimization after maxGen generations
+    if gen >= max_gen:
+        print(">> Termination criterion maxGen fulfilled.")
+        conditions['maxGen'] = True
 
-        population = None
-        # reconstruct the generational evoluation
-        for igen in range(int(paramsHistory["generation"].iloc[-1])+1):
-            # retrieve the generation's data
-            parsHistory = paramsHistory[paramsHistory["generation"] == igen]
-            # reconstruct the invalid individuals array
-            valid_ind = updatePopulationFromHistory(parsHistory)
-            # Update the hall of fame with the generation's parameters
-            halloffame.update(valid_ind)
-            history.update(valid_ind)
-            # prepare for the next stage
-            if population is not None:
-                population[:] = toolbox.select(population + valid_ind, mu)
-            else:
-                population = valid_ind
+    if gen >= min_gen and (effmax[gen, 0] - effmax[gen - 3, 0]) < 0.003
+        # # DD attempt to stop early with different criterion
+        # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
+        #     print(">> Termination criterion no-improvement sae fulfilled.")
+        #     # conditions["StallFit"] = True
+        print(">> Termination criterion no-improvement KGE fulfilled.")
+        conditions["StallFit"] = True
 
-            # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
-            for ii in range(1):
-                effmax[gen.value, ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-                effmin[gen.value, ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-                effavg[gen.value, ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-                effstd[gen.value, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            print(">> gen: " + str(gen.value) + ", effmax_KGE: " + "{0:.3f}".format(effmax[gen.value, 0]))
 
-            # Terminate the optimization after maxGen generations
-            if gen.value >= maxGen:
-                print(">> Termination criterion maxGen fulfilled.")
-                conditions["maxGen"] = True
+def restore_calibration(deap_param, lock_mgr, toolbox, halloffame, history_file,
+                        effmax, effmin, effavg, effstd, conditions):
 
-            if gen.value >= minGen:
-                # # DD attempt to stop early with different criterion
-                # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
-                #     print(">> Termination criterion no-improvement sae fulfilled.")
-                #     # conditions["StallFit"] = True
-                if (effmax[gen.value, 0] - effmax[gen.value - 3, 0]) < 0.003:
-                    print(">> Termination criterion no-improvement KGE fulfilled.")
-                    conditions["StallFit"] = True
-            with gen.get_lock():
-                gen.value += 1
+    # Open the paramsHistory file from previous runs
+    paramsHistory = pandas.read_csv(history_file, sep=",")[4:]
+    print("Restoring previous calibration state")
 
-    # No previous parameter history was found, so start from scratch
-    except IOError:
+    # Initiate the generations counter
+    lock_mgr.set_gen(0)
 
-        # Start with a fresh population
-        population = toolbox.population(n=pop)
+    population = None
+    # reconstruct the generational evoluation
+    for igen in range(int(paramsHistory["generation"].iloc[-1])+1):
+        # retrieve the generation's data
+        parsHistory = paramsHistory[paramsHistory["generation"] == igen]
+        # reconstruct the invalid individuals array
+        valid_ind = updatePopulationFromHistory(parsHistory)
+        # Update the hall of fame with the generation's parameters
+        halloffame.update(valid_ind)
+        # prepare for the next stage
+        if population is not None:
+            population[:] = toolbox.select(population + valid_ind, deap_param.mu)
+        else:
+            population = valid_ind
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in population if not ind.fitness.valid] # DD this filters the population or children for uncalculated fitnesses. We retain only the uncalculated ones to avoid recalculating those that already had a fitness. Potentially this can save time, especially if the algorithm tends to produce a child we already ran.
-        with gen.get_lock():
-            gen.value = 0
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind) # DD this runs lisflood and calculates the fitness, here KGE
-        for ind, fit in zip(invalid_ind, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
-            ind.fitness.values = fit
-
-        halloffame.update(population) # DD this selects the best one
-        history.update(population) # DD adds the population to the graph
+        gen = lock_mgr.get_gen()
 
         # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
         for ii in range(1):
-            effmax[0,ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effmin[0,ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effavg[0,ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effstd[0,ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-        print(">> gen: "+str(gen.value)+", effmax_KGE: "+"{0:.3f}".format(effmax[gen.value,0]))
+            effmax[gen, ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+            effmin[gen, ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+            effavg[gen, ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+            effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        print(">> gen: " + str(gen) + ", effmax_KGE: " + "{0:.3f}".format(effmax[gen, 0]))
 
-        # Update the generation to the first
-        with gen.get_lock():
-            gen.value = 1
+        check_termination_conditions(gen, deap_param, effmax, conditions)
 
-    # Resume the generational process from wherever we left off
-    while not any(conditions.values()):
+        lock_mgr.increment_gen()
 
-        # Vary the population
-        offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)
-
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind) # DD this runs lisflood
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-        # # DD we could also write this to be more poetic ;-P)
-        # for me, being in zip(invalid_ind, fitnesses):
-        #     me.fitness.values = being
-
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)
-
-        # # DD join population and offspring
-        # unionPopulation = population + offspring
-        # # DD then manually reselect 2 x mu runs from it that also are most hydrologically sound, i.e. the total discharge error is minimal
-        # # This way we combine the best of KGE properties with lowest SAE and keep them for the next generation
-        # # We also make sure not to include clustered solutions (removing those runs that have equal SAE to the 4th digit)
-        # doublePopulation = findBestSAERuns(2*mu, unionPopulation)
-        #
-        # # Select the next generation population
-        # population = toolbox.select(doublePopulation, mu)
-
-        # Select the next generation population
-        population[:] = toolbox.select(population + offspring, mu)
-        history.update(population)
-
-        # Loop through the different objective functions and calculate some statistics
-        # from the Pareto optimal population
-        for ii in range(1):
-            effmax[gen.value,ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effmin[gen.value,ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effavg[gen.value,ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            effstd[gen.value,ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-        print(">> gen: "+str(gen.value)+", effmax_KGE: "+"{0:.3f}".format(effmax[gen.value,0]))
-
-        # Terminate the optimization after maxGen generations
-        if gen.value >= maxGen:
-          print(">> Termination criterion maxGen fulfilled.")
-          conditions["maxGen"] = True
-
-        if gen.value >= minGen:
-            # # DD attempt to stop early with different criterion
-            # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
-            #     print(">> Termination criterion no-improvement sae fulfilled.")
-            #     # conditions["StallFit"] = True
-            if (effmax[gen.value,0]-effmax[gen.value-3,0]) < 0.003:
-                print(">> Termination criterion no-improvement KGE fulfilled.")
-                conditions["StallFit"] = True
-        with gen.get_lock():
-            gen.value += 1
+    return population
 
 
-    # plotSolutionTree(history, paramsHistory)
+def generate_population(deap_param, lock_mgr, toolbox, halloffame, effmax, effmin, effavg, effstd, conditions):
+    # Start with a fresh population
+    population = toolbox.population(n=deap_param.pop)
 
-    # Finito
-    if use_multiprocessing == True:
-        pool.close()
-    elapsed = time.time() - t
-    print(">> Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
+    # Evaluate the individuals with an invalid fitness
+    invalid_ind = [ind for ind in population if not ind.fitness.valid] # DD this filters the population or children for uncalculated fitnesses. We retain only the uncalculated ones to avoid recalculating those that already had a fitness. Potentially this can save time, especially if the algorithm tends to produce a child we already ran.
+    
+    lock_mgr.set_gen(0)
+
+    # Run the first generation, first random sampling of the parameter space
+    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    for ind, fit in zip(invalid_ind, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
+        ind.fitness.values = fit
+
+    halloffame.update(population) # DD this selects the best one
+
+    gen = lock_mgr.get_gen()
+    assert gen == 0
+
+    # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
+    for ii in range(1):
+        effmax[0,ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effmin[0,ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effavg[0,ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effstd[0,ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+    print(">> gen: "+str(gen)+", effmax_KGE: "+"{0:.3f}".format(effmax[gen,0]))
+
+    # Update the generation to the first
+    lock_mgr.increment_gen()
+
+    return population
 
 
-    ########################################################################
-    #   Save calibration results
-    ########################################################################
+def generate_offspring(deap_param, lock_mgr, toolbox, halloffame, population, effmax, effmin, effavg, effstd, conditions):
 
-    # Save history of the change in objective function scores during calibration to csv file
+    # Vary the population
+    offspring = algorithms.varOr(population, toolbox, deap_param.lambda_, deap_param.cxpb, deap_param.mutpb)
+
+    # Evaluate the individuals with an invalid fitness
+    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind) # DD this runs lisflood
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
+
+    # Update the hall of fame with the generated individuals
+    if halloffame is not None:
+        halloffame.update(offspring)
+
+    # Select the next generation population
+    population[:] = toolbox.select(population + offspring, deap_param.mu)
+
+    gen = lock_mgr.get_gen()
+
+    # Loop through the different objective functions and calculate some statistics
+    # from the Pareto optimal population
+    for ii in range(1):
+        effmax[gen,ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effmin[gen,ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effavg[gen,ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+        effstd[gen,ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+    print(">> gen: "+str(gen)+", effmax_KGE: "+"{0:.3f}".format(effmax[gen,0]))
+
+    check_termination_conditions(gen, deap_param, effmax, conditions)
+
+    lock_mgr.increment_gen()
+
+
+def write_front_history(cfg, gen, effmax, effmin, effavg, effstd):
     front_history = pandas.DataFrame()
-    front_history['gen'] = range(gen.value)
-    front_history['effmax_R'] = effmax[0:gen.value,0]
-    front_history['effmin_R'] = effmin[0:gen.value,0]
-    front_history['effstd_R'] = effstd[0:gen.value,0]
-    front_history['effavg_R'] = effavg[0:gen.value,0]
-    # front_history['saes'] = np.sum(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen + 1), max(pop, lambda_))[0:gen.value, :])
-    front_history.to_csv(os.path.join(path_subcatch,"front_history.csv"))
+    front_history['gen'] = range(gen)
+    front_history['effmax_R'] = effmax[0:gen,0]
+    front_history['effmin_R'] = effmin[0:gen,0]
+    front_history['effstd_R'] = effstd[0:gen,0]
+    front_history['effavg_R'] = effavg[0:gen,0]
+    front_history.to_csv(os.path.join(cfg.path_subcatch,"front_history.csv"))
 
-    # # Compute overall efficiency scores from the objective function scores for the
-    # # solutions in the Pareto optimal front
-    # # The overall efficiency reflects the proximity to R = 1, NSlog = 1, and B = 0 %
-    # front = np.array([ind.fitness.values for ind in halloffame])
-    # effover = 1 - np.sqrt((1-front[:,0]) ** 2)
-    # best = np.argmax(effover)
-    #
-    # # Convert the scaled parameter values of halloffame ranging from 0 to 1 to unscaled parameter values
-    # paramvals = np.zeros(shape=(len(halloffame),len(halloffame[0])))
-    # paramvals[:] = np.NaN
-    # for kk in range(len(halloffame)):
-    #     for ii in range(len(ParamRanges)):
-    #         paramvals[kk][ii] = halloffame[kk][ii]*(float(ParamRanges.iloc[ii,1])-float(ParamRanges.iloc[ii,0]))+float(ParamRanges.iloc[ii,0])
-    #
-    # # Save Pareto optimal solutions to csv file
-    # # The table is sorted by overall efficiency score
-    # print(">> Saving Pareto optimal solutions (pareto_front.csv)")
-    # ind = np.argsort(effover)[::-1]
-    # pareto_front = pandas.DataFrame({'effover':effover[ind],'R':front[ind,0]})
-    # for ii in range(len(ParamRanges)):
-    #     pareto_front["param_"+str(ii).zfill(2)+"_"+ParamRanges.index[ii]] = paramvals[ind,ii]
-    # pareto_front.to_csv(os.path.join(path_subcatch,"pareto_front.csv"),',')
 
-    # DD We found that there really are 4 aspects of the discharge time series we'd like to optimise the calibration for:
-    # timeliness of events (peaks), bias and spread, but also the total discharged volume, which is given by the SAE.
-    # By including the SAE ratio (s/o) in the KGE, we optimise all of these 4 aspects. However, we found by looking at the actual hydrographs
-    # that even including the SAE ratio in the KGE, there are compensating errors which give more weight to high discharge peaks,
-    # which makes the low flows events badly timed. The lisflood run giving minimal SAE seems to alleviate this problem quite well.
-    # Hence, we replace here the pareto_front of the halloffame with the one that gives the smallest SAE as this makes more sense
-    # hydrologically. The run is chosen throughout all generations, and since we know that the SAE is strongly correlated with KGE,
-    # it's safe to assume we won't end up with a run with very low SAE and crappy KGE overall.
-    # We conclude that the KGE perhaps is a good skill score, but not so great for actual calibration with a single objective functino.
-    # We now found that selecting purely the best SAE can also lead to bad selections. Therefore, we implemented a new method
-    # of selecting the pareto-optimal solution based on a multi-variate distribution of ranks for 3 aspects:
-    # KGE, correlation and SAE. We give equal weight to all 3. We know that the KGE includes correlation as well, but found
-    # that the variability of the two other components (bias and noise ratio) dominate the KGE. Also, the timeliness of peaks
-    # is most important hydrologically speaking. Thus we give a bit more importance to correlation.
-    pHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
+def write_ranked_solution(cfg):
+    pHistory = pandas.read_csv(os.path.join(cfg.path_subcatch, "paramsHistory.csv"), sep=",")[3:]
     # Keep only the best 10% of the runs for the selection of the parameters for the next generation
     pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
     pHistory = pHistory.head(int(max(2,round(len(pHistory) * 0.1))))
@@ -848,13 +754,18 @@ def run_calibration(cfg, obsid, station_data, model):
     # Give pareto score
     pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
     pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
-    pHistory.to_csv(os.path.join(path_subcatch,"pHistoryWRanks.csv"),',')
+    pHistory.to_csv(os.path.join(cfg.path_subcatch,"pHistoryWRanks.csv"),',')
+
+    return pHistory
+
+
+def write_pareto_front(cfg, pHistory):
     # Select the best pareto candidate
     bestParetoIndex = pHistory["paretoRank"].nsmallest(1).index
     # Save the pareto front
-    paramvals = np.zeros(shape=(1,len(ParamRanges)))
+    paramvals = np.zeros(shape=(1,len(cfg.param_ranges)))
     paramvals[:] = np.NaN
-    for ipar, par in enumerate(ParamRanges.index):
+    for ipar, par in enumerate(cfg.param_ranges.index):
         paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
     pareto_front = pandas.DataFrame(
         {
@@ -862,17 +773,117 @@ def run_calibration(cfg, obsid, station_data, model):
             'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]
         }, index=[0]
     )
-    for ii in range(len(ParamRanges)):
-        pareto_front["param_"+str(ii).zfill(2)+"_"+ParamRanges.index[ii]] = paramvals[0,ii]
-    pareto_front.to_csv(os.path.join(path_subcatch,"pareto_front.csv"),',')
-    # # Find absolute best over the last generation only (slightly worse actually)
-    # absoluteBest = findBestSAERuns(1, population)[0]
-    # pareto_front = pandas.DataFrame({'effover': absoluteBest.fitness.values[0], 'R': absoluteBest.fitness.values[0]}, index=[0])
-    # for ii in range(len(ParamRanges)):
-    #     pareto_front["param_"+str(ii).zfill(2)+"_"+ParamRanges.index[ii]] = absoluteBest[ii]*(float(ParamRanges.iloc[ii,1])-float(ParamRanges.iloc[ii,0]))+float(ParamRanges.iloc[ii,0])
-    # pareto_front.to_csv(os.path.join(path_subcatch,"pareto_front.csv"),',')
-    # pHistory.to_csv(os.path.join(path_subcatch, 'pHistory.csv'), sep=',')
+    for ii in range(len(cfg.param_ranges)):
+        pareto_front["param_"+str(ii).zfill(2)+"_"+cfg.param_ranges.index[ii]] = paramvals[0,ii]
+    pareto_front.to_csv(os.path.join(cfg.path_subcatch,"pareto_front.csv"),',')
+
+
+def run_calibration(cfg, obsid, station_data, model, lock_mgr):
+       
+    toolbox = initialise_deap(cfg.deap_param, model)
+
+    observed_streamflow = model.read_observed_streamflow()
+
+    t = time.time()
+
+    # load forcings and input maps in cache
+    # required in front of processing pool
+    # otherwise each child will reload the maps
+    model.init_run()
+
+    if use_multiprocessing==True:
+        pool_size = cfg.deap_param.numCPUs #mp.cpu_count() * 1 ## DD just restrict the number of CPUs to use manually
+        pool = mp.Pool(processes=pool_size, initargs=(self.lock_mgr.lock,))
+        toolbox.register("map", pool.map)
+
+    #cxpb = 0.9 # For someone reason, if sum of cxpb and mutpb is not one, a lot less Pareto optimal solutions are produced
+    # DD: These values are used as percentage probability, so they should add up to 1, to determine whether to mutate or cross. The former finds the parameter for the next generation by taking the average of two parameters. This could lead to convergence to a probability set by the first generation as a biproduct of low first-generation parameter spread (they are generated using a uniform-distribution random generator.
+    #mutpb = 0.1
+
+    # Initialise statistics arrays
+    effmax = np.zeros(shape=(deap_parameters.maxGen + 1, 1)) * np.NaN
+    effmin = np.zeros(shape=(deap_parameters.maxGen + 1, 1)) * np.NaN
+    effavg = np.zeros(shape=(deap_parameters.maxGen + 1, 1)) * np.NaN
+    effstd = np.zeros(shape=(deap_parameters.maxGen + 1, 1)) * np.NaN
+
+    # Start generational process setting all stopping conditions to false
+    conditions = {"maxGen": False, "StallFit": False}
+
+    # Start a new hall of fame
+    halloffame = tools.ParetoFront()
+
+    # Attempt to open a previous parameter history
+    history_file = os.path.join(cfg.path_subcatch, "paramsHistory.csv")
+    if os.path.getsize(history_file) > 0 and os.path.isfile(history_file):
+        population = restore_calibration(deap_parameters, lock_mgr, toolbox, halloffame, history_file, effmax, effmin, effavg, effstd, conditions)
+    else:
+        # No previous parameter history was found, so start from scratch
+        population = generate_population(deap_parameters, lock_mgr, toolbox, halloffame, effmax, effmin, effavg, effstd, conditions)
+
+    # Resume the generational process from wherever we left off
+    while not any(conditions.values()):
+        generate_offspring(deap_param, lock_mgr, toolbox, halloffame, population, effmax, effmin, effavg, effstd, conditions)
+
+    # plotSolutionTree(history, paramsHistory)
+
+    # Finito
+    if use_multiprocessing == True:
+        pool.close()
+    elapsed = time.time() - t
+    print(">> Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
+
+    ########################################################################
+    #   Save calibration results
+    ########################################################################
+
+    # Save history of the change in objective function scores during calibration to csv file
+    write_front_history(cfg, gen, effmax, effmin, effavg, effstd)
+
+    pHistory = write_ranked_solutions(cfg)
+
+    write_pareto_front(cfg, pHistory)
+
     return
+
+
+def generate_benchmark(cfg):
+
+    observed_streamflow = 0.0
+
+    minParams = ParamRanges[str(ParamRanges.head().columns.values[0])].values
+    maxParams = ParamRanges[str(ParamRanges.head().columns.values[1])].values
+    defaultParams = ParamRanges[str(ParamRanges.head().columns.values[2])].values
+
+    ## DD uncomment to generate a synthetic run with default parameters to converge to
+    RunModel((defaultParams - minParams) / (maxParams - minParams), mapLoadOnly=False)
+    print("Finished generating default run. Please relaunch the calibration. It will now try to converge to this default run.")
+
+
+    def updatePopulationFromHistory(pHistory):
+        n = len(pHistory)
+        paramvals = np.zeros(shape=(n, len(ParamRanges)))
+        paramvals[:] = np.NaN
+        invalid_ind = []
+        fitnesses = []
+        for ind in range(n):
+            for ipar, par in enumerate(ParamRanges.index):
+                # # scaled to unscaled conversion
+                # paramvals[ind][ipar] = pHistory.iloc[ind][par] * (float(ParamRanges.iloc[ipar,1]) - \
+                #   float(ParamRanges.iloc[ipar,0]))+float(ParamRanges.iloc[ipar,0])
+                # unscaled to scaled conversion
+                paramvals[ind][ipar] = (pHistory.iloc[ind][par] - float(ParamRanges.iloc[ipar, 0])) / \
+                  (float(ParamRanges.iloc[ipar, 1]) - float(ParamRanges.iloc[ipar, 0]))
+            # Create a fresh individual with the restored parameters
+            # newInd = toolbox.Individual() # creates an individual with random numbers for the parameters
+            newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
+            invalid_ind.append(newInd)
+            # WARNING: Change the following line when using multi-objective functions
+            # also load the old KGE the individual had (works only for single objective function)
+            fitnesses.append((pHistory.iloc[ind][len(ParamRanges) + 1],))
+        # update the score of each
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+        return invalid_ind
 
 
 def stage_inflows(path_subcatch):
