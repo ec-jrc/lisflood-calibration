@@ -8,7 +8,6 @@ from datetime import datetime
 from configparser import ConfigParser # Python 3.8
 from pcrasterCommand import pcrasterCommand, getPCrasterPath
 import glob
-import datetime
 import subprocess
 import traceback
 
@@ -53,15 +52,13 @@ class Config():
         self.lisflood_template = parser.get('Templates','LISFLOODSettings')
 
         # Debug/test parameters
-        self.test_convergence = bool(int(parser.get('DEFAULT', 'testConvergence')))
         self.fast_debug = bool(int(parser.get('DEFAULT', 'fastDebug')))
-        self.numDigits = int(parser.get('DEFAULT', 'numDigitsTests'))
 
         # Date parameters
         self.ObservationsStart = datetime.strptime(parser.get('DEFAULT', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
         self.ObservationsEnd = datetime.strptime(parser.get('DEFAULT', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_start = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.WarmupDays = int(parser.get('DEFAULT', 'WarmupDays'))
         self.calibration_freq = parser.get('DEFAULT', 'calibrationFreq')
 
@@ -194,8 +191,9 @@ def prepare_inflows(cfg, path_subcatch, index):
 
 class LisfloodSettingsTemplate():
 
-    def __init__(self, cfg, path_subcatch, gaugeloc, inflowflag):
+    def __init__(self, cfg, path_subcatch, obsid, gaugeloc, inflowflag):
 
+        self.obsid = obsid
         self.outfix = os.path.join(path_subcatch, os.path.basename(cfg.lisflood_template[:-4]))
         self.lisflood_template = cfg.lisflood_template
         with open(os.path.join('templates', cfg.lisflood_template), "r") as f:
@@ -208,10 +206,10 @@ class LisfloodSettingsTemplate():
 
         self.template_xml = template_xml
 
-    def settings_path(self, suffix):
+    def settings_path(self, suffix, run_rand_id):
         return self.outfix+suffix+run_rand_id+'.xml'
 
-    def write_template(self, obsid, run_rand_id, cal_start_local, cal_end_local, param_ranges, parameters):
+    def write_template(self, run_rand_id, cal_start_local, cal_end_local, param_ranges, parameters):
 
         out_xml = self.template_xml
 
@@ -221,7 +219,7 @@ class LisfloodSettingsTemplate():
 
         for ii in range(len(param_ranges)):
             ## DD Special Rule for the SAVA
-            if obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
+            if self.obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
                 out_xml = out_xml.replace('%adjust_Normal_Flood',"0.8")
                 out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
             out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
@@ -260,9 +258,9 @@ def calibrate_subcatchment(cfg, obsid, station_data):
     import cal_single_objfun
 
     if os.path.exists(os.path.join(path_subcatch,"pareto_front.csv"))==False:
-        cal_single_objfun.run_calibration(cfg, obsid, station_data, model, lock_mgr)
+        cal_single_objfun.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
 
-    cal_single_objfun.generate_outlet_streamflow(cfg, obsid, station_data, model)
+    cal_single_objfun.generate_outlet_streamflow(cfg, obsid, path_subcatch, station_data, model)
 
 
 def calibrate_system(args):

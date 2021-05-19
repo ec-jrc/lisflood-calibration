@@ -13,10 +13,7 @@ No_of_calibration_lists = 1
 MaxPercArea = 0.1
 calibrationFreq = 6-hourly
 # 6-hourly # daily
-testConvergence = 1
 fastDebug = 0
-
-[TEST]
 
 [CSV]
 Qmeta = /perm/rd/nedd/EFAS/efasCalib/src/Qmeta1.csv

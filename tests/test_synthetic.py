@@ -3,25 +3,12 @@ import sys
 import os
 import re
 import subprocess
+import pandas
 
 sys.path.insert(0, '/home/ma/macw/git/lisflood-calibration')
 
 import CAL_7_PERFORM_CAL as calib
-
-
-def roundn(x, n, num_digits=4):
-  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return round(x * 10 ** num_digits) / 10 ** num_digits
-
-
-def floorn(x, n, num_digits=4):
-  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return math.floor(x * 10 ** num_digits) / 10 ** num_digits
-
-
-def ceiln(x, n, num_digits=4):
-  num_digits = n - int(math.floor(math.log10(abs(x)))) - 1
-  return math.ceil(x * 10 ** num_digits) / 10 ** num_digits
+import cal_single_objfun
 
 
 def runCmd(cmd):
@@ -99,14 +86,40 @@ def inplacements(inFile, strings, precise=False):
 cfg = calib.Config(sys.argv[1])
 
 with open(sys.argv[2], "r") as catchmentFile:
-  catchment_index = int(catchmentFile.readline().replace("\n", ""))
+  obsid = int(catchmentFile.readline().replace("\n", ""))
 
-ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(catchment_index))))
+ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(obsid))))
 
-# Run a second time to run the actual calib
-if not os.path.isfile(os.path.join(cfg.subcatchment_path, str(catchment_index), 'pareto_front.csv')) or os.path.getsize(os.path.join(cfg.subcatchment_path, str(catchment_index), 'pareto_front.csv')) == 0:
-  calib.calibrate_subcatchment(cfg, catchment_index)
+print(">> Reading Qmeta2.csv file...")
+stations = pandas.read_csv(os.path.join(cfg.path_result,"Qmeta2.csv"), sep=",", index_col=0)
 
-test_calib_launcher(cfg, catchment_index, target1=0.9999, target2=0.99, tol=1e-4)
+try:
+    station_data = stations.loc[obsid]
+except KeyError as e:
+    raise Exception('Station {} not found in stations file'.format(obsid))
 
-deleteOutput(cfg, catchment_index)
+print("=================== "+str(obsid)+" ====================")
+path_subcatch = os.path.join(cfg.subcatchment_path, str(obsid))
+if os.path.exists(os.path.join(path_subcatch, "streamflow_simulated_best.csv")):
+    deleteOutput(cfg, obsid)
+print(">> Starting calibration of catchment "+str(obsid))
+
+gaugeloc = calib.create_gauge_loc(cfg, path_subcatch)
+
+inflowflag = calib.prepare_inflows(cfg, path_subcatch, obsid)
+
+lis_template = calib.LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
+
+lock_mgr = cal_single_objfun.LockManager()
+
+tol = 1e-4
+
+model = cal_single_objfun.HydrologicalModelTest(cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr, tol=tol)
+
+# Performing calibration with external call, to avoid multiprocessing problems
+if os.path.exists(os.path.join(path_subcatch, "pareto_front.csv"))==False:
+    cal_single_objfun.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
+
+test_calib_launcher(cfg, obsid, target1=0.9999, target2=0.99, tol=tol)
+
+# deleteOutput(cfg, obsid)
