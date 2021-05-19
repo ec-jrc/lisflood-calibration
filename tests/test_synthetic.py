@@ -7,8 +7,8 @@ import pandas
 
 sys.path.insert(0, '/home/ma/macw/git/lisflood-calibration')
 
+from liscal import hydro_model, calibration, pcr_utils, templates
 import CAL_7_PERFORM_CAL as calib
-import cal_single_objfun
 
 
 def runCmd(cmd):
@@ -88,8 +88,6 @@ cfg = calib.Config(sys.argv[1])
 with open(sys.argv[2], "r") as catchmentFile:
   obsid = int(catchmentFile.readline().replace("\n", ""))
 
-ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(obsid))))
-
 print(">> Reading Qmeta2.csv file...")
 stations = pandas.read_csv(os.path.join(cfg.path_result,"Qmeta2.csv"), sep=",", index_col=0)
 
@@ -100,26 +98,26 @@ except KeyError as e:
 
 print("=================== "+str(obsid)+" ====================")
 path_subcatch = os.path.join(cfg.subcatchment_path, str(obsid))
-if os.path.exists(os.path.join(path_subcatch, "streamflow_simulated_best.csv")):
+if os.path.exists(os.path.join(path_subcatch, "pareto_front.csv")):
     deleteOutput(cfg, obsid)
+ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(obsid))))
 print(">> Starting calibration of catchment "+str(obsid))
 
-gaugeloc = calib.create_gauge_loc(cfg, path_subcatch)
+gaugeloc = pcr_utils.create_gauge_loc(cfg, path_subcatch)
 
-inflowflag = calib.prepare_inflows(cfg, path_subcatch, obsid)
+inflowflag = pcr_utils.prepare_inflows(cfg, path_subcatch, obsid)
 
-lis_template = calib.LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
+lis_template = templates.LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
 
-lock_mgr = cal_single_objfun.LockManager()
+lock_mgr = calibration.LockManager()
 
 tol = 1e-4
 
-model = cal_single_objfun.HydrologicalModelTest(cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr, tol=tol)
+model = hydro_model.HydrologicalModelTest(cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr, tol=tol)
 
 # Performing calibration with external call, to avoid multiprocessing problems
-if os.path.exists(os.path.join(path_subcatch, "pareto_front.csv"))==False:
-    cal_single_objfun.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
+calibration.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
 
 test_calib_launcher(cfg, obsid, target1=0.9999, target2=0.99, tol=tol)
 
-# deleteOutput(cfg, obsid)
+deleteOutput(cfg, obsid)
