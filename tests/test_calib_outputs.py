@@ -1,3 +1,4 @@
+import numpy as np
 import subprocess
 from liscal import calibration
 
@@ -38,6 +39,24 @@ def test_pareto_front(dummy_cfg):
     calibration.write_pareto_front(param_ranges, path_result, pHistory_ranked)
 
     ret, out = run_cmd('diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result))
+    print(out)
+    assert out == ''
+    assert ret == 0
+
+
+def test_front_history(dummy_cfg):
+
+    path_subcatch = dummy_cfg.path_subcatch
+    path_result = dummy_cfg.path_result
+
+    effmax = np.array([[0.9999384017071802], [0.9999384017071802]])
+    effmin = np.array([[0.9999384017071802], [0.9999384017071802]])
+    effstd = np.array([[0.0], [0.0]])
+    effavg = np.array([[0.9999384017071802], [0.9999384017071802]])
+
+    calibration.write_front_history(path_result, 2, effmax, effmin, effavg, effstd)
+
+    ret, out = run_cmd('diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result))
     print(out)
     assert out == ''
     assert ret == 0
