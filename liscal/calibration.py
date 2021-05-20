@@ -21,9 +21,6 @@ class LockManager():
         self.counters['run'] = mgr.Value('i', -1)
         self.counters['gen'] = mgr.Value('i', -1)
 
-        assert self.get_run() == -1
-        assert self.get_gen() == -1
-
         self.lock = mgr.Lock()
 
     def increment_gen(self):
@@ -205,7 +202,6 @@ def restore_calibration(cfg, lock_mgr, toolbox, halloffame, history_file,
     return population
 
 
-
 def generate_population(deap_param, lock_mgr, toolbox, halloffame, effmax, effmin, effavg, effstd, conditions):
     # Start with a fresh population
     population = toolbox.population(n=deap_param.pop)
@@ -336,8 +332,6 @@ def run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr):
     deap_param = cfg.deap_param
 
     toolbox = initialise_deap(cfg, model)
-
-    observed_streamflow = model.read_observed_streamflow()
 
     t = time.time()
 

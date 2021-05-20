@@ -13,6 +13,11 @@ import lisf1
 from liscal import hydro_stats
 
 
+def read_tss(tss_file):
+    df = pandas.read_csv(tss_file, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
+    return df
+
+
 class HydrologicalModel():
 
     def __init__(self, cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr):
@@ -98,7 +103,7 @@ class HydrologicalModel():
         if os.path.isfile(Qsim_tss)==False:
             print("run_rand_id: "+str(run_rand_id))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
-        simulated_streamflow = pandas.read_csv(Qsim_tss, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
+        simulated_streamflow = read_tss(Qsim_tss)
         simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan
         simulated_streamflow.index = [datetime.strptime(cal_start_local, "%Y-%m-%d %H:%M") + timedelta(hours=6*i) for i in range(len(simulated_streamflow.index))]
 
@@ -377,7 +382,7 @@ class HydrologicalModelBenchmark(HydrologicalModel):
         lisf1.main(run_file, '-v')
 
         Qsim_tss = os.path.join(self, path_subcatch, "out", 'dis' + run_rand_id + '.tss')
-        simulated_streamflow = pandas.read_csv(Qsim_tss, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
+        simulated_streamflow = read_tss(Qsim_tss)
         simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
         Qsim = simulated_streamflow[1].values
         print( ">> Saving simulated streamflow with default parameters(convergenceTester.csv)")
@@ -387,12 +392,6 @@ class HydrologicalModelBenchmark(HydrologicalModel):
         Qsim.to_csv(os.path.join(self, path_subcatch, "convergenceTester.csv"), ',', header="")
         
         return Qsim
-
-
-
-def read_tss(tss_file):
-    df = pandas.read_csv(tss_file, sep=r"\s+", index_col=0, skiprows=4, header=None, skipinitialspace=True)
-    return df
 
 
 def read_parameters(path_subcatch):

@@ -9,6 +9,24 @@ DATA_DIR = path.join(TEST_DIR, 'data')
 OUT_DIR = path.join(TEST_DIR, 'outputs')
 
 
+class DummyModel():
+
+    def __init__(self, observations):
+
+        self.observations = observations
+
+    def run(self, Individual):
+
+        error = np.sqrt(np.mean((Individual - self.observations)**2))
+
+        return error
+
+
+@pytest.fixture
+def dummy_model():
+    return DummyModel()
+
+
 class DummyDEAPParameters():
 
     def __init__(self):
