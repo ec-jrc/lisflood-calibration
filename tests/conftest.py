@@ -1,54 +1,61 @@
 import pytest
+import pandas
+from datetime import datetime
+from os import path
+
+ROOT_DIR = path.join(path.dirname(path.realpath(__file__)), '..')
+TEST_DIR = path.join(ROOT_DIR, 'tests')
+DATA_DIR = path.join(TEST_DIR, 'data')
+OUT_DIR = path.join(TEST_DIR, 'outputs')
 
 
-class Comparator():
+class DummyDEAPParameters():
 
-    def compare_csv():
-        awdadwa
+    def __init__(self):
+        self.use_multiprocessing = 1
+        self.numCPUs = 2
+        self.minGen = 1
+        self.maxGen = 1
+        self.pop = 2
+        self.mu = 2
+        self.lambda_ = 2
 
+        self.cxpb = 0.6
+        self.mutpb = 0.4
 
 class DummyConfig():
 
     def __init__(self):
 
-        parser = ConfigParser()
-        parser.read(settings_file)
-
         # paths
-        self.path_result = parser.get('Path', 'Result')
-        self.subcatchment_path = parser.get('Path','SubCatchmentPath')
+        self.path_result = OUT_DIR
+        self.subcatchment_path = path.join(DATA_DIR)
+        self.path_subcatch = path.join(self.subcatchment_path, '380')
 
-        pcraster_path = parser.get('Path', 'PCRHOME')
+        pcraster_path = ''
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
-            self.pcraster_cmd[execname] = pcr_utils.getPCrasterPath(pcraster_path, settings_file, alias=execname)
+            self.pcraster_cmd[execname] = execname
 
         # deap
-        self.deap_param = calibration.DEAPParameters(parser)
+        self.deap_param = DummyDEAPParameters()
+
         # Load param ranges file
-        self.param_ranges = pandas.read_csv(parser.get('Path','ParamRanges'), sep=",", index_col=0)
+        param_ranges_file = path.join(DATA_DIR, 'ParamRanges_LISFLOOD.csv')
+        self.param_ranges = pandas.read_csv(param_ranges_file, sep=",", index_col=0)
 
         # template
-        self.lisflood_template = parser.get('Templates','LISFLOODSettings')
+        self.lisflood_template = path.join(ROOT_DIR, 'templates')
 
         # Debug/test parameters
-        self.fast_debug = bool(int(parser.get('DEFAULT', 'fastDebug')))
+        self.fast_debug = False
 
-        # Date parameters
-        self.ObservationsStart = datetime.strptime(parser.get('DEFAULT', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.ObservationsEnd = datetime.strptime(parser.get('DEFAULT', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_start = datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.WarmupDays = int(parser.get('DEFAULT', 'WarmupDays'))
-        self.calibration_freq = parser.get('DEFAULT', 'calibrationFreq')
+        # Date parametersObservationsStart = 1/1/1990 00:00
 
-        # observations
-        self.Qtss_csv = parser.get('CSV', 'Qtss')
-
-
-@pytest.fixture
-def comparator():
-    return Comparator()
+        self.forcing_start = datetime.strptime('2/1/1990 06:00',"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime('31/12/2017 06:00',"%d/%m/%Y %H:%M")  # Start of forcing
+        self.WarmupDays = 30
+        self.calibration_freq = '6-hourly'
 
 
 @pytest.fixture

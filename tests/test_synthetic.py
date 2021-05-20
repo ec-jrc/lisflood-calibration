@@ -5,10 +5,7 @@ import re
 import subprocess
 import pandas
 
-sys.path.insert(0, '/home/ma/macw/git/lisflood-calibration')
-
-from liscal import hydro_model, calibration, pcr_utils, templates
-import CAL_7_PERFORM_CAL as calib
+from liscal import hydro_model, calibration, pcr_utils, templates, config
 
 
 def runCmd(cmd):
@@ -83,7 +80,7 @@ def inplacements(inFile, strings, precise=False):
   file.close()
 
 
-cfg = calib.Config(sys.argv[1])
+cfg = config.Config(sys.argv[1])
 
 with open(sys.argv[2], "r") as catchmentFile:
   obsid = int(catchmentFile.readline().replace("\n", ""))

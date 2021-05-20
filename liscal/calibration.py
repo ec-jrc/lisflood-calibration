@@ -392,7 +392,7 @@ def run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr):
     # Save history of the change in objective function scores during calibration to csv file
     write_front_history(path_subcatch, lock_mgr.get_gen(), effmax, effmin, effavg, effstd)
 
-    pHistory = read_param_history()
+    pHistory = read_param_history(path_subcatch)
     pHistory = write_ranked_solution(path_subcatch, path_subcatch)
 
     write_pareto_front(cfg.param_ranges, path_subcatch, pHistory)
