@@ -15,6 +15,9 @@ class DummyModel():
 
         self.observations = observations
 
+    def init_run(self):
+        return
+        
     def run(self, Individual):
 
         error = np.sqrt(np.mean((Individual - self.observations)**2))

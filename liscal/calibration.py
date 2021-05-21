@@ -327,7 +327,7 @@ def write_pareto_front(param_ranges, path_subcatch, pHistory):
     pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"),',')
 
 
-def run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr):
+def run_calibration(cfg, subcatch, model, lock_mgr):
     
     deap_param = cfg.deap_param
 
@@ -361,7 +361,7 @@ def run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr):
     halloffame = tools.ParetoFront()
 
     # Attempt to open a previous parameter history
-    history_file = os.path.join(path_subcatch, "paramsHistory.csv")
+    history_file = os.path.join(subcatch.path, "paramsHistory.csv")
     if os.path.isfile(history_file) and os.path.getsize(history_file) > 0:
         population = restore_calibration(cfg, lock_mgr, toolbox, halloffame, history_file, effmax, effmin, effavg, effstd, conditions)
     else:
@@ -384,11 +384,23 @@ def run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr):
     ########################################################################
 
     # Save history of the change in objective function scores during calibration to csv file
+    write_front_history(subcatch.path, lock_mgr.get_gen(), effmax, effmin, effavg, effstd)
+
+    pHistory = read_param_history(subcatch.path)
+    pHistory = write_ranked_solution(subcatch.path, pHistory)
+
+    write_pareto_front(cfg.param_ranges, subcatch.path, pHistory)
+
+    return
+
+
+def write_calibration_results(path_subcatch, lock_mgr, effmax, effmin, effavg, effstd):
+
+    # Save history of the change in objective function scores during calibration to csv file
     write_front_history(path_subcatch, lock_mgr.get_gen(), effmax, effmin, effavg, effstd)
 
     pHistory = read_param_history(path_subcatch)
-    pHistory = write_ranked_solution(path_subcatch, path_subcatch)
+    pHistory = write_ranked_solution(path_subcatch, pHistory)
 
     write_pareto_front(cfg.param_ranges, path_subcatch, pHistory)
 
-    return

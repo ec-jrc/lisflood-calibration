@@ -2,18 +2,18 @@ import os
 
 class LisfloodSettingsTemplate():
 
-    def __init__(self, cfg, path_subcatch, obsid, gaugeloc, inflowflag):
+    def __init__(self, cfg, subcatch):
 
-        self.obsid = obsid
-        self.outfix = os.path.join(path_subcatch, os.path.basename(cfg.lisflood_template[:-4]))
+        self.obsid = subcatch.obsid
+        self.outfix = os.path.join(subcatch.path, os.path.basename(cfg.lisflood_template[:-4]))
         self.lisflood_template = cfg.lisflood_template
         with open(os.path.join('templates', cfg.lisflood_template), "r") as f:
             template_xml = f.read()
     
-        template_xml = template_xml.replace('%gaugeloc', gaugeloc) # Gauge location
-        template_xml = template_xml.replace('%inflowflag', inflowflag)
+        template_xml = template_xml.replace('%gaugeloc', subcatch.gaugeloc) # Gauge location
+        template_xml = template_xml.replace('%inflowflag', subcatch.inflowflag)
         template_xml = template_xml.replace('%ForcingStart', cfg.forcing_start.strftime('%Y-%m-%d %H:%M')) # Date of forcing start
-        template_xml = template_xml.replace('%SubCatchmentPath', path_subcatch)
+        template_xml = template_xml.replace('%SubCatchmentPath', subcatch.path)
 
         self.template_xml = template_xml
 

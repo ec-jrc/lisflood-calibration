@@ -4,39 +4,36 @@ import os
 import sys
 import numpy as np
 import pandas
-from datetime import datetime
 from configparser import ConfigParser # Python 3.8
 import glob
 import subprocess
 import traceback
 
-from liscal import pcr_utils, templates, calibration, config
+from liscal import templates, calibration, config, subcatchment
 
 
 def calibrate_subcatchment(cfg, obsid, station_data):
 
     print("=================== "+str(obsid)+" ====================")
-    path_subcatch = os.path.join(cfg.subcatchment_path, str(obsid))
-    if os.path.exists(os.path.join(path_subcatch, "streamflow_simulated_best.csv")):
+    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
+    if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
     print(">> Starting calibration of catchment "+str(obsid))
 
-    gaugeloc = pcr_utils.create_gauge_loc(cfg, path_subcatch)
-
-    inflowflag = pcr_utils.prepare_inflows(cfg, path_subcatch, obsid)
-
-    lis_template = templates.LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
+    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     lock_mgr = calibration.LockManager()
 
-    model = hydro_model.HydrologicalModel(cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr)
+    objective = hydro_model.ObjectiveDischarge(cfg, subcatch)
+
+    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
 
     # Performing calibration with external call, to avoid multiprocessing problems
-    if os.path.exists(os.path.join(path_subcatch,"pareto_front.csv"))==False:
-        calibration.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
+    if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==False:
+        calibration.run_calibration(cfg, subcatch, model, lock_mgr)
 
-    hydro_model.generate_outlet_streamflow(cfg, obsid, path_subcatch, station_data, lis_template)
+    hydro_model.generate_outlet_streamflow(cfg, subcatch, station_data, lis_template)
 
 
 def calibrate_system(args):

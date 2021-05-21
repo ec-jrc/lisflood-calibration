@@ -4,8 +4,9 @@ import os
 import re
 import subprocess
 import pandas
+from datetime import datetime, timedelta
 
-from liscal import hydro_model, calibration, pcr_utils, templates, config
+from liscal import hydro_model, calibration, templates, config,  subcatchment
 
 
 def runCmd(cmd):
@@ -16,6 +17,7 @@ def runCmd(cmd):
         Exception(res.stderr)
         out = res.stderr
     return (res.returncode, out)
+
 
 # For checking CAL_7_PERFORM_CAL.py and cal_single_objfun.py functioning bypassing uncertainty with deap
 def test_calib_launcher(cfg, catchment_index, target1, target2, tol):
@@ -89,27 +91,28 @@ if __name__ == '__main__':
     except KeyError as e:
         raise Exception('Station {} not found in stations file'.format(obsid))
 
+    # hack shorter period
+    station_data['Cal_Start'] = (cfg.forcing_end - timedelta(days=335+cfg.WarmupDays)).strftime('%Y-%m-%d %H:%M')
+    station_data['Cal_End'] = cfg.forcing_end.strftime('%Y-%m-%d %H:%M')
+
     print("=================== "+str(obsid)+" ====================")
-    path_subcatch = os.path.join(cfg.subcatchment_path, str(obsid))
-    if os.path.exists(os.path.join(path_subcatch, "pareto_front.csv")):
+    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
+    if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv")):
         deleteOutput(cfg, obsid)
-    ret, res = runCmd("mkdir -p {}/out".format(os.path.join(cfg.subcatchment_path, str(obsid))))
-    print(">> Starting calibration of catchment "+str(obsid))
+    ret, res = runCmd("mkdir -p {}/out".format(os.path.join(subcatch.path)))
 
-    gaugeloc = pcr_utils.create_gauge_loc(cfg, path_subcatch)
-
-    inflowflag = pcr_utils.prepare_inflows(cfg, path_subcatch, obsid)
-
-    lis_template = templates.LisfloodSettingsTemplate(cfg, path_subcatch, obsid, gaugeloc, inflowflag)
+    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     lock_mgr = calibration.LockManager()
 
     tol = 1e-4
 
-    model = hydro_model.HydrologicalModelTest(cfg, obsid, path_subcatch, station_data, lis_template, lock_mgr, tol=tol)
+    objective = hydro_model.ObjectiveDischargeTest(cfg, subcatch, tol)
+
+    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
 
     # Performing calibration with external call, to avoid multiprocessing problems
-    calibration.run_calibration(cfg, obsid, path_subcatch, station_data, model, lock_mgr)
+    calibration.run_calibration(cfg, subcatch, model, lock_mgr)
 
     test_calib_launcher(cfg, obsid, target1=0.9999, target2=0.99, tol=tol)
 

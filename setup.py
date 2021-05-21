@@ -19,7 +19,7 @@ setup(
         "numpy",
         "pandas",
         "deap",
-        "lisflood-model"
+        # "lisflood-model"
     ],
     tests_require=[
         "pytest",
