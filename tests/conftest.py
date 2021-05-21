@@ -4,6 +4,8 @@ import numpy as np
 from datetime import datetime
 from os import path
 
+from liscal import utils
+
 ROOT_DIR = path.join(path.dirname(path.realpath(__file__)), '..')
 TEST_DIR = path.join(ROOT_DIR, 'tests')
 DATA_DIR = path.join(TEST_DIR, 'data')
@@ -83,3 +85,19 @@ class DummyModel():
 @pytest.fixture
 def dummy_model(dummy_cfg):
     return DummyModel(dummy_cfg)
+
+
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    print('Creating output directory')
+    ret, out = utils.run_cmd("mkdir -p {}".format(OUT_DIR))
+    assert out == ''
+    print(out)
+
+    # running test here
+    yield
+
+    print('Removing output directory')
+    ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
+    assert out == ''
+    print(out)

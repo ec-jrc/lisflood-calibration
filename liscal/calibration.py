@@ -55,7 +55,7 @@ class LockManager():
         return self.counters[name].value
 
 
-class CalibrationCriteria():
+class Criteria():
 
     def __init__(self, deap_param):
 
@@ -63,12 +63,15 @@ class CalibrationCriteria():
 
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
+        self.gen_offset = 3
+
+        self.effmax_tol = 0.003
 
         # Initialise statistics arrays
-        self.effmax = np.zeros(shape=(self.max_gen + 1, 1)) * np.NaN
-        self.effmin = np.zeros(shape=(self.max_gen + 1, 1)) * np.NaN
-        self.effavg = np.zeros(shape=(self.max_gen + 1, 1)) * np.NaN
-        self.effstd = np.zeros(shape=(self.max_gen + 1, 1)) * np.NaN
+        self.effmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.effmin = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.effavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.effstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
 
         self.conditions = {"maxGen": False, "StallFit": False}
 
@@ -78,7 +81,7 @@ class CalibrationCriteria():
             print(">> Termination criterion maxGen fulfilled.")
             self.conditions['maxGen'] = True
 
-        if gen >= self.min_gen and (self.effmax[gen, 0] - self.effmax[gen - 3, 0]) < 0.003:
+        if gen >= self.min_gen and (self.effmax[gen, 0] - self.effmax[gen - self.gen_offset, 0]) < self.effmax_tol:
             # # DD attempt to stop early with different criterion
             # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
             #     print(">> Termination criterion no-improvement sae fulfilled.")
@@ -95,15 +98,14 @@ class CalibrationCriteria():
             self.effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
         print(">> gen: " + str(gen) + ", effmax_KGE: " + "{0:.3f}".format(self.effmax[gen, 0]))
 
-
-def write_front_history(criteria, path_subcatch, gen):
-        front_history = pandas.DataFrame()
-        front_history['gen'] = range(gen)
-        front_history['effmax_R'] = criteria.effmax[0:gen,0]
-        front_history['effmin_R'] = criteria.effmin[0:gen,0]
-        front_history['effstd_R'] = criteria.effstd[0:gen,0]
-        front_history['effavg_R'] = criteria.effavg[0:gen,0]
-        front_history.to_csv(os.path.join(path_subcatch,"front_history.csv"))
+    def write_front_history(self, path_subcatch, gen):
+            front_history = pandas.DataFrame()
+            front_history['gen'] = range(gen)
+            front_history['effmax_R'] = self.effmax[0:gen,0]
+            front_history['effmin_R'] = self.effmin[0:gen,0]
+            front_history['effstd_R'] = self.effstd[0:gen,0]
+            front_history['effavg_R'] = self.effavg[0:gen,0]
+            front_history.to_csv(os.path.join(path_subcatch,"front_history.csv"))
 
 
 def read_param_history(path_subcatch):
@@ -165,7 +167,7 @@ class CalibrationDeap():
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
 
-        self.criteria = CalibrationCriteria(deap_param)
+        self.criteria = Criteria(deap_param)
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -328,7 +330,7 @@ class CalibrationDeap():
     def write_calibration_results(self, path_subcatch, lock_mgr):
 
         # Save history of the change in objective function scores during calibration to csv file
-        write_front_history(self.criteria, path_subcatch, lock_mgr.get_gen())
+        self.criteria.write_front_history(path_subcatch, lock_mgr.get_gen())
 
         pHistory = read_param_history(path_subcatch)
         pHistory = write_ranked_solution(path_subcatch, pHistory)
