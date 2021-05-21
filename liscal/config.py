@@ -4,6 +4,19 @@ from configparser import ConfigParser
 from liscal import pcr_utils, calibration
 
 
+class DEAPParameters():
+
+    def __init__(self, parser):
+        self.num_cpus = int(parser.get('DEAP','numCPUs'))
+        self.min_gen = int(parser.get('DEAP','minGen'))
+        self.max_gen = int(parser.get('DEAP','maxGen'))
+        self.pop = int(parser.get('DEAP','pop'))
+        self.mu = int(parser.get('DEAP','mu'))
+        self.lambda_ = int(parser.get('DEAP','lambda_'))
+        self.cxpb = 0.6
+        self.mutpb = 0.4
+
+
 class Config():
 
     def __init__(self, settings_file):
@@ -21,9 +34,9 @@ class Config():
             self.pcraster_cmd[execname] = pcr_utils.getPCrasterPath(pcraster_path, settings_file, alias=execname)
 
         # deap
-        self.deap_param = calibration.DEAPParameters(parser)
-        # Load param ranges file
         self.param_ranges = pandas.read_csv(parser.get('Path','ParamRanges'), sep=",", index_col=0)
+        self.deap_param = DEAPParameters(parser)
+        # Load param ranges file
 
         # template
         self.lisflood_template = parser.get('Templates','LISFLOODSettings')

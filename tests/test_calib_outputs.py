@@ -1,16 +1,5 @@
 import numpy as np
-import subprocess
-from liscal import calibration
-
-
-def run_cmd(cmd):
-  res = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  if res.returncode == 0:
-    out = res.stdout[0:-1]
-  else:
-    Exception(res.stderr)
-    out = res.stderr
-  return res.returncode, out
+from liscal import calibration, utils
 
 
 def test_phistory_ranked(dummy_cfg):
@@ -18,11 +7,12 @@ def test_phistory_ranked(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
     path_result = dummy_cfg.path_result
+    utils.run_cmd("mkdir -p {}".format(path_result))
+
     pHistory = calibration.read_param_history(path_subcatch)
     pHistory_ranked = calibration.write_ranked_solution(path_result, pHistory)
 
-    run_cmd("mkdir -p {}".format(path_result))
-    ret, out = run_cmd('diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result))
+    ret, out = utils.run_cmd('diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result))
     print(out)
     assert out == ''
     assert ret == 0
@@ -32,31 +22,36 @@ def test_pareto_front(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
     path_result = dummy_cfg.path_result
-
-    run_cmd("mkdir -p {}".format(path_result))
+    utils.run_cmd("mkdir -p {}".format(path_result))
+    
     pHistory = calibration.read_param_history(path_subcatch)
     pHistory_ranked = calibration.write_ranked_solution(path_subcatch, pHistory)
     calibration.write_pareto_front(param_ranges, path_result, pHistory_ranked)
 
-    ret, out = run_cmd('diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result))
+    ret, out = utils.run_cmd('diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result))
     print(out)
     assert out == ''
     assert ret == 0
 
 
-def test_front_history(dummy_cfg):
-
-    path_subcatch = dummy_cfg.path_subcatch
-    path_result = dummy_cfg.path_result
+class Criteria():
 
     effmax = np.array([[0.9999384017071802], [0.9999384017071802]])
     effmin = np.array([[0.9999384017071802], [0.9999384017071802]])
     effstd = np.array([[0.0], [0.0]])
     effavg = np.array([[0.9999384017071802], [0.9999384017071802]])
 
-    calibration.write_front_history(path_result, 2, effmax, effmin, effavg, effstd)
+def test_front_history(dummy_cfg):
 
-    ret, out = run_cmd('diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result))
+    path_subcatch = dummy_cfg.path_subcatch
+    path_result = dummy_cfg.path_result
+    utils.run_cmd("mkdir -p {}".format(path_result))
+
+    criteria = Criteria()
+
+    calibration.write_front_history(criteria, path_result, 2)
+
+    ret, out = utils.run_cmd('diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result))
     print(out)
     assert out == ''
     assert ret == 0

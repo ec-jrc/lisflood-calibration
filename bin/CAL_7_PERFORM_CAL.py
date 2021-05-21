@@ -9,7 +9,7 @@ import glob
 import subprocess
 import traceback
 
-from liscal import templates, calibration, config, subcatchment
+from liscal import templates, calibration, config, subcatchment, objective
 
 
 def calibrate_subcatchment(cfg, obsid, station_data):
@@ -19,19 +19,21 @@ def calibrate_subcatchment(cfg, obsid, station_data):
     if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
-    print(">> Starting calibration of catchment "+str(obsid))
 
-    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
-
-    lock_mgr = calibration.LockManager()
-
-    objective = hydro_model.ObjectiveDischarge(cfg, subcatch)
-
-    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
-
-    # Performing calibration with external call, to avoid multiprocessing problems
     if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==False:
-        calibration.run_calibration(cfg, subcatch, model, lock_mgr)
+        print(">> Starting calibration of catchment "+str(obsid))
+
+        lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+
+        lock_mgr = calibration.LockManager()
+
+        objective = objective.ObjectiveDischarge(cfg, subcatch)
+
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
+        model.init_run() # load static maps into memory
+
+        calib_deap = calibration.CalibrationDeap(cfg, model.run)
+        calib_deap.run(subcatch.path, lock_mgr)
 
     hydro_model.generate_outlet_streamflow(cfg, subcatch, station_data, lis_template)
 
