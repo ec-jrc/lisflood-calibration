@@ -124,7 +124,6 @@ class CalibrationDeap():
 
         deap_param = cfg.deap_param
 
-        self.num_cpus = deap_param.num_cpus
         self.pop = deap_param.pop
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
