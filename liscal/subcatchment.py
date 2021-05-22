@@ -46,7 +46,7 @@ class SubCatchment():
         gaugeloc_txt = os.path.join(self.path, "maps", "gaugeloc.txt")
         with open(gaugeloc_txt,"r") as f:
             for line in f.readlines():
-                (X,Y,value) = line.split()
+                (X, Y, value) = line.split()
         gaugeloc = str(float(X))+" "+str(float(Y))
 
         pcr_utils.pcrasterCommand(cfg.pcraster_cmd['map2col'] + " F0 F1"  , {"F0": os.path.join(self.path, "maps", "outlet.map"), "F1":gaugeloc_txt})
@@ -60,7 +60,7 @@ class SubCatchment():
         print("Upstream station(s): ")
         direct_links = pandas.read_csv(os.path.join(cfg.path_result, "direct_links.csv"), sep=",", index_col=0)
         #inflow_tss is created according to the cal_start cal_end parameyters, script removes steps before and after and it reindex the steps
-        
+
         inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
         #inflow_tss_lastrun is for when after the optimal combination of parameters is found , when we run the full forcing period
         inflow_tss_last_run = os.path.join(self.path, "inflow", "chanq_last_run.tss")

@@ -1,5 +1,6 @@
 import os
 
+
 class LisfloodSettingsTemplate():
 
     def __init__(self, cfg, subcatch):

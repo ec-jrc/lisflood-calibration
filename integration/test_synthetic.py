@@ -91,8 +91,8 @@ class ObjectiveDischargeTest(objective.ObjectiveDischarge):
         param_ranges = self.cfg.param_ranges
         parameters = [None] * len(param_ranges)
         for ii in range(len(param_ranges)):
-          ref = 0.5 * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
-          parameters[ii] = ref * (1+self.tol)
+            ref = 0.5 * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
+            parameters[ii] = ref * (1+self.tol)
         return parameters
 
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
         obsid = int(catchmentFile.readline().replace("\n", ""))
 
     print(">> Reading Qmeta2.csv file...")
-    stations = pandas.read_csv(os.path.join(cfg.path_result,"Qmeta2.csv"), sep=",", index_col=0)
+    stations = pandas.read_csv(os.path.join(cfg.path_result, "Qmeta2.csv"), sep=",", index_col=0)
 
     try:
         station_data = stations.loc[obsid]

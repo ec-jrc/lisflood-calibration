@@ -80,47 +80,6 @@ class HydrologicalModel():
         return fKGEComponents  # If using just one objective function, put a comma at the end!!!
 
 
-class HydrologicalModelBenchmark(HydrologicalModel):
-
-    def __init__(self, cfg, subcatch, lis_template, lock_mgr):
-        super().__init__(cfg, subcatch, lis_template, lock_mgr)
-
-    def get_parameters(self, Individual):
-        param_ranges = self.cfg.param_ranges
-        parameters = [None] * len(param_ranges)
-        for ii in range(len(param_ranges)):
-            parameters[ii] = 0.5 * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
-        return parameters
-
-    def run(self, Individual):
-
-        cfg = self.cfg
-
-        run_rand_id = str(int(random.random()*1e10)).zfill(12)
-
-        parameters = self.get_parameters(Individual)
-
-        self.lis_template.write_template(run_rand_id, cfg.param_ranges, parameters)
-
-        prerun_file = self.lis_template('-Prerun')
-        run_file = self.lis_template('-Run')
-
-        lisf1.main(prerun_file, '-v')
-        lisf1.main(run_file, '-v')
-
-        Qsim_tss = os.path.join(self, self.subcatch.path, "out", 'dis' + run_rand_id + '.tss')
-        simulated_streamflow = read_tss(Qsim_tss)
-        simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
-        Qsim = simulated_streamflow[1].values
-        print( ">> Saving simulated streamflow with default parameters(convergenceTester.csv)")
-        # DD DEBUG try shorter time series for testing convergence
-        Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(self.subcatch.cal_start, periods=len(Qsim), freq='6H'))
-        #Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(ForcingStart, periods=len(Qsim), freq='6H'))
-        Qsim.to_csv(os.path.join(self, self.subcatch.path, "convergenceTester.csv"), ',', header="")
-
-        return Qsim
-
-
 def read_parameters(path_subcatch):
 
     paramvals = pandas.read_csv(os.path.join(path_subcatch, "pareto_front.csv"),sep=",")
@@ -170,10 +129,7 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss_last_run, inflow_tss)
 
 
-def generate_outlet_streamflow(cfg, subcatch, station_data, lis_template):
-
-    # Select the "best" parameter set and run LISFLOOD for the entire forcing period
-    #Parameters = paramvals[best,:]
+def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
     stage_inflows(subcatch.path)
 
@@ -186,44 +142,53 @@ def generate_outlet_streamflow(cfg, subcatch, station_data, lis_template):
     run_end = cfg.forcing_end.strftime('%Y-%m-%d %H:%M')
     lis_template.write_template(run_rand_id, run_start, run_end, cfg.param_ranges, parameters)
 
-    ### SECOND LISFLOOD RUN ###
-
+    # FIRST LISFLOOD RUN
     prerun_file = lis_template.settings_path('-PreRun', run_rand_id)
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
     cmd = "cp " + subcatch.path + "/out/avgdis" + run_rand_id + "end.nc " + subcatch.path + "/out/avgdis" + run_rand_id + ".simulated_bestend.nc"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
+    utils.run_cmd(cmd)
     cmd = "cp " + subcatch.path + "/out/lzavin" + run_rand_id + "end.nc " + subcatch.path + "/out/lzavin" + run_rand_id + ".simulated_bestend.nc"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
+    utils.run_cmd(cmd)
 
-    ### SECOND LISFLOOD RUN ###
-
+    # SECOND LISFLOOD RUN
     run_file = lis_template.settings_path('-Run', run_rand_id)
     lisf1.main(run_file)
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = "rm " + subcatch.path + "/out/avgdis" + run_rand_id + "end.nc " + subcatch.path + "/out/lzavin" + run_rand_id + "end.nc"
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(p.communicate()[0])
-    p.wait()
+    utils.run_cmd(cmd)
 
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'dis', 'streamflow')
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
-def generate_benchmark(cfg):
+def generate_benchmark(cfg, subcatch, lis_template):
 
-    observed_streamflow = 0.0
+    run_rand_id = str(int(random.random()*1e10)).zfill(12)
 
-    minParams = ParamRanges[str(ParamRanges.head().columns.values[0])].values
-    maxParams = ParamRanges[str(ParamRanges.head().columns.values[1])].values
-    defaultParams = ParamRanges[str(ParamRanges.head().columns.values[2])].values
+    param_ranges = cfg.param_ranges
+    parameters = [None] * len(param_ranges)
+    for ii in range(len(param_ranges)):
+        parameters[ii] = 0.5 * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    ## DD uncomment to generate a synthetic run with default parameters to converge to
-    RunModel((defaultParams - minParams) / (maxParams - minParams), mapLoadOnly=False)
-    print("Finished generating default run. Please relaunch the calibration. It will now try to converge to this default run.")
+    lis_template.write_template(run_rand_id, param_ranges, parameters)
+
+    prerun_file = lis_template('-Prerun')
+    run_file = lis_template('-Run')
+
+    lisf1.main(prerun_file, '-v')
+    lisf1.main(run_file, '-v')
+
+    Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_rand_id + '.tss')
+    simulated_streamflow = read_tss(Qsim_tss)
+    simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
+    Qsim = simulated_streamflow[1].values
+    print( ">> Saving simulated streamflow with default parameters(convergenceTester.csv)")
+    # DD DEBUG try shorter time series for testing convergence
+    Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, periods=len(Qsim), freq='6H'))
+    #Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(ForcingStart, periods=len(Qsim), freq='6H'))
+    Qsim.to_csv(os.path.join(subcatch.path, "convergenceTester.csv"), ',', header="")
+
+    return Qsim

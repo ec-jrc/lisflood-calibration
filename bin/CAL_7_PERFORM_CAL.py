@@ -41,7 +41,7 @@ def calibrate_subcatchment(cfg, obsid, station_data):
 
         obj.process_results()
 
-    hydro_model.generate_outlet_streamflow(cfg, subcatch, station_data, lis_template)
+    hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template)
 
 
 def calibrate_system(args):
@@ -58,14 +58,14 @@ def calibrate_system(args):
         subcatchments_list = os.path.normpath(args[1])
 
     cfg = config.Config(settings_file)
-    
+
     # Read full list of stations, index is obsid
     print(">> Reading Qmeta2.csv file...")
-    stations = pandas.read_csv(os.path.join(cfg.path_result,"Qmeta2.csv"), sep=",", index_col=0)
+    stations = pandas.read_csv(os.path.join(cfg.path_result, "Qmeta2.csv"), sep=",", index_col=0)
 
     # Read list of stations we want to calibrate
     subcatchments = pandas.read_csv(subcatchments_list, sep=",", header=None)
-    obsid_list = subcatchments.loc[:,0]
+    obsid_list = subcatchments.loc[:, 0]
 
     ########################################################################
     #   Loop through subcatchments and perform calibration
@@ -81,7 +81,6 @@ def calibrate_system(args):
 
     print("==================== END ====================")
 
+
 if __name__ == '__main__':
-    #h = hpy() 
     calibrate_system()
-    #print(h.heap())
