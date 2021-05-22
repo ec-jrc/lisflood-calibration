@@ -5,12 +5,6 @@ import random
 from liscal import calibration
 
 
-ROOT_DIR = path.join(path.dirname(path.realpath(__file__)), '..')
-TEST_DIR = path.join(ROOT_DIR, 'tests')
-DATA_DIR = path.join(TEST_DIR, 'data')
-OUT_DIR = path.join(TEST_DIR, 'outputs')
-
-
 class DummyDEAPParameters():
 
     def __init__(self):
