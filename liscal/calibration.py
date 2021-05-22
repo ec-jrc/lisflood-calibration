@@ -136,8 +136,10 @@ class CalibrationDeap():
 
         self.param_ranges = cfg.param_ranges
 
+        weights = [1.0 for i in range(n_obj)]
+
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=(1.0,))
+        creator.create("FitnessMin", base.Fitness, weights=weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
