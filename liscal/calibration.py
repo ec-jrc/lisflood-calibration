@@ -14,14 +14,17 @@ from deap import tools
 
 
 class LockManager():
-    def __init__(self):
-        
+
+    def __init__(self, num_cpus):
+
         mgr = mp.Manager()
         self.counters = {}
         self.counters['run'] = mgr.Value('i', -1)
         self.counters['gen'] = mgr.Value('i', -1)
 
         self.lock = mgr.Lock()
+
+        self.num_cpus = num_cpus
 
     def increment_gen(self):
         self._increment('gen')
@@ -54,12 +57,19 @@ class LockManager():
     def _value(self, name):
         return self.counters[name].value
 
+    def create_mapping(self):
+        if self.num_cpus > 1:
+            pool = mp.Pool(processes=self.num_cpus, initargs=(self.lock,))
+            return pool.map, pool
+        else:
+            return map, None
+
 
 class Criteria():
 
-    def __init__(self, deap_param):
+    def __init__(self, deap_param, n_obj=1):
 
-        self.n_obj = 1
+        self.n_obj = n_obj
 
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
@@ -108,66 +118,18 @@ class Criteria():
         front_history.to_csv(os.path.join(path_subcatch, "front_history.csv"))
 
 
-def read_param_history(path_subcatch):
-    pHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
-    return pHistory
-
-
-def write_ranked_solution(path_subcatch, pHistory):
-    # Keep only the best 10% of the runs for the selection of the parameters for the next generation
-    pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-    pHistory = pHistory.head(int(max(2, round(len(pHistory) * 0.1))))
-    n = len(pHistory)
-    minOffset = 0.1
-    maxOffset = 1.0
-    # Give ranking scores to corr
-    pHistory = pHistory.sort_values(by="Correlation", ascending=False)
-    pHistory["corrRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Correlation"].values)]
-    # Give ranking scores to sae
-    pHistory = pHistory.sort_values(by="sae", ascending=True)
-    pHistory["saeRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["sae"].values)]
-    # Give ranking scores to KGE
-    pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-    pHistory["KGERank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Kling Gupta Efficiency"].values)]
-    # Give pareto score
-    pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
-    pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
-    pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',', float_format='%g')
-
-    return pHistory
-
-
-def write_pareto_front(param_ranges, path_subcatch, pHistory):
-    # Select the best pareto candidate
-    bestParetoIndex = pHistory["paretoRank"].nsmallest(1).index
-    # Save the pareto front
-    paramvals = np.zeros(shape=(1,len(param_ranges)))
-    paramvals[:] = np.NaN
-    for ipar, par in enumerate(param_ranges.index):
-        paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
-    pareto_front = pandas.DataFrame(
-        {
-            'effover': pHistory["Kling Gupta Efficiency"].loc[bestParetoIndex],
-            'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]
-        }, index=[0]
-    )
-    for ii in range(len(param_ranges)):
-        pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
-    pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"), ',', float_format='%g')
-
-
 class CalibrationDeap():
 
-    def __init__(self, cfg, fun):
+    def __init__(self, cfg, fun, n_obj=1):
 
         deap_param = cfg.deap_param
 
-        self.num_cpus =  deap_param.num_cpus
+        self.num_cpus = deap_param.num_cpus
         self.pop = deap_param.pop
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
 
-        self.criteria = Criteria(deap_param)
+        self.criteria = Criteria(deap_param, n_obj)
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -201,7 +163,7 @@ class CalibrationDeap():
                 return wrappper
             return decorator
 
-        toolbox.register("evaluate", fun) #profiler) #RunModel) #DD Debug for profiling
+        toolbox.register("evaluate", fun)
         toolbox.register("mate", tools.cxBlend, alpha=0.15)
         toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.3, indpb=0.3)
         toolbox.register("select", tools.selNSGA2)
@@ -274,6 +236,9 @@ class CalibrationDeap():
         return population
 
     def generate_population(self, lock_mgr, halloffame):
+
+        print("Generating first population")
+
         # Start with a fresh population
         population = self.toolbox.population(n=self.pop)
 
@@ -327,27 +292,15 @@ class CalibrationDeap():
 
         lock_mgr.increment_gen()
 
-    def write_calibration_results(self, path_subcatch, lock_mgr):
-
-        # Save history of the change in objective function scores during calibration to csv file
-        self.criteria.write_front_history(path_subcatch, lock_mgr.get_gen())
-
-        pHistory = read_param_history(path_subcatch)
-        pHistory = write_ranked_solution(path_subcatch, pHistory)
-
-        write_pareto_front(self.param_ranges, path_subcatch, pHistory)
+        print('Done generation {}'.format(lock_mgr.get_gen()))
 
     def run(self, path_subcatch, lock_mgr):
-        
+
         t = time.time()
 
-        # load forcings and input maps in cache
-        # required in front of processing pool
-        # otherwise each child will reload the maps
-
-        pool_size = self.num_cpus #mp.cpu_count() * 1 ## DD just restrict the number of CPUs to use manually
-        pool = mp.Pool(processes=pool_size, initargs=(lock_mgr.lock,))
-        self.toolbox.register("map", pool.map)
+        print('Starting calibration')
+        mapping, pool = lock_mgr.create_mapping()
+        self.toolbox.register("map", mapping)
 
         # Start a new hall of fame
         halloffame = tools.ParetoFront()
@@ -365,13 +318,12 @@ class CalibrationDeap():
             self.generate_offspring(lock_mgr, halloffame, population)
 
         # Finito
-        pool.close()
+        if pool:
+            pool.close()
         elapsed = time.time() - t
         print(">> Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
 
-        ########################################################################
-        #   Save calibration results
-        ########################################################################
-        self.write_calibration_results(path_subcatch, lock_mgr)
+        # Save history of the change in objective function scores during calibration to csv file
+        self.criteria.write_front_history(path_subcatch, lock_mgr.get_gen())
 
-        return
+        return self.criteria.effmax[lock_mgr.get_gen()-1]

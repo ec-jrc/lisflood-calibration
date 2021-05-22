@@ -35,7 +35,7 @@ Functions:
 # import required modules
 import numpy as np
 from random import randrange
-import matplotlib.pyplot as plt
+
 
 def filter_nan(s,o):
     """

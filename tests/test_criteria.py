@@ -3,43 +3,6 @@ import xarray as xr
 from liscal import calibration, utils
 
 
-def test_phistory_ranked(dummy_cfg):
-
-    path_subcatch = dummy_cfg.path_subcatch
-    param_ranges = dummy_cfg.param_ranges
-    path_result = dummy_cfg.path_result
-
-    print('checking pHistory file')
-
-    pHistory = calibration.read_param_history(path_subcatch)
-    pHistory_ranked = calibration.write_ranked_solution(path_result, pHistory)
-
-    cmd = 'diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result)
-    ret, out = utils.run_cmd(cmd)
-    print(out)
-    assert out == ''
-    assert ret == 0
-
-
-def test_pareto_front(dummy_cfg):
-    path_subcatch = dummy_cfg.path_subcatch
-    param_ranges = dummy_cfg.param_ranges
-    path_result = dummy_cfg.path_result
-
-    print('checking pareto_front file')
-
-    pHistory = calibration.read_param_history(path_subcatch)
-    pHistory_ranked = calibration.write_ranked_solution(path_result, pHistory)
-    calibration.write_pareto_front(param_ranges, path_result, pHistory_ranked)
-
-    cmd = 'diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result)
-    ret, out = utils.run_cmd(cmd)
-    print(out)
-    print(cmd)
-    assert out == ''
-    assert ret == 0
-
-
 def test_front_history(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch

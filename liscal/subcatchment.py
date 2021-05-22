@@ -9,19 +9,20 @@ from liscal import pcr_utils
 
 class SubCatchment():
 
-    def __init__(self, cfg, obsid, station_data):
+    def __init__(self, cfg, obsid, station_data, initialise=True):
 
         self.obsid = obsid
         self.data = station_data
         self.path = os.path.join(cfg.subcatchment_path, str(obsid))
 
-        cal_start, cal_end = self.calibration_start_end(cfg)
-        self.cal_start = cal_start
-        self.cal_end = cal_end
+        if initialise:
+            cal_start, cal_end = self.calibration_start_end(cfg)
+            self.cal_start = cal_start
+            self.cal_end = cal_end
 
-        self.gaugeloc = self.create_gauge_loc(cfg)
+            self.gaugeloc = self.create_gauge_loc(cfg)
 
-        self.inflowflag = self.prepare_inflows(cfg)
+            self.inflowflag = self.prepare_inflows(cfg)
 
     def calibration_start_end(self, cfg):
         if cfg.fast_debug:

@@ -77,11 +77,11 @@ class HydrologicalModel():
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_rand_id, parameters, fKGEComponents, gen, run)
 
-        return fKGEComponents # If using just one objective function, put a comma at the end!!!
+        return fKGEComponents  # If using just one objective function, put a comma at the end!!!
 
 
 class HydrologicalModelBenchmark(HydrologicalModel):
-    
+
     def __init__(self, cfg, subcatch, lis_template, lock_mgr):
         super().__init__(cfg, subcatch, lis_template, lock_mgr)
 
@@ -117,7 +117,7 @@ class HydrologicalModelBenchmark(HydrologicalModel):
         Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(self.subcatch.cal_start, periods=len(Qsim), freq='6H'))
         #Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(ForcingStart, periods=len(Qsim), freq='6H'))
         Qsim.to_csv(os.path.join(self, self.subcatch.path, "convergenceTester.csv"), ',', header="")
-        
+
         return Qsim
 
 
@@ -155,7 +155,6 @@ def simulated_best_tss2csv(path_subcatch, run_rand_id, forcing_start, dataname, 
     except:
         pass
     os.rename(tss_file, os.path.join(path_subcatch, outname+"_simulated_best.tss"))
-
 
 
 def stage_inflows(path_subcatch):
@@ -217,7 +216,6 @@ def generate_outlet_streamflow(cfg, subcatch, station_data, lis_template):
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
-
 def generate_benchmark(cfg):
 
     observed_streamflow = 0.0
@@ -229,4 +227,3 @@ def generate_benchmark(cfg):
     ## DD uncomment to generate a synthetic run with default parameters to converge to
     RunModel((defaultParams - minParams) / (maxParams - minParams), mapLoadOnly=False)
     print("Finished generating default run. Please relaunch the calibration. It will now try to converge to this default run.")
-

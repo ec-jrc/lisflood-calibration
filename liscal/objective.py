@@ -8,12 +8,13 @@ from liscal import hydro_stats, utils
 
 class ObjectiveDischarge():
 
-    def __init__(self, cfg, subcatch):
+    def __init__(self, cfg, subcatch, read_observations=True):
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
 
-        self.observed_streamflow = self.read_observed_streamflow()
+        if read_observations:
+            self.observed_streamflow = self.read_observed_streamflow()
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
@@ -182,3 +183,65 @@ class ObjectiveDischarge():
         print("   run_rand_id: "+str(run_rand_id)+", KGE: "+"{0:.3f}".format(fKGEComponents[0]))
 
         return fKGEComponents
+
+    def read_param_history(self):
+        path_subcatch = self.subcatch.path
+        pHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
+        return pHistory
+
+    def write_ranked_solution(self, pHistory, path_out=None):
+        if path_out is None:
+            path_subcatch = self.subcatch.path
+        else:
+            path_subcatch = path_out
+        # Keep only the best 10% of the runs for the selection of the parameters for the next generation
+        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
+        pHistory = pHistory.head(int(max(2, round(len(pHistory) * 0.1))))
+        n = len(pHistory)
+        minOffset = 0.1
+        maxOffset = 1.0
+        # Give ranking scores to corr
+        pHistory = pHistory.sort_values(by="Correlation", ascending=False)
+        pHistory["corrRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Correlation"].values)]
+        # Give ranking scores to sae
+        pHistory = pHistory.sort_values(by="sae", ascending=True)
+        pHistory["saeRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["sae"].values)]
+        # Give ranking scores to KGE
+        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
+        pHistory["KGERank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Kling Gupta Efficiency"].values)]
+        # Give pareto score
+        pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
+        pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
+        pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',', float_format='%g')
+
+        return pHistory
+
+    def write_pareto_front(self, pHistory, path_out=None):
+        if path_out is None:
+            path_subcatch = self.subcatch.path
+        else:
+            path_subcatch = path_out
+        param_ranges = self.param_ranges
+        # Select the best pareto candidate
+        bestParetoIndex = pHistory["paretoRank"].nsmallest(1).index
+        # Save the pareto front
+        paramvals = np.zeros(shape=(1, len(param_ranges)))
+        paramvals[:] = np.NaN
+        for ipar, par in enumerate(param_ranges.index):
+            paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
+        pareto_front = pandas.DataFrame(
+            {
+                'effover': pHistory["Kling Gupta Efficiency"].loc[bestParetoIndex],
+                'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]
+            }, index=[0]
+        )
+        for ii in range(len(param_ranges)):
+            pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
+        pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"), ',', float_format='%g')
+
+    def process_results(self):
+
+        pHistory = self.read_param_history()
+        pHistory_ranked = self.write_ranked_solution(pHistory)
+
+        self.write_pareto_front(pHistory_ranked)

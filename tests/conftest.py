@@ -15,8 +15,7 @@ OUT_DIR = path.join(TEST_DIR, 'outputs')
 class DummyDEAPParameters():
 
     def __init__(self):
-        self.use_multiprocessing = 1
-        self.num_cpus = 2
+        self.num_cpus = 1
         self.min_gen = 1
         self.max_gen = 1
         self.pop = 2
@@ -67,27 +66,6 @@ def dummy_cfg():
     return DummyConfig()
 
 
-class DummyModel():
-
-    def __init__(self, dummy_cfg):
-
-        self.observations = 0.1*np.ones(len(dummy_cfg.param_ranges))
-
-    def init_run(self):
-        return
-
-    def run(self, Individual):
-
-        error = np.sqrt(np.mean((Individual - self.observations)**2))
-
-        return error
-
-
-@pytest.fixture
-def dummy_model(dummy_cfg):
-    return DummyModel(dummy_cfg)
-
-
 @pytest.fixture(autouse=True)
 def run_around_tests():
     print('Creating output directory')
@@ -98,7 +76,7 @@ def run_around_tests():
     # running test here
     yield
 
-    # print('Removing output directory')
-    # ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
-    # assert out == ''
-    # print(out)
+    print('Removing output directory')
+    ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
+    assert out == ''
+    print(out)

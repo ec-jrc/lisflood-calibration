@@ -101,7 +101,7 @@ if __name__ == '__main__':
     cfg = config.Config(sys.argv[1])
 
     with open(sys.argv[2], "r") as catchmentFile:
-      obsid = int(catchmentFile.readline().replace("\n", ""))
+        obsid = int(catchmentFile.readline().replace("\n", ""))
 
     print(">> Reading Qmeta2.csv file...")
     stations = pandas.read_csv(os.path.join(cfg.path_result,"Qmeta2.csv"), sep=",", index_col=0)
@@ -127,13 +127,19 @@ if __name__ == '__main__':
 
     tol = 1e-4
 
-    objective = ObjectiveDischargeTest(cfg, subcatch, tol)
+    obj = ObjectiveDischargeTest(cfg, subcatch, tol)
 
-    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
-    model.init_run() # load static maps into memory
+    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+
+    # load forcings and input maps in cache
+    # required in front of processing pool
+    # otherwise each child will reload the maps
+    model.init_run()
 
     calib_deap = calibration.CalibrationDeap(cfg, model.run)
     calib_deap.run(subcatch.path, lock_mgr)
+
+    obj.process_results()
 
     test_calib_launcher(cfg, obsid, target1=0.9999, target2=0.99, tol=tol)
 

@@ -27,13 +27,19 @@ def calibrate_subcatchment(cfg, obsid, station_data):
 
         lock_mgr = calibration.LockManager()
 
-        objective = objective.ObjectiveDischarge(cfg, subcatch)
+        obj = objective.ObjectiveDischarge(cfg, subcatch)
 
-        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, objective)
-        model.init_run() # load static maps into memory
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+
+        # load forcings and input maps in cache
+        # required in front of processing pool
+        # otherwise each child will reload the maps
+        model.init_run()
 
         calib_deap = calibration.CalibrationDeap(cfg, model.run)
         calib_deap.run(subcatch.path, lock_mgr)
+
+        obj.process_results()
 
     hydro_model.generate_outlet_streamflow(cfg, subcatch, station_data, lis_template)
 
