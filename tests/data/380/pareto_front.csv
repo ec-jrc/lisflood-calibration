@@ -1,2 +1,2 @@
 ,effover,R,param_00_UpperZoneTimeConstant,param_01_LowerZoneTimeConstant,param_02_GwPercValue,param_03_LZThreshold,param_04_b_Xinanjiang,param_05_PowerPrefFlow,param_06_SnowMeltCoef,param_07_CalChanMan1,param_08_CalChanMan2,param_09_LakeMultiplier,param_10_adjust_Normal_Flood,param_11_ReservoirRnormqMult,param_12_QSplitMult,param_13_GwLoss
-0,,,20.007000500000004,5020.502,1.0051005,15.0015,2.5052505000000003,4.250425,4.50045,1.250125,2.750275,1.250125,0.50005,1.1251125,10.001,0.250025
+0,,,20.007,5020.5,1.0051,15.0015,2.50525,4.25042,4.50045,1.25012,2.75027,1.25012,0.50005,1.12511,10.001,0.250025

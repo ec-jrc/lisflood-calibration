@@ -99,13 +99,13 @@ class Criteria():
         print(">> gen: " + str(gen) + ", effmax_KGE: " + "{0:.3f}".format(self.effmax[gen, 0]))
 
     def write_front_history(self, path_subcatch, gen):
-            front_history = pandas.DataFrame()
-            front_history['gen'] = range(gen)
-            front_history['effmax_R'] = self.effmax[0:gen,0]
-            front_history['effmin_R'] = self.effmin[0:gen,0]
-            front_history['effstd_R'] = self.effstd[0:gen,0]
-            front_history['effavg_R'] = self.effavg[0:gen,0]
-            front_history.to_csv(os.path.join(path_subcatch,"front_history.csv"))
+        front_history = pandas.DataFrame()
+        front_history['gen'] = range(gen)
+        front_history['effmax_R'] = self.effmax[0:gen, 0]
+        front_history['effmin_R'] = self.effmin[0:gen, 0]
+        front_history['effstd_R'] = self.effstd[0:gen, 0]
+        front_history['effavg_R'] = self.effavg[0:gen, 0]
+        front_history.to_csv(os.path.join(path_subcatch, "front_history.csv"))
 
 
 def read_param_history(path_subcatch):
@@ -116,7 +116,7 @@ def read_param_history(path_subcatch):
 def write_ranked_solution(path_subcatch, pHistory):
     # Keep only the best 10% of the runs for the selection of the parameters for the next generation
     pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-    pHistory = pHistory.head(int(max(2,round(len(pHistory) * 0.1))))
+    pHistory = pHistory.head(int(max(2, round(len(pHistory) * 0.1))))
     n = len(pHistory)
     minOffset = 0.1
     maxOffset = 1.0
@@ -132,7 +132,7 @@ def write_ranked_solution(path_subcatch, pHistory):
     # Give pareto score
     pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
     pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
-    pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',')
+    pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',', float_format='%g')
 
     return pHistory
 
@@ -153,7 +153,7 @@ def write_pareto_front(param_ranges, path_subcatch, pHistory):
     )
     for ii in range(len(param_ranges)):
         pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
-    pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"),',')
+    pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"), ',', float_format='%g')
 
 
 class CalibrationDeap():

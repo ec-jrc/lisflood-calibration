@@ -26,6 +26,7 @@ class DummyDEAPParameters():
         self.cxpb = 0.6
         self.mutpb = 0.4
 
+
 class DummyConfig():
 
     def __init__(self):
@@ -55,8 +56,8 @@ class DummyConfig():
 
         # Date parametersObservationsStart = 1/1/1990 00:00
 
-        self.forcing_start = datetime.strptime('2/1/1990 06:00',"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime('31/12/2017 06:00',"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
         self.WarmupDays = 30
         self.calibration_freq = '6-hourly'
 
@@ -74,7 +75,7 @@ class DummyModel():
 
     def init_run(self):
         return
-        
+
     def run(self, Individual):
 
         error = np.sqrt(np.mean((Individual - self.observations)**2))
@@ -97,7 +98,7 @@ def run_around_tests():
     # running test here
     yield
 
-    print('Removing output directory')
-    ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
-    assert out == ''
-    print(out)
+    # print('Removing output directory')
+    # ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
+    # assert out == ''
+    # print(out)

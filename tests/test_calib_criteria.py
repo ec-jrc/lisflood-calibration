@@ -14,7 +14,8 @@ def test_phistory_ranked(dummy_cfg):
     pHistory = calibration.read_param_history(path_subcatch)
     pHistory_ranked = calibration.write_ranked_solution(path_result, pHistory)
 
-    ret, out = utils.run_cmd('diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result))
+    cmd = 'diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result)
+    ret, out = utils.run_cmd(cmd)
     print(out)
     assert out == ''
     assert ret == 0
@@ -28,11 +29,13 @@ def test_pareto_front(dummy_cfg):
     print('checking pareto_front file')
 
     pHistory = calibration.read_param_history(path_subcatch)
-    pHistory_ranked = calibration.write_ranked_solution(path_subcatch, pHistory)
+    pHistory_ranked = calibration.write_ranked_solution(path_result, pHistory)
     calibration.write_pareto_front(param_ranges, path_result, pHistory_ranked)
 
-    ret, out = utils.run_cmd('diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result))
+    cmd = 'diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result)
+    ret, out = utils.run_cmd(cmd)
     print(out)
+    print(cmd)
     assert out == ''
     assert ret == 0
 
@@ -53,10 +56,12 @@ def test_front_history(dummy_cfg):
 
     criteria.write_front_history(path_result, 2)
 
-    ret, out = utils.run_cmd('diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result))
+    cmd = 'diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result)
+    ret, out = utils.run_cmd(cmd)
     print(out)
     assert out == ''
     assert ret == 0
+
 
 def test_termination_gen(dummy_cfg):
 
@@ -69,15 +74,16 @@ def test_termination_gen(dummy_cfg):
     criteria = calibration.Criteria(deap_param)
     criteria.gen_offset = 1
 
-    assert criteria.conditions['maxGen'] == False
-    assert criteria.conditions['StallFit'] == False
+    assert criteria.conditions['maxGen']is False
+    assert criteria.conditions['StallFit'] is False
 
     gen = criteria.max_gen
 
     criteria.check_termination_conditions(gen)
 
-    assert criteria.conditions['maxGen'] == True
-    assert criteria.conditions['StallFit'] == False
+    assert criteria.conditions['maxGen'] is True
+    assert criteria.conditions['StallFit'] is False
+
 
 def test_termination_gen(dummy_cfg):
 
@@ -89,8 +95,8 @@ def test_termination_gen(dummy_cfg):
     print(criteria.effmax)
     criteria.gen_offset = 1
 
-    assert criteria.conditions['maxGen'] == False
-    assert criteria.conditions['StallFit'] == False
+    assert criteria.conditions['maxGen'] is False
+    assert criteria.conditions['StallFit'] is False
 
     gen = 1
     criteria.max_gen = 2
@@ -98,8 +104,9 @@ def test_termination_gen(dummy_cfg):
 
     criteria.check_termination_conditions(gen)
 
-    assert criteria.conditions['maxGen'] == False
-    assert criteria.conditions['StallFit'] == True
+    assert criteria.conditions['maxGen']is False
+    assert criteria.conditions['StallFit'] is True
+
 
 def test_update(dummy_cfg):
 
@@ -112,7 +119,7 @@ def test_update(dummy_cfg):
     criteria.effmin = np.array([[0.9999384017071802], [0.9999384017071802]])
     criteria.effstd = np.array([[0.0], [0.0]])
     criteria.effavg = np.array([[0.9999384017071802], [0.9999384017071802]])
-    
+
     halloffame = []
     ds1 = xr.Dataset()
     ds1['fitness'] = xr.DataArray(np.array([0.1]), dims=['x'])
@@ -120,7 +127,7 @@ def test_update(dummy_cfg):
     ds2 = xr.Dataset()
     ds2['fitness'] = xr.DataArray(np.array([0.2]), dims=['x'])
     halloffame.append(ds2)
-    
+
     gen = 1
     criteria.update_statistics(gen, halloffame)
 
