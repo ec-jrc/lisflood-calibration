@@ -25,7 +25,7 @@ def calibrate_subcatchment(cfg, obsid, station_data):
 
         lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
-        lock_mgr = calibration.LockManager()
+        lock_mgr = calibration.LockManager(cfg.deap_param.num_cpus)
 
         obj = objective.ObjectiveDischarge(cfg, subcatch)
 

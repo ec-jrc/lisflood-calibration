@@ -48,7 +48,7 @@ class DummyConfig():
         self.param_ranges = pandas.read_csv(param_ranges_file, sep=",", index_col=0)
 
         # template
-        self.lisflood_template = path.join(ROOT_DIR, 'templates')
+        self.lisflood_template = path.join(ROOT_DIR, 'templates','settings_LF_CUT.xml')
 
         # Debug/test parameters
         self.fast_debug = False

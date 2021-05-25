@@ -39,10 +39,9 @@ lisfloodPath = /perm/ma/macw/lisflood-ci/local/lisflood_env/bin/lisflood
 LISFLOODSettings = %(Src)s/templates/settings_LF_CUT.xml
 
 [DEAP]
-use_multiprocessing = 1
-numCPUs = 2
-minGen = 1
-maxGen = 1
-mu = 2
-lambda_ = 2
-pop = 2
+numCPUs = 8
+minGen = 6
+maxGen = 16
+mu = 18
+lambda_ = 36
+pop = 72

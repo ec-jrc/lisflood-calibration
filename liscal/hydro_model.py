@@ -9,6 +9,8 @@ import random
 # lisflood
 import lisf1
 
+from liscal import utils
+
 
 class HydrologicalModel():
 
@@ -41,7 +43,7 @@ class HydrologicalModel():
 
         # -i option to exit after initialisation, we just load the inputs map in memory
         try:
-            lisf1.main(prerun_file, '-i', '-v')
+            lisf1.main(prerun_file, '-i')
         except:
             traceback.print_exc()
             raise Exception("")
@@ -50,9 +52,9 @@ class HydrologicalModel():
 
         cfg = self.cfg
 
-        self.lock_mgr.increment_run()
         gen = self.lock_mgr.get_gen()
-        run = self.lock_mgr.get_run()
+        run = self.lock_mgr.increment_run()
+        print('Generation {}, run {}'.format(gen, run))
 
         run_rand_id = str(int(random.random()*1e10)).zfill(12)
 
@@ -73,6 +75,7 @@ class HydrologicalModel():
         fKGEComponents = self.objective.compute_objectives(run_rand_id)
 
         KGE = fKGEComponents[0]
+        print('Generation {}, run {} done. KGE: {:.3f}'.format(gen, run, KGE))
 
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_rand_id, parameters, fKGEComponents, gen, run)
@@ -101,7 +104,7 @@ def simulated_best_tss2csv(path_subcatch, run_rand_id, forcing_start, dataname, 
 
     tss_file = os.path.join(path_subcatch, "out", dataname + run_rand_id + '.tss')
 
-    tss = read_tss(tss_file)
+    tss = utils.read_tss(tss_file)
 
     tss[1][tss[1]==1e31] = np.nan
     tss_values = tss[1].values
@@ -164,31 +167,27 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
-def generate_benchmark(cfg, subcatch, lis_template):
+def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
 
-    run_rand_id = str(int(random.random()*1e10)).zfill(12)
+    run_rand_id = str(0)
 
     param_ranges = cfg.param_ranges
     parameters = [None] * len(param_ranges)
     for ii in range(len(param_ranges)):
-        parameters[ii] = 0.5 * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
+        parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
+        
+    lis_template.write_template(run_rand_id, subcatch.cal_start, subcatch.cal_end, param_ranges, parameters)
 
-    lis_template.write_template(run_rand_id, param_ranges, parameters)
+    prerun_file = lis_template.settings_path('-PreRun', run_rand_id)
+    run_file = lis_template.settings_path('-Run', run_rand_id)
 
-    prerun_file = lis_template('-Prerun')
-    run_file = lis_template('-Run')
+    lisf1.main(prerun_file)
+    lisf1.main(run_file)
 
-    lisf1.main(prerun_file, '-v')
-    lisf1.main(run_file, '-v')
-
+    print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
     Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_rand_id + '.tss')
-    simulated_streamflow = read_tss(Qsim_tss)
+    simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
-    print( ">> Saving simulated streamflow with default parameters(convergenceTester.csv)")
-    # DD DEBUG try shorter time series for testing convergence
-    Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, periods=len(Qsim), freq='6H'))
-    #Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(ForcingStart, periods=len(Qsim), freq='6H'))
-    Qsim.to_csv(os.path.join(subcatch.path, "convergenceTester.csv"), ',', header="")
-
-    return Qsim
+    Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, subcatch.cal_end, freq='6H'))
+    Qsim.to_csv(outfile, ',', header="")

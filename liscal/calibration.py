@@ -31,7 +31,7 @@ class LockManager():
         self._set('run', 0)
 
     def increment_run(self):
-        self._increment('run')
+        return self._increment('run')
 
     def set_gen(self, value):
         self._set('gen', value)
@@ -49,10 +49,14 @@ class LockManager():
     def _increment(self, name):
         with self.lock:
             self.counters[name].value += 1
+            value = self.counters[name].value
+        return value
 
     def _set(self, name, value):
         with self.lock:
             self.counters[name].value = value
+            value = self.counters[name].value
+        return value
 
     def _value(self, name):
         return self.counters[name].value

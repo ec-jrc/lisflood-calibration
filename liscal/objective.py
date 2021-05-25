@@ -18,9 +18,9 @@ class ObjectiveDischarge():
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
-        Parameters = [None] * len(param_ranges)
+        parameters = [None] * len(param_ranges)
         for ii in range(len(param_ranges)):
-            Parameters[ii] = Individual[ii]*(float(param_ranges.iloc[ii,1])-float(param_ranges.iloc[ii,0]))+float(param_ranges.iloc[ii,0])
+            parameters[ii] = Individual[ii]*(float(param_ranges.iloc[ii,1])-float(param_ranges.iloc[ii,0]))+float(param_ranges.iloc[ii,0])
 
         return parameters
 
@@ -179,8 +179,6 @@ class ObjectiveDischarge():
             raise Exception("run_rand_id: "+str(run_rand_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
 
         fKGEComponents = self.compute_KGE(Qsim, Qobs)
-
-        print("   run_rand_id: "+str(run_rand_id)+", KGE: "+"{0:.3f}".format(fKGEComponents[0]))
 
         return fKGEComponents
 

@@ -25,18 +25,17 @@ class SubCatchment():
             self.inflowflag = self.prepare_inflows(cfg)
 
     def calibration_start_end(self, cfg):
+        # Compute the time steps at which the calibration should start and end
+        cal_start = datetime.strptime(self.data['Cal_Start'], '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+        cal_end = datetime.strptime(self.data['Cal_End'], '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+
         if cfg.fast_debug:
             # Turn this on for debugging faster. You can speed up further by setting maxGen = 1
-            cal_start = self.data['Cal_Start']
             cal_end = (datetime.strptime(cal_start, '%Y-%m-%d %H:%M') + timedelta(days=1121)).strftime('%Y-%m-%d %H:%M')
             # !!!! rewrite cfg parameters
             cfg.forcing_start = datetime.strptime(cal_start, '%Y-%m-%d %H:%M')
             cfg.forcing_end = datetime.strptime(cal_end, '%Y-%m-%d %H:%M')
             cfg.WarmupDays = 0
-        else:
-            # Compute the time steps at which the calibration should start and end
-            cal_start = self.data['Cal_Start']
-            cal_end = self.data['Cal_End'] # DD original
 
         return cal_start, cal_end
 
