@@ -20,7 +20,9 @@ class SubCatchment():
             self.cal_start = cal_start
             self.cal_end = cal_end
 
-            self.gaugeloc = self.create_gauge_loc(cfg)
+            gaugeloc_txt = os.path.join(self.path, "out", "gaugeloc.txt")
+            self.extract_gauge_loc_txt(cfg, gaugeloc_txt)
+            self.gaugeloc = self.read_gauge_loc(gaugeloc_txt)
 
             self.inflowflag = self.prepare_inflows(cfg)
 
@@ -39,16 +41,17 @@ class SubCatchment():
 
         return cal_start, cal_end
 
-    def create_gauge_loc(self, cfg):
+    def extract_gauge_loc_txt(self, cfg, gaugeloc_txt):
         # For some reason this version of LISFLOOD doesn't work with outlet map,
         # hence have to supply gauge coordinates
-        gaugeloc_txt = os.path.join(self.path, "maps", "gaugeloc.txt")
+        pcr_utils.pcrasterCommand(cfg.pcraster_cmd['map2col'] + " F0 F1"  , {"F0": os.path.join(self.path, "maps", "outletsmall.map"), "F1":gaugeloc_txt})
+        return gaugeloc
+
+    def read_gauge_loc(self, gaugeloc_txt):
         with open(gaugeloc_txt,"r") as f:
             for line in f.readlines():
                 (X, Y, value) = line.split()
         gaugeloc = str(float(X))+" "+str(float(Y))
-
-        pcr_utils.pcrasterCommand(cfg.pcraster_cmd['map2col'] + " F0 F1"  , {"F0": os.path.join(self.path, "maps", "outlet.map"), "F1":gaugeloc_txt})
 
         return gaugeloc
 
@@ -72,10 +75,6 @@ class SubCatchment():
         except: pass
         upstream_catchments = [int(i) for i in direct_links.loc[self.obsid].values if not np.isnan(i)]
         cnt = 1
-        subcatchinlets_map = os.path.join(self.path, "inflow", "inflow.map")
-        # subcatchinlets_new_map = os.path.join(path_subcatch,"inflow","inflow_new.map")
-        subcatchinlets_cut_map = os.path.join(self.path, "inflow", "inflow_cut.map")
-        smallsubcatchmask_map = os.path.join(self.path, "maps", "masksmall.map")
         
         # pcrasterCommand(pcrcalc + " 'F0 = F1*0.0'", {"F0":subcatchinlets_new_map,"F1":subcatchinlets_map})
         header = ""
@@ -126,6 +125,11 @@ class SubCatchment():
         # pcrasterCommand(resample + " F0 F1 --clone F2 " , {"F0": subcatchinlets_new2_map, "F1":subcatchinlets_new3_map, "F2":smallsubcatchmask_map})
         #print("(note that despite memory error, inflow_new3.map is being created, strange...)")
         # pcrasterCommand(pcrcalc + " 'F1 = if(F0>=0,F0)'", {"F0": subcatchinlets_map,"F1": subcatchinlets_new_map})
+
+        subcatchinlets_map = os.path.join(self.path, "inflow", "inflow.map")
+        # subcatchinlets_new_map = os.path.join(path_subcatch,"inflow","inflow_new.map")
+        subcatchinlets_cut_map = os.path.join(self.path, "inflow", "inflow_cut.map")
+        smallsubcatchmask_map = os.path.join(self.path, "maps", "masksmall.map")
         pcr_utils.pcrasterCommand(cfg.pcraster_cmd['resample'] + " --clone F2 F0 F1" , {"F0": subcatchinlets_map, "F1":subcatchinlets_cut_map, "F2":smallsubcatchmask_map})
         # map = pcraster.readmap(subcatchinlets_cut_map)
         # mapNpyInt = int(pcraster.pcr2numpy(map, -9999))

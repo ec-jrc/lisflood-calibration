@@ -62,6 +62,7 @@ class ModelMultObj(ModelDummy):
         obj = 1-np.sqrt(((parameters - self.target)**2))
         return obj
 
+
 def test_deap_single_obj(dummy_cfg):
 
     print('Test calibration single objective')
