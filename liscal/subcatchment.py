@@ -4,7 +4,7 @@ import pandas
 import numpy as np
 from datetime import datetime
 
-from liscal import pcr_utils
+from liscal import pcr_utils, utils
 
 
 class SubCatchment():
