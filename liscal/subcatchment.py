@@ -15,6 +15,8 @@ class SubCatchment():
         self.data = station_data
         self.path = os.path.join(cfg.subcatchment_path, str(obsid))
 
+        ret, res = utils.run_cmd("mkdir -p {}/out".format(self.path))
+
         if initialise:
             cal_start, cal_end = self.calibration_start_end(cfg)
             self.cal_start = cal_start

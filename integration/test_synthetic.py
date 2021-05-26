@@ -160,8 +160,6 @@ if __name__ == '__main__':
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv")):
         deleteOutput(subcatch.path)
 
-    ret, res = utils.run_cmd("mkdir -p {}/out".format(os.path.join(subcatch.path)))
-
     # create object to create lisflood settings file
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
