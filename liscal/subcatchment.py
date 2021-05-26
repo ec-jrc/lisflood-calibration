@@ -21,7 +21,7 @@ class SubCatchment():
             self.cal_end = cal_end
 
             gaugeloc_txt = os.path.join(self.path, "out", "gaugeloc.txt")
-            self.extract_gauge_loc_txt(cfg, gaugeloc_txt)
+            self.convert_gauge_loc(cfg, gaugeloc_txt)
             self.gaugeloc = self.read_gauge_loc(gaugeloc_txt)
 
             self.inflowflag = self.prepare_inflows(cfg)
@@ -41,11 +41,10 @@ class SubCatchment():
 
         return cal_start, cal_end
 
-    def extract_gauge_loc_txt(self, cfg, gaugeloc_txt):
+    def convert_gauge_loc(self, cfg, gaugeloc_txt):
         # For some reason this version of LISFLOOD doesn't work with outlet map,
         # hence have to supply gauge coordinates
         pcr_utils.pcrasterCommand(cfg.pcraster_cmd['map2col'] + " F0 F1"  , {"F0": os.path.join(self.path, "maps", "outletsmall.map"), "F1":gaugeloc_txt})
-        return gaugeloc
 
     def read_gauge_loc(self, gaugeloc_txt):
         with open(gaugeloc_txt,"r") as f:
