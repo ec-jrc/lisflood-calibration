@@ -157,7 +157,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
     # SECOND LISFLOOD RUN
     run_file = lis_template.settings_path('-Run', run_rand_id)
-    lisf1.main(run_file)
+    lisf1.main(run_file, 'q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = "rm " + subcatch.path + "/out/avgdis" + run_rand_id + "end.nc " + subcatch.path + "/out/lzavin" + run_rand_id + "end.nc"
@@ -181,8 +181,8 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     prerun_file = lis_template.settings_path('-PreRun', run_rand_id)
     run_file = lis_template.settings_path('-Run', run_rand_id)
 
-    lisf1.main(prerun_file)
-    lisf1.main(run_file)
+    lisf1.main(prerun_file, '-v')
+    lisf1.main(run_file, '-q')
 
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
     Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_rand_id + '.tss')

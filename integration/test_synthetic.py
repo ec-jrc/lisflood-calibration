@@ -128,8 +128,8 @@ class ConfigTest():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("obsid", help="Station obsid")
-    parser.add_argument("data_dir", help="Station obsid")
+    parser.add_argument('obsid', help='Station obsid')
+    parser.add_argument('data_dir', help='Static data folder')
     parser.add_argument('--slow', action='store_true', help='run slow test')
     parser.add_argument('--ncpus', default=1)
     args = parser.parse_args()
