@@ -110,13 +110,13 @@ def simulated_best_tss2csv(path_subcatch, run_rand_id, forcing_start, dataname, 
     tss_values = tss[1].values
 
     df = pandas.DataFrame(data=tss_values, index=pandas.date_range(forcing_start, periods=len(tss_values), freq='6H'))
-    df.to_csv(os.path.join(path_subcatch, outname+"_simulated_best.csv"), ',', header="")
+    df.to_csv(os.path.join(path_subcatch, 'out', outname+"_simulated_best.csv"), ',', header="")
 
     try:
-        os.remove(os.path.join(path_subcatch, outname+"_simulated_best.tss"))
+        os.remove(os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
     except:
         pass
-    os.rename(tss_file, os.path.join(path_subcatch, outname+"_simulated_best.tss"))
+    os.rename(tss_file, os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
 
 
 def stage_inflows(path_subcatch):
@@ -150,9 +150,9 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = "cp " + subcatch.path + "/out/avgdis" + run_rand_id + "end.nc " + subcatch.path + "/out/avgdis" + run_rand_id + ".simulated_bestend.nc"
+    cmd = 'cp {1}/out/avgdis{2}end.nc {1}/out/avgdis{2}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
-    cmd = "cp " + subcatch.path + "/out/lzavin" + run_rand_id + "end.nc " + subcatch.path + "/out/lzavin" + run_rand_id + ".simulated_bestend.nc"
+    cmd = 'cp {1}/out/lzavin{2}end.nc {1}/out/lzavin{2}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
 
     # SECOND LISFLOOD RUN
@@ -160,7 +160,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     lisf1.main(run_file, 'q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = "rm " + subcatch.path + "/out/avgdis" + run_rand_id + "end.nc " + subcatch.path + "/out/lzavin" + run_rand_id + "end.nc"
+    cmd = 'rm {1}/out/avgdis{2}end.nc {1}/out/lzavin{2}end.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
 
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'dis', 'streamflow')
@@ -191,3 +191,6 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     Qsim = simulated_streamflow[1].values
     Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, subcatch.cal_end, freq='6H'))
     Qsim.to_csv(outfile, ',', header="")
+
+    simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'dis', 'streamflow')
+    simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'chanq', 'chanq')
