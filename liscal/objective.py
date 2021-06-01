@@ -53,7 +53,7 @@ class ObjectiveDischarge():
         return observed_streamflow
 
     def read_simulated_streamflow(self, run_rand_id):
-        Qsim_tss = os.path.join(self.subcatch.path, "out", 'dis'+run_rand_id+'.tss')
+        Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_rand_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
             print("run_rand_id: "+str(run_rand_id))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")

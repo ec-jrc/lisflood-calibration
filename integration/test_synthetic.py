@@ -119,8 +119,9 @@ class ConfigTest():
         # Debug/test parameters
         self.fast_debug = False
 
-        self.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
+        # self.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
         self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = (self.forcing_end - timedelta(days=365))
         self.WarmupDays = 30
         self.calibration_freq = '6-hourly'
 
@@ -151,8 +152,7 @@ if __name__ == '__main__':
         raise Exception('Station {} not found in stations file'.format(obsid))
 
     # hack shorter period
-    n_days_test = 365
-    station_data.loc['Cal_Start'] = (cfg.forcing_end - timedelta(days=n_days_test)).strftime('%d/%m/%Y %H:%M')
+    station_data.loc['Cal_Start'] = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     station_data.loc['Cal_End'] = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     print("=================== "+str(obsid)+" ====================")

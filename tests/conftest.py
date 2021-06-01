@@ -1,4 +1,6 @@
 import pytest
+import os
+import shutil
 import pandas
 import numpy as np
 from datetime import datetime
@@ -31,7 +33,7 @@ class DummyConfig():
     def __init__(self):
 
         # paths
-        self.path_result = OUT_DIR
+        self.path_result = path.join(DATA_DIR, 'results')
         self.subcatchment_path = path.join(DATA_DIR)
         self.path_subcatch = path.join(self.subcatchment_path, '380')
 
@@ -53,10 +55,9 @@ class DummyConfig():
         # Debug/test parameters
         self.fast_debug = False
 
-        # Date parametersObservationsStart = 1/1/1990 00:00
-
-        self.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")  # Start of forcing
+        # Date params
+        self.forcing_start = datetime.strptime('31/12/2016 06:00', "%d/%m/%Y %H:%M")
+        self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
         self.WarmupDays = 30
         self.calibration_freq = '6-hourly'
 
@@ -69,14 +70,10 @@ def dummy_cfg():
 @pytest.fixture(autouse=True)
 def run_around_tests():
     print('Creating output directory')
-    ret, out = utils.run_cmd("mkdir -p {}".format(OUT_DIR))
-    assert out == ''
-    print(out)
+    os.makedirs(OUT_DIR, exist_ok=True)
 
     # running test here
     yield
 
     print('Removing output directory')
-    ret, out = utils.run_cmd('rm -rf {}'.format(OUT_DIR))
-    assert out == ''
-    print(out)
+    shutil.rmtree(OUT_DIR)
