@@ -1,3 +1,4 @@
+import os
 import pandas
 from datetime import datetime
 from configparser import ConfigParser
@@ -22,7 +23,10 @@ class Config():
     def __init__(self, settings_file):
 
         parser = ConfigParser()
-        parser.read(settings_file)
+        if os.path.isfile(settings_file):
+            parser.read(settings_file)
+        else:
+            raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
         # paths
         self.path_result = parser.get('Path', 'Result')
