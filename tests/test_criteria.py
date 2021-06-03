@@ -6,7 +6,7 @@ from liscal import calibration, utils
 def test_front_history(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
-    path_result = dummy_cfg.path_result
+    path_out = dummy_cfg.path_out
     deap_param = dummy_cfg.deap_param
 
     print('checking front_history file')
@@ -17,9 +17,9 @@ def test_front_history(dummy_cfg):
     criteria.effstd = np.array([[0.0], [0.0]])
     criteria.effavg = np.array([[0.9999384017071802], [0.9999384017071802]])
 
-    criteria.write_front_history(path_result, 2)
+    criteria.write_front_history(path_out, 2)
 
-    cmd = 'diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_result)
+    cmd = 'diff {}/front_history.csv {}/front_history.csv'.format(path_subcatch, path_out)
     ret, out = utils.run_cmd(cmd)
     print(out)
     assert out == ''
@@ -29,10 +29,7 @@ def test_front_history(dummy_cfg):
 def test_termination_gen(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
-    path_result = dummy_cfg.path_result
     deap_param = dummy_cfg.deap_param
-
-    print('checking front_history file')
 
     criteria = calibration.Criteria(deap_param)
     criteria.gen_offset = 1
@@ -51,7 +48,6 @@ def test_termination_gen(dummy_cfg):
 def test_termination_gen(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
-    path_result = dummy_cfg.path_result
     deap_param = dummy_cfg.deap_param
 
     criteria = calibration.Criteria(deap_param)
@@ -74,7 +70,6 @@ def test_termination_gen(dummy_cfg):
 def test_update(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
-    path_result = dummy_cfg.path_result
     deap_param = dummy_cfg.deap_param
 
     criteria = calibration.Criteria(deap_param)

@@ -34,6 +34,7 @@ class DummyConfig():
 
         # paths
         self.path_result = path.join(DATA_DIR, 'results')
+        self.path_out = path.join(OUT_DIR)
         self.subcatchment_path = path.join(DATA_DIR)
         self.path_subcatch = path.join(self.subcatchment_path, '380')
 

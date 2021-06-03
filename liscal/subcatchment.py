@@ -80,10 +80,9 @@ class SubCatchment():
             os.remove(inflow_tss)
 
         upstream_catchments = [int(i) for i in direct_links.loc[self.obsid].values if not np.isnan(i)]
-        cnt = 1
-        
+
+        count = 1
         all_inflows = None
-        n_inflows = 0
         header = ""
         for subcatchment in upstream_catchments:
             
@@ -108,29 +107,28 @@ class SubCatchment():
                     cfg.forcing_end, simulated_streamflow.index[-1])
             simulated_streamflow.index = [i+1 for i in range(len(simulated_streamflow))]
                     
-            if cnt==1: 
+            if count == 1: 
                 all_inflows = simulated_streamflow  # type: object
             else:
-                all_inflows[str(cnt)] = simulated_streamflow.values
-            cnt += 1
+                all_inflows[str(count)] = simulated_streamflow.values
+            count += 1
             header = header+subcatchment+"\n"
-            n_inflows += 1
             print('Found inflow for subcatchment {}'.format(subcatchment))
 
+        n_inflows =  count - 1
+
+        # hack csv into tss (duh)
         if all_inflows is not None:
-            all_inflows.to_csv(inflow_tss,sep=' ',header=False)
-            f = open(inflow_tss,'r+')
+            all_inflows.to_csv(inflow_tss, sep=' ', header=False)
+            f = open(inflow_tss, 'r+')
             content = f.read()
-            content = 'timeseries scalar\n'+str(cnt)+'\n'+'timestep\n'+header+content
+            content = 'timeseries scalar\n'+str(count)+'\n'+'timestep\n'+header+content
             f.seek(0,0)
             f.write(content)
             f.close()
+            inflowflag = str(1)
         else:
             print("No upstream inflow needed\n")
-        sys.stdout.write("\n")
-
-        inflowflag = str(0)
-        if os.path.isfile(inflow_tss):
-            inflowflag = str(1)
+            inflowflag = str(0)
 
         return inflowflag, n_inflows

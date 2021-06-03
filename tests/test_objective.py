@@ -7,7 +7,7 @@ def test_phistory_ranked(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
-    path_result = dummy_cfg.path_result
+    path_out = dummy_cfg.path_out
 
     print('checking pHistory file')
 
@@ -15,9 +15,9 @@ def test_phistory_ranked(dummy_cfg):
     obj = objective.ObjectiveDischarge(dummy_cfg, subcatch, read_observations=False)
 
     pHistory = obj.read_param_history()
-    pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_result)
+    pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_out)
 
-    cmd = 'diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_result)
+    cmd = 'diff {}/pHistoryWRanks.csv {}/pHistoryWRanks.csv'.format(path_subcatch, path_out)
     ret, out = utils.run_cmd(cmd)
     print(out)
     assert out == ''
@@ -27,7 +27,7 @@ def test_phistory_ranked(dummy_cfg):
 def test_pareto_front(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
-    path_result = dummy_cfg.path_result
+    path_out = dummy_cfg.path_out
 
     print('checking pareto_front file')
 
@@ -35,10 +35,10 @@ def test_pareto_front(dummy_cfg):
     obj = objective.ObjectiveDischarge(dummy_cfg, subcatch, read_observations=False)
 
     pHistory = obj.read_param_history()
-    pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_result)
-    obj.write_pareto_front(pHistory_ranked, path_out=path_result)
+    pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_out)
+    obj.write_pareto_front(pHistory_ranked, path_out=path_out)
 
-    cmd = 'diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_result)
+    cmd = 'diff {}/pareto_front.csv {}/pareto_front.csv'.format(path_subcatch, path_out)
     ret, out = utils.run_cmd(cmd)
     print(out)
     print(cmd)

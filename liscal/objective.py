@@ -26,29 +26,13 @@ class ObjectiveDischarge():
 
     def read_observed_streamflow(self):
         cfg = self.cfg
-        obsid = self.subcatch.obsid
-        # Load observed streamflow # DD Much faster IO with npy despite being more complicated (<1s vs 22s)
-        if os.path.exists(cfg.Qtss_csv.replace(".csv", ".npy")) and os.path.getsize(cfg.Qtss_csv) > 0:
-            streamflow_data = pandas.DataFrame(np.load(cfg.Qtss_csv.replace(".csv", ".npy"), allow_pickle=True))
-            streamflow_datetimes = np.load(cfg.Qtss_csv.replace(".csv", "_dates.npy"), allow_pickle=True).astype('string_')
-            try:
-                streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%d/%m/%Y %H:%M") for i in streamflow_datetimes]
-            except ValueError:
-                try:
-                    streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d %H:%M:%S") for i in streamflow_datetimes]
-                except ValueError:
-                    streamflow_data.index = [datetime.strptime(i.decode('utf-8'), "%Y-%m-%d") for i in streamflow_datetimes]
-            streamflow_data.columns = np.load(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), allow_pickle=True)
-        else:
-            streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
-            # streamflow_data.index = pandas.date_range(start=ObservationsStart, end=ObservationsEnd, periods=len(streamflow_data))
-            # streamflow_data = pandas.read_csv(Qtss_csv, sep=",", index_col=0, parse_dates=True) # DD WARNING buggy unreliable parse_dates! Don't use it!
-            np.save(cfg.Qtss_csv.replace(".csv", ".npy"), streamflow_data)
-            np.save(cfg.Qtss_csv.replace(".csv", "_dates.npy"), streamflow_data.index)
-            np.save(cfg.Qtss_csv.replace(".csv", "_catchments.npy"), streamflow_data.columns.values)
-        observed_streamflow = streamflow_data[str(obsid)]
+        subcatch = self.subcatch
+        
+        streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
+        
+        observed_streamflow = streamflow_data[str(subcatch.obsid)]
         observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%Y-%m-%d %H:%M'):cfg.forcing_end.strftime('%Y-%m-%d %H:%M')] # Keep only the part for which we run LISFLOOD
-        observed_streamflow = observed_streamflow[Cal_Start:Cal_End]
+        observed_streamflow = observed_streamflow[subcatch.cal_start:subcatch.cal_end]
 
         return observed_streamflow
 
@@ -64,7 +48,6 @@ class ObjectiveDischarge():
         return simulated_streamflow
 
     def resample_streamflows(self, simulated_streamflow, observed_streamflow):
-
         cfg = self.cfg
         cal_start = self.subcatch.cal_start
         cal_end = self.subcatch.cal_end
