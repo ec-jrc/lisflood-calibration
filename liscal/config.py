@@ -28,10 +28,9 @@ class Config():
         self.path_result = parser.get('Path', 'Result')
         self.subcatchment_path = parser.get('Path','SubCatchmentPath')
 
-        pcraster_path = parser.get('Path', 'PCRHOME')
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
-            self.pcraster_cmd[execname] = pcr_utils.getPCrasterPath(pcraster_path, settings_file, alias=execname)
+            self.pcraster_cmd[execname] = execname
 
         # deap
         self.param_ranges = pandas.read_csv(parser.get('Path','ParamRanges'), sep=",", index_col=0)
@@ -54,3 +53,4 @@ class Config():
 
         # observations
         self.Qtss_csv = parser.get('CSV', 'Qtss')
+        self.Qmeta_csv = parser.get('CSV', 'Qmeta')
