@@ -83,4 +83,4 @@ def calibrate_system(args):
 
 
 if __name__ == '__main__':
-    calibrate_system()
+    calibrate_system([])
