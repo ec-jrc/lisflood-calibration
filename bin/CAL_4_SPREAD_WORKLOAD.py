@@ -19,7 +19,7 @@ else:
 import array
 import logging
 import random
-from pcrasterCommand import pcrasterCommand, getPCrasterPath
+from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 
 if __name__=="__main__":
 

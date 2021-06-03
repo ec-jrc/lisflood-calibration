@@ -10,7 +10,7 @@ import pdb
 import time
 import struct
 import shutil
-from pcrasterCommand import pcrasterCommand, getPCrasterPath
+from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 ver = sys.version
 ver = ver[:ver.find('(')-1]
 if ver.find('3.') > -1:

@@ -10,11 +10,11 @@ if ver.find('3.') > -1:
   from configparser import ConfigParser # Python 3.8
 else:
   from ConfigParser import SafeConfigParser # Python 2.7-15
-import binFileIO
-from pcrasterCommand import pcrasterCommand, getPCrasterPath
-import rasterOps as ro
-import domain as dom
-import pyproj
+# import binFileIO
+from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
+# import liscal.raster_operations as ro
+# import domain as dom
+# import pyproj
 import dask
 from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
 import pcraster as pcr
@@ -452,7 +452,7 @@ with dask.config.set(scheduler='threads'): #, pool=ThreadPool(cfg.ncpus)):  # [d
                     else:
                         os.system("cp " + filenc + " " + fileout)
 
-        # Transform into numpy binary
-        if ver.find('3.') > -1:
-            binFileIO.main(iniFile, file_CatchmentsToProcess)
+        # # Transform into numpy binary
+        # if ver.find('3.') > -1:
+        #     binFileIO.main(iniFile, file_CatchmentsToProcess)
         print('finito...')

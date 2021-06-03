@@ -17,16 +17,16 @@ testConvergence = 0
 fastDebug = 0
 
 [CSV]
-Qmeta = /perm/rd/nedd/EFAS/efasCalib/src/Qmeta1.csv
-Qtss = /perm/rd/nedd/EFAS/efasCalib/src/ecQts.csv
+Qmeta = /perm/rd/nedd/EFAS/efasCalib/src/data/Qmeta1.csv
+Qtss = /perm/rd/nedd/EFAS/efasCalib/src/data/ecQts.csv
 
 [Path]
 Temp = %(Root)s/temp/
 Result = %(Root)s/result/
 Templates = /perm/rd/nedd/EFAS/efasCalib/src/templates/
 SubCatchmentPath = %(Root)s/catchments/
-ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/ParamRanges_LISFLOOD.csv
-#ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/ParamRanges_LISFLOOD_380_Efas4.csv
+ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/data/ParamRanges_LISFLOOD.csv
+#ParamRanges = /perm/rd/nedd/EFAS/efasCalib/src/data/ParamRanges_LISFLOOD_380_Efas4.csv
 CatchmentDataPath = /perm/rd/nedd/EFAS/efasCalib/input/maps/static/
 MeteoData = /perm/rd/nedd/EFAS/efasCalib/input/maps/forcings/day/
 WaterUseData = /perm/rd/nedd/EFAS/efasCalib/input/maps/water_abstraction/
