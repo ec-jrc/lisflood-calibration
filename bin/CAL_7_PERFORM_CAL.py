@@ -2,6 +2,7 @@
 """Please refer to quick_guide.pdf for usage instructions"""
 import os
 import sys
+import argparse
 import numpy as np
 import pandas
 from configparser import ConfigParser # Python 3.8
@@ -9,7 +10,7 @@ import glob
 import subprocess
 import traceback
 
-from liscal import templates, calibration, config, subcatchment, objective
+from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 
 def calibrate_subcatchment(cfg, obsid, station_data):
@@ -44,28 +45,25 @@ def calibrate_subcatchment(cfg, obsid, station_data):
     hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template)
 
 
-def calibrate_system(args):
-    ########################################################################
-    #   Read settings file
-    ########################################################################
-    if len(args) == 0:
-        print(args)
-        settings_file = os.path.normpath(sys.argv[1])
-        subcatchments_list = os.path.normpath(sys.argv[2])
-    else:
-        print(sys.argv)
-        settings_file = os.path.normpath(args[0])
-        subcatchments_list = os.path.normpath(args[1])
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_file', help='Calibration settings file')
+    parser.add_argument('stations', help='List of stations to process')
+    args = parser.parse_args()
+
+    settings_file = args.settings_file
+    stations_list = args.stations
 
     cfg = config.Config(settings_file)
 
     # Read full list of stations, index is obsid
     print(">> Reading Qmeta2.csv file...")
-    stations = pandas.read_csv(os.path.join(cfg.path_result, "Qmeta2.csv"), sep=",", index_col=0)
+    stations_meta = pandas.read_csv(cfg.Qmeta_csv, sep=",", index_col=0)
 
     # Read list of stations we want to calibrate
-    subcatchments = pandas.read_csv(subcatchments_list, sep=",", header=None)
-    obsid_list = subcatchments.loc[:, 0]
+    stations = pandas.read_csv(stations_list, sep=",", header=None)
+    obsid_list = stations.loc[:, 0]
 
     ########################################################################
     #   Loop through subcatchments and perform calibration
@@ -73,14 +71,10 @@ def calibrate_system(args):
     for obsid in obsid_list:
 
         try:
-            station_data = stations.loc[obsid]
+            station_data = stations_meta.loc[obsid]
         except KeyError as e:
             raise Exception('Station {} not found in stations file'.format(obsid))
 
         calibrate_subcatchment(cfg, obsid, station_data)
 
     print("==================== END ====================")
-
-
-if __name__ == '__main__':
-    calibrate_system([])

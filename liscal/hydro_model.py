@@ -150,9 +150,9 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = 'cp {1}/out/avgdis{2}end.nc {1}/out/avgdis{2}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/avgdis{1}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
-    cmd = 'cp {1}/out/lzavin{2}end.nc {1}/out/lzavin{2}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/lzavin{1}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
 
     # SECOND LISFLOOD RUN
@@ -160,7 +160,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     lisf1.main(run_file, 'q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = 'rm {1}/out/avgdis{2}end.nc {1}/out/lzavin{2}end.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_rand_id)
     utils.run_cmd(cmd)
 
     simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'dis', 'streamflow')
@@ -184,13 +184,17 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')
 
+    # Outputing synthetic observed discharge
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
     Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_rand_id + '.tss')
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
     Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, subcatch.cal_end, freq='6H'))
-    Qsim.to_csv(outfile, ',', header="")
+    Qsim.columns = [str(subcatch.obsid)]
+    Qsim.index.name = 'Timestamp'
+    Qsim.to_csv(outfile, ',', date_format='%Y-%m-%d %H:%M')
 
+    # required for downstream catchments
     simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'dis', 'streamflow')
     simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'chanq', 'chanq')
