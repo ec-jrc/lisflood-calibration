@@ -41,8 +41,8 @@ def test_subcatchment_full(dummy_cfg):
     assert subcatch.path_out == os.path.join(dummy_cfg.subcatchment_path, str(380), 'out')
     assert subcatch.gaugeloc == '4307500.0 2377500.0'
     assert subcatch.inflowflag == '0'
-    assert subcatch.cal_start == '1984-12-29 00:00'
-    assert subcatch.cal_end == '2021-06-01 00:00'
+    assert subcatch.cal_start == '29/12/1984 00:00'
+    assert subcatch.cal_end == '01/06/2021 00:00'
     os.remove(os.path.join(subcatch.path, "inflow", "inflow_cut.map"))
     os.remove(os.path.join(subcatch.path, "inflow", "inflow.map"))
 
@@ -57,8 +57,8 @@ def test_calibration_start_end(dummy_cfg):
 
     cal_start, cal_end = subcatch.calibration_start_end(dummy_cfg)
 
-    assert cal_start == '1984-12-29 00:00'
-    assert cal_end == '2021-06-01 00:00'
+    assert cal_start == '29/12/1984 00:00'
+    assert cal_end == '01/06/2021 00:00'
 
 
 @pytest.mark.parametrize('catch, gauge_loc', [(2823, '4187500.0 2417500.0'), (380, '4307500.0 2377500.0')])

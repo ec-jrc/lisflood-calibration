@@ -29,9 +29,11 @@ class ObjectiveDischarge():
         subcatch = self.subcatch
         
         streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
+        # check that date format is correct
+        pandas.to_datetime(streamflow_data.index, format='%d/%m/%Y %H:%M', errors='raise')
         
         observed_streamflow = streamflow_data[str(subcatch.obsid)]
-        observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%Y-%m-%d %H:%M'):cfg.forcing_end.strftime('%Y-%m-%d %H:%M')] # Keep only the part for which we run LISFLOOD
+        observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%d/%m/%Y %H:%M'):cfg.forcing_end.strftime('%d/%m/%Y %H:%M')] # Keep only the part for which we run LISFLOOD
         observed_streamflow = observed_streamflow[subcatch.cal_start:subcatch.cal_end]
 
         return observed_streamflow
@@ -41,9 +43,10 @@ class ObjectiveDischarge():
         if os.path.isfile(Qsim_tss)==False:
             print("run_rand_id: "+str(run_rand_id))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
+
         simulated_streamflow = utils.read_tss(Qsim_tss)
-        simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan
-        simulated_streamflow.index = [datetime.strptime(self.subcatch.cal_start, "%Y-%m-%d %H:%M") + timedelta(hours=6*i) for i in range(len(simulated_streamflow.index))]
+        simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
+        simulated_streamflow.index = [(datetime.strptime(self.subcatch.cal_start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
 
         return simulated_streamflow
 
@@ -51,6 +54,10 @@ class ObjectiveDischarge():
         cfg = self.cfg
         cal_start = self.subcatch.cal_start
         cal_end = self.subcatch.cal_end
+
+        # check that dates are compatible
+        if not simulated_streamflow.index.equals(observed_streamflow.index):
+            raise Exception('Simulated and observed streamflow dates not aligned!')
 
         # synchronise simulated and observed streamflows - NaN when missing obs
         Q = pandas.concat({"Sim": simulated_streamflow[1], "Obs": self.observed_streamflow}, axis=1)  # .reset_index()
@@ -84,6 +91,12 @@ class ObjectiveDischarge():
         # Trim nans
         Qsim = Qsim[~np.isnan(Qobs)]
         Qobs = Qobs[~np.isnan(Qobs)]
+
+        # we shouldn't have NaNs in the arrays at this point
+        if np.isnan(Qsim).any():
+            raise Exception('NaN found in Qsim')
+        if np.isnan(Qobs).any():
+            raise Exception('NaN found in Qobs')
 
         return Qsim, Qobs
 

@@ -13,7 +13,7 @@ class LisfloodSettingsTemplate():
     
         template_xml = template_xml.replace('%gaugeloc', subcatch.gaugeloc) # Gauge location
         template_xml = template_xml.replace('%inflowflag', subcatch.inflowflag)
-        template_xml = template_xml.replace('%ForcingStart', cfg.forcing_start.strftime('%Y-%m-%d %H:%M')) # Date of forcing start
+        template_xml = template_xml.replace('%ForcingStart', cfg.forcing_start.strftime('%d/%m/%Y %H:%M')) # Date of forcing start
         template_xml = template_xml.replace('%SubCatchmentPath', subcatch.path)
 
         self.template_xml = template_xml

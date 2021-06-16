@@ -21,10 +21,10 @@ def calibrate_subcatchment(cfg, obsid, station_data):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
+    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+    
     if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
-
-        lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
         lock_mgr = calibration.LockManager(cfg.deap_param.num_cpus)
 

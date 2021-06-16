@@ -139,10 +139,10 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     print(">> Running LISFLOOD using the \"best\" parameter set")
     parameters = read_parameters(subcatch.path)
 
-    run_rand_id = str(int(random.random()*1e10)).zfill(12)
+    run_rand_id = str(0)
 
-    run_start = cfg.forcing_start.strftime('%Y-%m-%d %H:%M')
-    run_end = cfg.forcing_end.strftime('%Y-%m-%d %H:%M')
+    run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
+    run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     lis_template.write_template(run_rand_id, run_start, run_end, cfg.param_ranges, parameters)
 
     # FIRST LISFLOOD RUN
@@ -193,7 +193,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, subcatch.cal_end, freq='6H'))
     Qsim.columns = [str(subcatch.obsid)]
     Qsim.index.name = 'Timestamp'
-    Qsim.to_csv(outfile, ',', date_format='%Y-%m-%d %H:%M')
+    Qsim.to_csv(outfile, ',', date_format='%d/%m/%Y %H:%M')
 
     # required for downstream catchments
     simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'dis', 'streamflow')

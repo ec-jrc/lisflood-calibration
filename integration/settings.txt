@@ -1,0 +1,30 @@
+[DEFAULT]
+Root = ROOT
+Src = SRC
+ObservationsStart = 1/1/1990 00:00
+ObservationsEnd = 01/07/2018 00:00
+ForcingStart = 2/1/1990 06:00
+ForcingEnd = 31/12/2017 06:00
+WarmupDays = 1095
+calibrationFreq = 6-hourly
+fastDebug = 0
+
+[CSV]
+Qmeta = STATIONS
+Qtss = OBS
+
+[Path]
+Result = %(Root)s/result/
+SubCatchmentPath = %(Root)s/catchments/
+ParamRanges = %(Src)s/tests/data/ParamRanges_LISFLOOD.csv
+
+[Templates]
+LISFLOODSettings = %(Src)s/templates/settings_LF_CUT.xml
+
+[DEAP]
+numCPUs = NCPUS
+minGen = 6
+maxGen = 16
+mu = 18
+lambda_ = 36
+pop = 72
