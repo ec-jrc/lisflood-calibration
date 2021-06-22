@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Please refer to quick_guide.pdf for usage instructions"""
-
 import os
 import sys
 import pdb
@@ -61,8 +60,8 @@ if __name__=="__main__":
 	(path, fil)  = os.path.split(path)
 	print( ">> Reading Qmeta file ("+fil+")...")
 	stationdata = pandas.read_csv(Qmeta_csv,sep=",",index_col='ObsID')
-	# stationdata = stationdata[stationdata['EC_calib']==3] # for EFAS4.1
-	#stationdata = stationdata[np.logical_and(stationdata['EC_calib'] == 3, np.logical_or(stationdata['Country code'] == 'SE', stationdata['Country code'] == 'NO'))] # for test powerPrefFlow in Scandinavia
+	# stationdata = stationdata[stationdata['EC_calib']=='3'] # for EFAS4.1
+	# stationdata = stationdata[np.logical_and(stationdata['EC_calib'] == 3, np.logical_or(stationdata['Country code'] == 'SE', stationdata['Country code'] == 'NO'))] # for test powerPrefFlow in Scandinavia
 	# stationdata = stationdata[np.logical_or(stationdata['EC_calib'] == '3', stationdata['EC_calib'] == '4')] # fix of powerPrefFlow EFAS4.1
 	stationdata = stationdata[stationdata['EC_calib'] == 'T'] # to test calib
 	# stationdata.index = stationdata['ObsID']
