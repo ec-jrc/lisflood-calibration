@@ -38,7 +38,7 @@ class LockManager():
         self._set('run', 0)
 
     def set_run(self, value):
-        self._set('run', value)
+        return self._set('run', value)
 
     def get_gen(self):
         return self._value('gen')
@@ -204,7 +204,7 @@ class CalibrationDeap():
             ind.fitness.values = fit
         return invalid_ind
 
-    def restore_calibration(self, lock_mgr, halloffame, history_file):
+    def restore_calibration(self, halloffame, history_file):
 
         param_ranges = self.param_ranges
 
@@ -213,7 +213,7 @@ class CalibrationDeap():
         print("Restoring previous calibration state")
 
         # Initiate the generations counter
-        lock_mgr.set_gen(0)
+        gen = 0
 
         population = None
         # reconstruct the generational evoluation
@@ -230,27 +230,24 @@ class CalibrationDeap():
             else:
                 population = valid_ind
 
-            gen = lock_mgr.get_gen()
-
             self.criteria.update_statistics(gen, halloffame)
 
             self.criteria.check_termination_conditions(gen)
 
-            lock_mgr.increment_gen()
+            gen = gen+1
 
-        return population
+        return population, gen
 
-    def generate_population(self, lock_mgr, halloffame):
+    def generate_population(self, halloffame):
 
         print("Generating first population")
+        gen = 0
 
         # Start with a fresh population
         population = self.toolbox.population(n=self.pop)
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in population if not ind.fitness.valid] # DD this filters the population or children for uncalculated fitnesses. We retain only the uncalculated ones to avoid recalculating those that already had a fitness. Potentially this can save time, especially if the algorithm tends to produce a child we already ran.
-
-        lock_mgr.set_gen(0)
 
         # Run the first generation, first random sampling of the parameter space
         fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind)
@@ -259,17 +256,11 @@ class CalibrationDeap():
 
         halloffame.update(population) # DD this selects the best one
 
-        gen = lock_mgr.get_gen()
-        assert gen == 0
-
         self.criteria.update_statistics(gen, halloffame)
-
-        # Update the generation to the first
-        lock_mgr.increment_gen()
 
         return population
 
-    def generate_offspring(self, lock_mgr, halloffame, population):
+    def generate_offspring(self, gen, halloffame, population):
 
         # Vary the population
         offspring = algorithms.varOr(population, self.toolbox, self.lambda_, self.cxpb, self.mutpb)
@@ -287,23 +278,20 @@ class CalibrationDeap():
         # Select the next generation population
         population[:] = self.toolbox.select(population + offspring, self.mu)
 
-        gen = lock_mgr.get_gen()
-
         # Loop through the different objective functions and calculate some statistics
         # from the Pareto optimal population
         self.criteria.update_statistics(gen, halloffame)
 
         self.criteria.check_termination_conditions(gen)
 
-        lock_mgr.increment_gen()
-
-        print('Done generation {}'.format(lock_mgr.get_gen()))
+        print('Done generation {}'.format(gen))
 
     def run(self, path_subcatch, lock_mgr):
 
         t = time.time()
 
         print('Starting calibration')
+        lock_mgr.set_gen(0)
         mapping, pool = lock_mgr.create_mapping()
         self.toolbox.register("map", mapping)
 
@@ -313,14 +301,17 @@ class CalibrationDeap():
         # Attempt to open a previous parameter history
         history_file = os.path.join(path_subcatch, "paramsHistory.csv")
         if os.path.isfile(history_file) and os.path.getsize(history_file) > 0:
-            population = self.restore_calibration(lock_mgr, halloffame, history_file)
+            population, gen = self.restore_calibration(halloffame, history_file)
+            lock_mgr.set_gen(gen)
         else:
             # No previous parameter history was found, so start from scratch
-            population = self.generate_population(lock_mgr, halloffame)
+            population = self.generate_population(halloffame)
+            lock_mgr.set_gen(1)
 
         # Resume the generational process from wherever we left off
         while not any(self.criteria.conditions.values()):
-            self.generate_offspring(lock_mgr, halloffame, population)
+            self.generate_offspring(lock_mgr.get_gen(), halloffame, population)
+            lock_mgr.increment_gen()
 
         # Finito
         if pool:

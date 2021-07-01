@@ -1,6 +1,4 @@
-[DEFAULT]
-Root = ROOT
-Src = SRC
+[MAIN]
 ObservationsStart = 1/1/1990 00:00
 ObservationsEnd = 01/07/2018 00:00
 ForcingStart = 2/1/1990 06:00
@@ -14,12 +12,12 @@ Qmeta = STATIONS
 Qtss = OBS
 
 [Path]
-Result = %(Root)s/result/
-SubCatchmentPath = %(Root)s/catchments/
-ParamRanges = %(Src)s/tests/data/ParamRanges_LISFLOOD.csv
+Result = ROOT/result/
+SubCatchmentPath = ROOT/catchments/
+ParamRanges = SRC/tests/data/ParamRanges_LISFLOOD.csv
 
 [Templates]
-LISFLOODSettings = %(Src)s/templates/settings_LF_CUT.xml
+LISFLOODSettings = SRC/templates/settings_LF_CUT.xml
 
 [DEAP]
 numCPUs = NCPUS

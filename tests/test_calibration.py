@@ -13,7 +13,7 @@ class DummyDEAPParameters():
         self.num_cpus = 1
         self.min_gen = 6
         self.max_gen = 32
-        self.pop = 72
+        self.pop = 144
         self.mu = 18
         self.lambda_ = 36
 

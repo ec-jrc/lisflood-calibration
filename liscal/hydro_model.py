@@ -33,13 +33,13 @@ class HydrologicalModel():
 
         cfg = self.cfg
 
-        run_rand_id = str(int(random.random()*1e10)).zfill(12)
+        run_id = str(0)
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_rand_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
 
-        prerun_file = self.lis_template.settings_path('-PreRun', run_rand_id)
+        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
 
         # -i option to exit after initialisation, we just load the inputs map in memory
         try:
@@ -56,29 +56,29 @@ class HydrologicalModel():
         run = self.lock_mgr.increment_run()
         print('Generation {}, run {}'.format(gen, run))
 
-        run_rand_id = str(int(random.random()*1e10)).zfill(12)
+        run_id = '{}_{}'.format(gen, run)
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_rand_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
 
-        prerun_file = self.lis_template.settings_path('-PreRun', run_rand_id)
-        run_file = self.lis_template.settings_path('-Run', run_rand_id)
+        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
+        run_file = self.lis_template.settings_path('-Run', run_id)
 
         try:
-            lisf1.main(prerun_file, '-v') #os.path.realpath(__file__),
-            lisf1.main(run_file, '-v')  # os.path.realpath(__file__),
+            lisf1.main(prerun_file, '-v')
+            lisf1.main(run_file, '-v')
         except:
             traceback.print_exc()
             raise Exception("")
 
-        fKGEComponents = self.objective.compute_objectives(run_rand_id)
+        fKGEComponents = self.objective.compute_objectives(run_id)
 
         KGE = fKGEComponents[0]
         print('Generation {}, run {} done. KGE: {:.3f}'.format(gen, run, KGE))
 
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_rand_id, parameters, fKGEComponents, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
 
         return fKGEComponents  # If using just one objective function, put a comma at the end!!!
 
@@ -100,9 +100,9 @@ def read_parameters(path_subcatch):
     return parameters
 
 
-def simulated_best_tss2csv(path_subcatch, run_rand_id, forcing_start, dataname, outname):
+def simulated_best_tss2csv(path_subcatch, run_id, forcing_start, dataname, outname):
 
-    tss_file = os.path.join(path_subcatch, "out", dataname + run_rand_id + '.tss')
+    tss_file = os.path.join(path_subcatch, "out", dataname + run_id + '.tss')
 
     tss = utils.read_tss(tss_file)
 
@@ -134,59 +134,59 @@ def stage_inflows(path_subcatch):
 
 def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
-    stage_inflows(subcatch.path)
+    # stage_inflows(subcatch.path)
 
     print(">> Running LISFLOOD using the \"best\" parameter set")
     parameters = read_parameters(subcatch.path)
 
-    run_rand_id = str(0)
+    run_id = 'X'
 
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    lis_template.write_template(run_rand_id, run_start, run_end, cfg.param_ranges, parameters)
+    lis_template.write_template(run_id, run_start, run_end, cfg.param_ranges, parameters)
 
     # FIRST LISFLOOD RUN
-    prerun_file = lis_template.settings_path('-PreRun', run_rand_id)
+    prerun_file = lis_template.settings_path('-PreRun', run_id)
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/avgdis{1}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/avgdis{1}.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
-    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/lzavin{1}.simulated_bestend.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/lzavin{1}.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
     # SECOND LISFLOOD RUN
-    run_file = lis_template.settings_path('-Run', run_rand_id)
+    run_file = lis_template.settings_path('-Run', run_id)
     lisf1.main(run_file, 'q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_rand_id)
+    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
-    simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(subcatch.path, run_rand_id, cfg.forcing_start, 'chanq', 'chanq')
+    simulated_best_tss2csv(subcatch.path, run_id, cfg.forcing_start, 'dis', 'streamflow')
+    simulated_best_tss2csv(subcatch.path, run_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
 
-    run_rand_id = str(0)
+    run_id = 'X'
 
     param_ranges = cfg.param_ranges
     parameters = [None] * len(param_ranges)
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
         
-    lis_template.write_template(run_rand_id, subcatch.cal_start, subcatch.cal_end, param_ranges, parameters)
+    lis_template.write_template(run_id, subcatch.cal_start, subcatch.cal_end, param_ranges, parameters)
 
-    prerun_file = lis_template.settings_path('-PreRun', run_rand_id)
-    run_file = lis_template.settings_path('-Run', run_rand_id)
+    prerun_file = lis_template.settings_path('-PreRun', run_id)
+    run_file = lis_template.settings_path('-Run', run_id)
 
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')
 
     # Outputing synthetic observed discharge
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
-    Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_rand_id + '.tss')
+    Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_id + '.tss')
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
@@ -196,5 +196,5 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     Qsim.to_csv(outfile, ',', date_format='%d/%m/%Y %H:%M')
 
     # required for downstream catchments
-    simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(subcatch.path, run_rand_id, subcatch.cal_start, 'chanq', 'chanq')
+    simulated_best_tss2csv(subcatch.path, run_id, subcatch.cal_start, 'dis', 'streamflow')
+    simulated_best_tss2csv(subcatch.path, run_id, subcatch.cal_start, 'chanq', 'chanq')

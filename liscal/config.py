@@ -28,6 +28,12 @@ class Config():
         else:
             raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
+        print('Calibration settings:')
+        for section in parser.sections():
+            print('- {}'.format(section))
+            for key, value in dict(parser[section]).items():
+                print('  - {}: {}'.format(key, value)) 
+
         # paths
         self.path_result = parser.get('Path', 'Result')
         self.subcatchment_path = parser.get('Path','SubCatchmentPath')
@@ -45,15 +51,15 @@ class Config():
         self.lisflood_template = parser.get('Templates','LISFLOODSettings')
 
         # Debug/test parameters
-        self.fast_debug = bool(int(parser.get('DEFAULT', 'fastDebug')))
+        self.fast_debug = bool(int(parser.get('MAIN', 'fastDebug')))
 
         # Date parameters
-        self.ObservationsStart = datetime.strptime(parser.get('DEFAULT', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.ObservationsEnd = datetime.strptime(parser.get('DEFAULT', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_start = datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.WarmupDays = int(parser.get('DEFAULT', 'WarmupDays'))
-        self.calibration_freq = parser.get('DEFAULT', 'calibrationFreq')
+        self.ObservationsStart = datetime.strptime(parser.get('MAIN', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.ObservationsEnd = datetime.strptime(parser.get('MAIN', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = datetime.strptime(parser.get('MAIN','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(parser.get('MAIN','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.WarmupDays = int(parser.get('MAIN', 'WarmupDays'))
+        self.calibration_freq = parser.get('MAIN', 'calibrationFreq')
 
         # observations
         self.Qtss_csv = parser.get('CSV', 'Qtss')

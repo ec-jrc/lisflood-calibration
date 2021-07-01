@@ -38,10 +38,10 @@ class ObjectiveDischarge():
 
         return observed_streamflow
 
-    def read_simulated_streamflow(self, run_rand_id):
-        Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_rand_id+'.tss')
+    def read_simulated_streamflow(self, run_id):
+        Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
-            print("run_rand_id: "+str(run_rand_id))
+            print("run_id: "+str(run_id))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
         simulated_streamflow = utils.read_tss(Qsim_tss)
@@ -60,43 +60,50 @@ class ObjectiveDischarge():
             raise Exception('Simulated and observed streamflow dates not aligned!')
 
         # synchronise simulated and observed streamflows - NaN when missing obs
-        Q = pandas.concat({"Sim": simulated_streamflow[1], "Obs": self.observed_streamflow}, axis=1)  # .reset_index()
+        # Q = pandas.concat({"Sim": simulated_streamflow[1], "Obs": self.observed_streamflow}, axis=1)  # .reset_index()
 
         # Finally, extract equal-length arrays from it
-        Qobs = np.array(Q['Obs'][cal_start:cal_end]) #.values+0.001
-        Qsim = np.array(Q['Sim'][cal_start:cal_end])
+        Qobs = np.array(observed_streamflow[cal_start:cal_end])
+        Qsim = np.array(simulated_streamflow[cal_start:cal_end])
 
         if cfg.calibration_freq == r"6-hourly":
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
+                # start and end have to be in datetime format to avoid "dayfirst" type bugs
+                start = datetime.strptime(cal_start, "%d/%m/%Y %H:%M")
+                end = datetime.strptime(cal_end, "%d/%m/%Y %H:%M")
+                date_range = pandas.date_range(start, end, freq="360min")
                 # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
                 Qsim = simulated_streamflow[cal_start:cal_end]
-                Qsim.index = pandas.date_range(cal_start, cal_end, freq="360min")
+                Qsim.index = date_range
                 Qsim = Qsim.resample('24H', label="right", closed="right").mean()
-                Qsim = np.array(Qsim) #[1].values + 0.001
+                Qsim = np.array(Qsim)
                 # Same for Qobs
                 Qobs = observed_streamflow[cal_start:cal_end]
-                Qobs.index = pandas.date_range(cal_start, cal_end, freq="360min")
+                Qobs.index = date_range
                 Qobs = Qobs.resample('24H', label="right", closed="right").mean()
-                Qobs = np.array(Qobs) #[1].values + 0.001
+                Qobs = np.array(Qobs)
 
         elif cfg.calibration_freq == r"daily":
             # DD Untested code! DEBUG TODO
+            start = datetime.strptime(cal_start, "%d/%m/%Y %H:%M")
+            end = datetime.strptime(cal_end, "%d/%m/%Y %H:%M")
+            date_range = pandas.date_range(start, end, freq="360min")
             Qobs = observed_streamflow[cal_start:cal_start]
-            Qobs.index = pandas.date_range(cal_start, cal_start, freq="360min")
+            Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
             Qobs = np.array(Qobs) #[1].values + 0.001
 
         # Trim nans
-        Qsim = Qsim[~np.isnan(Qobs)]
-        Qobs = Qobs[~np.isnan(Qobs)]
+        # Qsim = Qsim[~np.isnan(Qobs)]
+        # Qobs = Qobs[~np.isnan(Qobs)]
 
-        # we shouldn't have NaNs in the arrays at this point
+        # we shouldn't have NaNs in the sim array at this point
         if np.isnan(Qsim).any():
             raise Exception('NaN found in Qsim')
-        if np.isnan(Qobs).any():
-            raise Exception('NaN found in Qobs')
+        # if np.isnan(Qobs).any():
+        #     raise Exception('NaN found in Qobs')
 
         return Qsim, Qobs
 
@@ -117,14 +124,14 @@ class ObjectiveDischarge():
 
         return fKGEComponents
 
-    def update_parameter_history(self, run_rand_id, parameters, fKGEComponents, gen, run):
+    def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
 
         cfg = self.cfg
 
         KGE = fKGEComponents[0]
 
         with open(os.path.join(self.subcatch.path, "runs_log.csv"), "a") as myfile:
-            myfile.write(str(run_rand_id)+","+str(KGE)+"\n")
+            myfile.write(str(run_id)+","+str(KGE)+"\n")
 
         # DD We want to check that the parameter space is properly sampled. Write them out to file now
         paramsHistoryFilename = os.path.join(self.subcatch.path, "paramsHistory.csv")
@@ -155,7 +162,7 @@ class ObjectiveDischarge():
         else:
             paramsHistoryFile = open(paramsHistoryFilename, "a")
             paramsHistory = ""
-        paramsHistory += str(run_rand_id) + ","
+        paramsHistory += str(run_id) + ","
         for i in [str(ip) + "," for ip in parameters]:
             paramsHistory += i
         for i in [str(ip) + "," for ip in fKGEComponents]:
@@ -166,13 +173,13 @@ class ObjectiveDischarge():
         paramsHistoryFile.write(paramsHistory)
         paramsHistoryFile.close()
 
-    def compute_objectives(self, run_rand_id):
+    def compute_objectives(self, run_id):
         # DD Extract simulation
-        simulated_streamflow = self.read_simulated_streamflow(run_rand_id)
+        simulated_streamflow = self.read_simulated_streamflow(run_id)
 
         Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
-            raise Exception("run_rand_id: "+str(run_rand_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
 
         fKGEComponents = self.compute_KGE(Qsim, Qobs)
 

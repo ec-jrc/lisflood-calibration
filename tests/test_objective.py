@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import xarray as xr
 from liscal import subcatchment, objective, utils
-
+import matplotlib.pyplot as plt
 
 def test_phistory_ranked(dummy_cfg):
 
@@ -135,6 +135,34 @@ def test_kge_synthetic(dummy_cfg):
     assert kge_comp == (0.9613349667410458, 0.9995939501541478, 0.9949282186830977, 0.9616711994094227, 973.489873)
 
 
+def test_kge_fail(dummy_cfg):
+    path_subcatch = dummy_cfg.path_subcatch
+    param_ranges = dummy_cfg.param_ranges
+    path_out = dummy_cfg.path_out
+
+    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380_fail.csv')
+    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.WarmupDays = 1095
+
+    print('checking if wrong dates in observations generates a ValueError')
+
+    station_data = {}
+    station_data['Cal_Start'] = '02/01/2009 06:00'
+    station_data['Cal_End'] = '07/11/2017 12:00'
+    station_data['CAL_TYPE'] = 'NRT_6h'
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
+    try:
+        obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    except ValueError:
+        pass
+    else:
+        assert False
+
+    os.remove(dummy_cfg.Qtss_csv)
+
 def test_kge_real(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
@@ -171,33 +199,84 @@ def test_kge_real(dummy_cfg):
     os.remove(dummy_cfg.Qtss_csv)
     os.remove(os.path.join(subcatch.path_out, 'dis0.tss'))
 
-    assert kge_comp == (0.19782258295099509, 0.45760114392511725, 0.694222427139027, 0.49424100078463834, 23422.263992)
+    assert kge_comp == (0.583961732802424, 0.7703130232405978, 1.3460817211190588, 1.023646876900714, 69039.41991299999)
 
 
-def test_kge_fail(dummy_cfg):
+def test_kge_24h(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
     path_out = dummy_cfg.path_out
 
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380_fail.csv')
+    dummy_cfg.path_subcatch = os.path.join(dummy_cfg.subcatchment_path, '2733')
+    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_2733.csv')
     gzip_file(dummy_cfg.Qtss_csv)
     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.WarmupDays = 1095
 
-    print('checking if wrong dates in observations generates a ValueError')
+    print('checking kge function')
 
     station_data = {}
-    station_data['Cal_Start'] = '02/01/2009 06:00'
-    station_data['Cal_End'] = '07/11/2017 12:00'
-    station_data['CAL_TYPE'] = 'NRT_6h'
+    station_data['Cal_Start'] = '02/01/1995 06:00'
+    station_data['Cal_End'] = '01/11/2002 00:00'
+    station_data['CAL_TYPE'] = 'HIST_24h'
 
-    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
-    try:
-        obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
-    except ValueError:
-        pass
-    else:
-        assert False
+    subcatch = subcatchment.SubCatchment(dummy_cfg, 2733, station_data, initialise=False)
+    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    print(obj.observed_streamflow)
+
+    gzip_file(os.path.join(subcatch.path_out, 'dis008133470374.tss'))
+    sim = obj.read_simulated_streamflow('008133470374')
+    print(sim)
+
+    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    print(Qsim[dummy_cfg.WarmupDays:])
+    print(Qobs[dummy_cfg.WarmupDays:])
+
+    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    print(kge_comp)
 
     os.remove(dummy_cfg.Qtss_csv)
+    os.remove(os.path.join(subcatch.path_out, 'dis008133470374.tss'))
+
+    assert kge_comp == (0.4332305120518942, 0.4507688484024667, 0.863698541377526, 0.9684610247282592, 7304.1193571412505)
+
+
+def test_kge_6h(dummy_cfg):
+    path_subcatch = dummy_cfg.path_subcatch
+    param_ranges = dummy_cfg.param_ranges
+    path_out = dummy_cfg.path_out
+
+    dummy_cfg.path_subcatch = os.path.join(dummy_cfg.subcatchment_path, '892')
+    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_892.csv')
+    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.WarmupDays = 1095
+
+    print('checking kge function')
+
+    station_data = {}
+    station_data['Cal_Start'] = '02/01/2010 06:00'
+    station_data['Cal_End'] = '31/12/2017 00:00'
+    station_data['CAL_TYPE'] = 'NRT_6h'
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, 892, station_data, initialise=False)
+    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    print(obj.observed_streamflow)
+
+    gzip_file(os.path.join(subcatch.path_out, 'dis001497862365.tss'))
+    sim = obj.read_simulated_streamflow('001497862365')
+    print(sim)
+
+    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    print(Qsim[dummy_cfg.WarmupDays:])
+    print(Qobs[dummy_cfg.WarmupDays:])
+
+    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    print(kge_comp)
+
+    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(os.path.join(subcatch.path_out, 'dis001497862365.tss'))
+
+    assert kge_comp == (0.4332305120518942, 0.4507688484024667, 0.863698541377526, 0.9684610247282592, 7304.1193571412505)
