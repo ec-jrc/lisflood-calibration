@@ -64,12 +64,12 @@ def gzip_file(file_path):
 #     param_ranges = dummy_cfg.param_ranges
 #     path_out = dummy_cfg.path_out
 
-#     dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380.csv')
+#     dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380.csv')
 #     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
 #     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
 #     # dummy_cfg.forcing_start = datetime.strptime('02/01/2009 06:00', "%d/%m/%Y %H:%M")
 #     # dummy_cfg.forcing_end = datetime.strptime('02/01/2015 06:00', "%d/%m/%Y %H:%M")
-#     dummy_cfg.WarmupDays = 1095
+#     dummy_cfg.spinup_days = 1095
 
 #     print('checking kge function')
 
@@ -104,8 +104,8 @@ def test_kge_synthetic(dummy_cfg):
     param_ranges = dummy_cfg.param_ranges
     path_out = dummy_cfg.path_out
 
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'convergenceTester.csv')
-    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'convergenceTester.csv')
+    gzip_file(dummy_cfg.observed_discharges)
 
     print('checking kge function')
 
@@ -129,7 +129,7 @@ def test_kge_synthetic(dummy_cfg):
     kge_comp = obj.compute_KGE(Qsim, Qobs)
     print(kge_comp)
 
-    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(dummy_cfg.observed_discharges)
     os.remove(os.path.join(subcatch.path_out, 'dis1.tss'))
 
     assert kge_comp == (0.9613349667410458, 0.9995939501541478, 0.9949282186830977, 0.9616711994094227, 973.489873)
@@ -140,11 +140,11 @@ def test_kge_fail(dummy_cfg):
     param_ranges = dummy_cfg.param_ranges
     path_out = dummy_cfg.path_out
 
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380_fail.csv')
-    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380_fail.csv')
+    gzip_file(dummy_cfg.observed_discharges)
     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-    dummy_cfg.WarmupDays = 1095
+    dummy_cfg.spinup_days = 1095
 
     print('checking if wrong dates in observations generates a ValueError')
 
@@ -161,18 +161,18 @@ def test_kge_fail(dummy_cfg):
     else:
         assert False
 
-    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(dummy_cfg.observed_discharges)
 
 def test_kge_real(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
     path_out = dummy_cfg.path_out
 
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380.csv')
-    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380.csv')
+    gzip_file(dummy_cfg.observed_discharges)
     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-    dummy_cfg.WarmupDays = 1095
+    dummy_cfg.spinup_days = 1095
 
     print('checking kge function')
 
@@ -196,7 +196,7 @@ def test_kge_real(dummy_cfg):
     kge_comp = obj.compute_KGE(Qsim, Qobs)
     print(kge_comp)
 
-    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(dummy_cfg.observed_discharges)
     os.remove(os.path.join(subcatch.path_out, 'dis0.tss'))
 
     assert kge_comp == (0.583961732802424, 0.7703130232405978, 1.3460817211190588, 1.023646876900714, 69039.41991299999)
@@ -208,11 +208,11 @@ def test_kge_24h(dummy_cfg):
     path_out = dummy_cfg.path_out
 
     dummy_cfg.path_subcatch = os.path.join(dummy_cfg.subcatchment_path, '2733')
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_2733.csv')
-    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_2733.csv')
+    gzip_file(dummy_cfg.observed_discharges)
     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-    dummy_cfg.WarmupDays = 1095
+    dummy_cfg.spinup_days = 1095
 
     print('checking kge function')
 
@@ -230,13 +230,13 @@ def test_kge_24h(dummy_cfg):
     print(sim)
 
     Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
-    print(Qsim[dummy_cfg.WarmupDays:])
-    print(Qobs[dummy_cfg.WarmupDays:])
+    print(Qsim[dummy_cfg.spinup_days:])
+    print(Qobs[dummy_cfg.spinup_days:])
 
     kge_comp = obj.compute_KGE(Qsim, Qobs)
     print(kge_comp)
 
-    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(dummy_cfg.observed_discharges)
     os.remove(os.path.join(subcatch.path_out, 'dis008133470374.tss'))
 
     assert kge_comp == (0.4332305120518942, 0.4507688484024667, 0.863698541377526, 0.9684610247282592, 7304.1193571412505)
@@ -248,11 +248,11 @@ def test_kge_6h(dummy_cfg):
     path_out = dummy_cfg.path_out
 
     dummy_cfg.path_subcatch = os.path.join(dummy_cfg.subcatchment_path, '892')
-    dummy_cfg.Qtss_csv = os.path.join(dummy_cfg.path_subcatch, 'Qtss_892.csv')
-    gzip_file(dummy_cfg.Qtss_csv)
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_892.csv')
+    gzip_file(dummy_cfg.observed_discharges)
     dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
     dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-    dummy_cfg.WarmupDays = 1095
+    dummy_cfg.spinup_days = 1095
 
     print('checking kge function')
 
@@ -270,13 +270,13 @@ def test_kge_6h(dummy_cfg):
     print(sim)
 
     Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
-    print(Qsim[dummy_cfg.WarmupDays:])
-    print(Qobs[dummy_cfg.WarmupDays:])
+    print(Qsim[dummy_cfg.spinup_days:])
+    print(Qobs[dummy_cfg.spinup_days:])
 
     kge_comp = obj.compute_KGE(Qsim, Qobs)
     print(kge_comp)
 
-    os.remove(dummy_cfg.Qtss_csv)
+    os.remove(dummy_cfg.observed_discharges)
     os.remove(os.path.join(subcatch.path_out, 'dis001497862365.tss'))
 
-    assert kge_comp == (0.4332305120518942, 0.4507688484024667, 0.863698541377526, 0.9684610247282592, 7304.1193571412505)
+    assert kge_comp == (0.8087191318516062, 0.8992883303124082, 1.1618604067180205, 0.9842920769858771, 109250.76130000001)

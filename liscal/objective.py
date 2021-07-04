@@ -28,7 +28,7 @@ class ObjectiveDischarge():
         cfg = self.cfg
         subcatch = self.subcatch
         
-        streamflow_data = pandas.read_csv(cfg.Qtss_csv, sep=",", index_col=0)
+        streamflow_data = pandas.read_csv(cfg.observed_discharges, sep=",", index_col=0)
         # check that date format is correct
         pandas.to_datetime(streamflow_data.index, format='%d/%m/%Y %H:%M', errors='raise')
         
@@ -116,11 +116,11 @@ class ObjectiveDischarge():
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
-                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, warmup=cfg.WarmupDays, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
+                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
             else:
-                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, warmup=4*cfg.WarmupDays, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
+                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=4*cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
         elif cfg.calibration_freq == r"daily":
-            fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, warmup=cfg.WarmupDays, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
+            fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
 
         return fKGEComponents
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Please refer to quick_guide.pdf for usage instructions"""
 import os
@@ -55,11 +56,11 @@ if __name__ == '__main__':
     cfg = config.Config(settings_file)
 
     # Read full list of stations, index is obsid
-    print(">> Reading Qmeta2.csv file...")
-    stations_meta = pandas.read_csv(cfg.Qmeta_csv, sep=",", index_col=0)
+    print(">> Reading stations_data file...")
+    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
 
     # Calibrate lisflood fo specified station
-    obsid = args.station
+    obsid = int(args.station)
     try:
         station_data = stations_meta.loc[obsid]
     except KeyError as e:

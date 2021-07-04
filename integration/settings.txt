@@ -1,28 +1,38 @@
 [MAIN]
-ObservationsStart = 1/1/1990 00:00
-ObservationsEnd = 01/07/2018 00:00
-ForcingStart = 2/1/1990 06:00
-ForcingEnd = 31/12/2017 06:00
-WarmupDays = 1095
-calibrationFreq = 6-hourly
-fastDebug = 0
+observations_start = 1/1/1990 00:00
+observations_end = 01/07/2018 00:00
+forcing_start = 2/1/1990 06:00
+forcing_end = 31/12/2017 06:00
+spinup_days = 1095
+calibration_freq = 6-hourly
+fast_debug = 0
 
 [CSV]
-Qmeta = STATIONS
-Qtss = OBS
+stations_data = STATIONS/stations_runtimes.csv
+observed_discharges = STATIONS/observed_discharges.csv
+stations_links = STATIONS/stations_links.csv
 
 [Path]
-Result = ROOT/result/
-SubCatchmentPath = ROOT/catchments/
-ParamRanges = SRC/tests/data/ParamRanges_LISFLOOD.csv
+result = RESULTS
+param_ranges = TEMPLATES/param_ranges_LISFLOOD.csv
+subcatchment_path = CATCHMENTS_DIR
 
 [Templates]
-LISFLOODSettings = SRC/templates/settings_LF_CUT.xml
+LISFLOODSettings = TEMPLATES/settings_LF_CUT.xml
 
 [DEAP]
 numCPUs = NCPUS
-minGen = 6
-maxGen = 16
+min_gen = 6
+max_gen = 16
 mu = 18
 lambda_ = 36
 pop = 72
+# NOTES:
+# min_gen = Run at least this number of generations.
+# max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
+# mu = # of best children chosen to feed into the next generation (JRC decided to make it 2x calibration parameters)
+#      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
+# Lamda = # of children spawned at every generation (= # threads to run in parallel)
+#         This must always be twice mu
+
+

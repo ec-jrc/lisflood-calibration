@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Please refer to quick_guide.pdf for usage instructions"""
 import os
@@ -26,7 +27,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
     if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==True:
         hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template)
     else:
-        raise Exception('Could not find optimnal parameters for long term run')
+        raise Exception('Could not find optimnal parameters for long term run. Please calibrate to generate pareto_front.csv first.')
 
 
 if __name__ == '__main__':
@@ -37,16 +38,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     settings_file = args.settings_file
-    stations_list = args.stations
 
     cfg = config.Config(settings_file)
 
     # Read full list of stations, index is obsid
-    print(">> Reading Qmeta2.csv file...")
-    stations_meta = pandas.read_csv(cfg.Qmeta_csv, sep=",", index_col=0)
+    print(">> Reading stations_data file...")
+    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
 
     # Long term run for specified station
-    obsid = args.station
+    obsid = int(args.station)
     try:
         station_data = stations_meta.loc[obsid]
     except KeyError as e:

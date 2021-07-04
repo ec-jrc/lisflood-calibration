@@ -46,7 +46,7 @@ class SubCatchment():
             # !!!! rewrite cfg parameters
             cfg.forcing_start = datetime.strptime(cal_start, '%d/%m/%Y %H:%M')
             cfg.forcing_end = datetime.strptime(cal_end, '%d/%m/%Y %H:%M')
-            cfg.WarmupDays = 0
+            cfg.spinup_days = 0
 
         return cal_start, cal_end
 
@@ -75,12 +75,12 @@ class SubCatchment():
         # Copy simulated streamflow from upstream catchments
         # Change inlet map by replacing the numeric ID's with 1, 2, ...
         print("Upstream station(s): ")
-        direct_links = pandas.read_csv(os.path.join(cfg.path_result, "direct_links.csv"), sep=",", index_col=0)
+        stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
         inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
         if os.path.isfile(inflow_tss):
             os.remove(inflow_tss)
 
-        upstream_catchments = [int(i) for i in direct_links.loc[self.obsid].values if not np.isnan(i)]
+        upstream_catchments = [int(i) for i in stations_links.loc[self.obsid].values if not np.isnan(i)]
 
         count = 1
         all_inflows = None

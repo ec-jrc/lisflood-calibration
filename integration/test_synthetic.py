@@ -49,7 +49,7 @@ if __name__ == '__main__':
     cfg = config.Config(args.settings)
 
     print(">> Reading stations.csv file...")
-    stations = pandas.read_csv(cfg.Qmeta_csv, sep=",", index_col=0)
+    stations = pandas.read_csv(cfg.observed_discharges, sep=",", index_col=0)
     try:
         station_data = stations.loc[obsid]
     except KeyError as e:

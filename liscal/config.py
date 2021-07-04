@@ -9,8 +9,8 @@ class DEAPParameters():
 
     def __init__(self, parser):
         self.num_cpus = int(parser.get('DEAP','numCPUs'))
-        self.min_gen = int(parser.get('DEAP','minGen'))
-        self.max_gen = int(parser.get('DEAP','maxGen'))
+        self.min_gen = int(parser.get('DEAP','min_gen'))
+        self.max_gen = int(parser.get('DEAP','max_gen'))
         self.pop = int(parser.get('DEAP','pop'))
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
@@ -35,15 +35,15 @@ class Config():
                 print('  - {}: {}'.format(key, value)) 
 
         # paths
-        self.path_result = parser.get('Path', 'Result')
-        self.subcatchment_path = parser.get('Path','SubCatchmentPath')
+        self.path_result = parser.get('Path', 'result')
+        self.subcatchment_path = parser.get('Path','subcatchment_path')
 
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
 
         # deap
-        self.param_ranges = pandas.read_csv(parser.get('Path','ParamRanges'), sep=",", index_col=0)
+        self.param_ranges = pandas.read_csv(parser.get('Path','param_ranges'), sep=",", index_col=0)
         self.deap_param = DEAPParameters(parser)
         # Load param ranges file
 
@@ -51,16 +51,17 @@ class Config():
         self.lisflood_template = parser.get('Templates','LISFLOODSettings')
 
         # Debug/test parameters
-        self.fast_debug = bool(int(parser.get('MAIN', 'fastDebug')))
+        self.fast_debug = bool(int(parser.get('MAIN', 'fast_debug')))
 
         # Date parameters
-        self.ObservationsStart = datetime.strptime(parser.get('MAIN', 'ObservationsStart'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.ObservationsEnd = datetime.strptime(parser.get('MAIN', 'ObservationsEnd'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_start = datetime.strptime(parser.get('MAIN','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime(parser.get('MAIN','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.WarmupDays = int(parser.get('MAIN', 'WarmupDays'))
-        self.calibration_freq = parser.get('MAIN', 'calibrationFreq')
+        self.observations_start = datetime.strptime(parser.get('MAIN', 'observations_start'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.observations_end = datetime.strptime(parser.get('MAIN', 'observations_end'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = datetime.strptime(parser.get('MAIN','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(parser.get('MAIN','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.spinup_days = int(parser.get('MAIN', 'spinup_days'))
+        self.calibration_freq = parser.get('MAIN', 'calibration_freq')
 
         # observations
-        self.Qtss_csv = parser.get('CSV', 'Qtss')
-        self.Qmeta_csv = parser.get('CSV', 'Qmeta')
+        self.observed_discharges = parser.get('CSV', 'observed_discharges')
+        self.stations_data = parser.get('CSV', 'stations_data')
+        self.direct_links = parser.get('CSV', 'direct_links')

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Please refer to quick_guide.pdf for usage instructions"""
 
@@ -11,12 +12,7 @@ import time
 import struct
 import shutil
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
+from configparser import ConfigParser # Python 3.8
 
 ########################################################################
 #   Read settings file
@@ -27,29 +23,21 @@ file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 print("=================== START ===================")
 print(">> Reading settings file ("+sys.argv[1]+")...")
 
-if ver.find('3.') > -1:
-	parser = ConfigParser()  # python 3.8
-else:
-	parser = SafeConfigParser()  # python 2.7-15
+parser = ConfigParser()  # python 3.8
 parser.read(iniFile)
 
-path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'),"maps")
 path_result = parser.get('Path', 'Result')
 
-CatchmentDataPath = parser.get('Path','CatchmentDataPath')
-SubCatchmentPath = parser.get('Path','SubCatchmentPath')
+subcatchment_path = parser.get('Path','subcatchment_path')
 
-pcraster_path = parser.get('Path', 'PCRHOME')
-
-path_MeteoData = parser.get('Path', 'MeteoData')
-
-switch_SubsetMeteoData = int(parser.get('DEFAULT', 'SubsetMeteoData'))
-
-path_gauges = parser.get("Path", "gaugesPath")
+path_gauges = parser.get("Path", "gauges_path")
+interstation_regions = parser.get("Path", "interstation_regions")
+inlets =parser.get("Path", "inlets")
+stations_data_path = parser.get("CSV", "stations_data")
 
 config = {}
 for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-	config[execname] = getPCrasterPath(pcraster_path,sys.argv[1],execname)
+	config[execname] = execname
 
 pcrcalc = config["pcrcalc"]
 col2map = config["col2map"]
@@ -61,8 +49,8 @@ resample = config["resample"]
 #   Make stationdata array from the Qmeta csv
 ########################################################################
 
-print(">> Reading Qmeta2.csv file...")
-stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
+print(">> Reading stations_data file...")
+stationdata = pandas.read_csv(stations_data_path, sep=",", index_col='ObsID')
 stationdata_sorted = stationdata.sort_values(by=['DrainingArea.km2.LDD'],ascending=True)
 
 CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)
@@ -81,7 +69,7 @@ for index, row in stationdata_sorted.iterrows():
 
 	t = time.time()
 
-	path_subcatch = os.path.join(SubCatchmentPath,str(catchment))
+	path_subcatch = os.path.join(subcatchment_path,str(catchment))
 	path_temp = path_subcatch  # parser.get('Path', 'Temp') DD make the temp folder separate for each catchment or you'll get weird results when making the cut small masks
 
 	# Delete all files in catchment directory
@@ -104,8 +92,7 @@ for index, row in stationdata_sorted.iterrows():
 	
 	# Make mask map for subcatchment
 	subcatchmask_map = os.path.join(path_subcatch,"maps","mask.map")
-	interstation_regions_map = os.path.join(path_result,"interstation_regions.map")
-	pcrasterCommand(pcrcalc + " 'F0 = boolean(if(scalar(F1) eq "+str(index)+",scalar(1)))'", {"F0":subcatchmask_map,"F1":interstation_regions_map})
+	pcrasterCommand(pcrcalc + " 'F0 = boolean(if(scalar(F1) eq "+str(index)+",scalar(1)))'", {"F0":subcatchmask_map,"F1":interstation_regions})
 	tmp1_map = os.path.join(path_temp,"tmp1.map")
 	smallsubcatchmask_map = os.path.join(path_subcatch,"maps","masksmall.map")
 	pcrasterCommand(pcrcalc + " 'F0 = if(F1==1,F2)'", {"F0": tmp1_map, "F1":subcatchmask_map,"F2":subcatchmask_map})
@@ -187,9 +174,8 @@ for index, row in stationdata_sorted.iterrows():
 	pcrasterCommand(resample + " F0 F1 --clone F2" , {"F0": subcatchstation_map, "F1":subcatchstation_small_map, "F2":smallsubcatchmask_map})
 
 	# Make inlet map
-	inlets_map = os.path.join(path_result,"inlets.map")
 	subcatchinlets_map = os.path.join(path_subcatch,"inflow","inflow.map")
-	shutil.copyfile(inlets_map,subcatchinlets_map)
+	shutil.copyfile(inlets,subcatchinlets_map)
 	pcrasterCommand(pcrcalc + " 'F0 = F1*scalar(F2)'", {"F0":subcatchinlets_map,"F1":subcatchinlets_map,"F2":subcatchmask_map})
 		
 	elapsed = time.time() - t
