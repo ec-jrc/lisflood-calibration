@@ -35,7 +35,6 @@ class Config():
                 print('  - {}: {}'.format(key, value)) 
 
         # paths
-        self.path_result = parser.get('Path', 'result')
         self.subcatchment_path = parser.get('Path','subcatchment_path')
 
         self.pcraster_cmd = {}
@@ -64,4 +63,4 @@ class Config():
         # observations
         self.observed_discharges = parser.get('CSV', 'observed_discharges')
         self.stations_data = parser.get('CSV', 'stations_data')
-        self.direct_links = parser.get('CSV', 'direct_links')
+        self.stations_links = parser.get('CSV', 'stations_links')

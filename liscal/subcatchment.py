@@ -75,6 +75,8 @@ class SubCatchment():
         # Copy simulated streamflow from upstream catchments
         # Change inlet map by replacing the numeric ID's with 1, 2, ...
         print("Upstream station(s): ")
+        if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
+            raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
         stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
         inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
         if os.path.isfile(inflow_tss):

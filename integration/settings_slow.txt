@@ -8,16 +8,16 @@ calibration_freq = 6-hourly
 fast_debug = 0
 
 [CSV]
-stations_data = STATIONS/stations_runtimes.csv
-observed_discharges = STATIONS/observed_discharges.csv
+stations_data = STATIONS/stations_data_synthetic.csv
+stations_links = STATIONS/stations_links.csv
+observed_discharges = OBS
 
 [Path]
-result = RESULTS
-param_ranges = TEMPLATES/param_ranges_LISFLOOD.csv
+param_ranges = TEMPLATES/param_ranges.csv
 subcatchment_path = CATCHMENTS_DIR
 
 [Templates]
-LISFLOODSettings = TEMPLATES/settings_LF_CUT.xml
+LISFLOODSettings = TEMPLATES/settings_lisflood.xml
 
 [DEAP]
 numCPUs = NCPUS
