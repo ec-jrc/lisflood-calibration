@@ -74,7 +74,7 @@ def test_deap_single_obj(dummy_cfg):
     target = np.arange(1, n_param+1)/n_param
     model = ModelSingleObj(lock_mgr, target)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run)
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1])
     target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
 
     assert target[0] > 0.9
@@ -91,7 +91,7 @@ def test_deap_mult_obj(dummy_cfg, value):
     target = value*np.ones(len(dummy_cfg.param_ranges))
     model = ModelMultObj(lock_mgr, target)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, len(dummy_cfg.param_ranges))
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1 for i in range(len(dummy_cfg.param_ranges))])
     target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
 
     assert target[0] > 0.99

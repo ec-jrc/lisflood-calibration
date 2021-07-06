@@ -6,6 +6,7 @@ import xarray as xr
 from liscal import subcatchment, objective, utils
 import matplotlib.pyplot as plt
 
+
 def test_phistory_ranked(dummy_cfg):
 
     path_subcatch = dummy_cfg.path_subcatch
@@ -15,7 +16,7 @@ def test_phistory_ranked(dummy_cfg):
     print('checking pHistory file')
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, None, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch, read_observations=False)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch, read_observations=False)
 
     pHistory = obj.read_param_history()
     pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_out)
@@ -35,7 +36,7 @@ def test_pareto_front(dummy_cfg):
     print('checking pareto_front file')
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, None, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch, read_observations=False)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch, read_observations=False)
 
     pHistory = obj.read_param_history()
     pHistory_ranked = obj.write_ranked_solution(pHistory, path_out=path_out)
@@ -79,7 +80,7 @@ def gzip_file(file_path):
 #     station_data['CAL_TYPE'] = 'NRT_6h'
 
 #     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
-#     obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+#     obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
 #     print(obj.observed_streamflow)
 #     obs = obj.observed_streamflow[~np.isnan(obj.observed_streamflow)]
 #     print(obs)
@@ -115,7 +116,7 @@ def test_kge_synthetic(dummy_cfg):
     station_data['CAL_TYPE'] = 'NRT_6h'
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
     print(obj.observed_streamflow)
 
     gzip_file(os.path.join(subcatch.path_out, 'dis1.tss'))
@@ -155,7 +156,7 @@ def test_kge_fail(dummy_cfg):
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
     try:
-        obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+        obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
     except ValueError:
         pass
     else:
@@ -182,7 +183,7 @@ def test_kge_real(dummy_cfg):
     station_data['CAL_TYPE'] = 'NRT_6h'
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
     print(obj.observed_streamflow)
 
     gzip_file(os.path.join(subcatch.path_out, 'dis0.tss'))
@@ -222,7 +223,7 @@ def test_kge_24h(dummy_cfg):
     station_data['CAL_TYPE'] = 'HIST_24h'
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 2733, station_data, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
     print(obj.observed_streamflow)
 
     gzip_file(os.path.join(subcatch.path_out, 'dis008133470374.tss'))
@@ -262,7 +263,7 @@ def test_kge_6h(dummy_cfg):
     station_data['CAL_TYPE'] = 'NRT_6h'
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 892, station_data, initialise=False)
-    obj = objective.ObjectiveDischarge(dummy_cfg, subcatch)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
     print(obj.observed_streamflow)
 
     gzip_file(os.path.join(subcatch.path_out, 'dis001497862365.tss'))

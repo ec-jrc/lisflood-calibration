@@ -5,13 +5,18 @@ from datetime import datetime, timedelta
 
 from liscal import hydro_stats, utils
 
+class ObjectiveKGEMulti(ObjectiveKGE):
+    def __init__(self, cfg, subcatch, read_observations=True):
 
-class ObjectiveDischarge():
+        self
+
+class ObjectiveKGE():
 
     def __init__(self, cfg, subcatch, read_observations=True):
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
+        self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
             self.observed_streamflow = self.read_observed_streamflow()
@@ -129,6 +134,8 @@ class ObjectiveDischarge():
         cfg = self.cfg
 
         KGE = fKGEComponents[0]
+
+        print('Generation {}, run {} done. KGE: {:.3f}'.format(gen, run, KGE))
 
         with open(os.path.join(self.subcatch.path, "runs_log.csv"), "a") as myfile:
             myfile.write(str(run_id)+","+str(KGE)+"\n")

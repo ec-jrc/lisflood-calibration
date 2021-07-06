@@ -72,15 +72,12 @@ class HydrologicalModel():
             traceback.print_exc()
             raise Exception("")
 
-        fKGEComponents = self.objective.compute_objectives(run_id)
-
-        KGE = fKGEComponents[0]
-        print('Generation {}, run {} done. KGE: {:.3f}'.format(gen, run, KGE))
+        objectives = self.objective.compute_objectives(run_id)
 
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
 
-        return fKGEComponents  # If using just one objective function, put a comma at the end!!!
+        return objectives  # If using just one objective function, put a comma at the end!!!
 
 
 def read_parameters(path_subcatch):
