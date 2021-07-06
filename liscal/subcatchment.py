@@ -3,7 +3,7 @@ import sys
 import pandas
 import numpy as np
 import pcraster as pcr
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from liscal import pcr_utils, utils
 
@@ -42,11 +42,15 @@ class SubCatchment():
 
         if cfg.fast_debug:
             # Turn this on for debugging faster. You can speed up further by setting maxGen = 1
-            cal_end = (datetime.strptime(cal_start, '%d/%m/%Y %H:%M') + timedelta(days=1121)).strftime('%d/%m/%Y %H:%M')
+            cal_start = (datetime.strptime(cal_start, '%d/%m/%Y %H:%M') + timedelta(days=cfg.spinup_days)).strftime('%d/%m/%Y %H:%M')
+            cal_end = (datetime.strptime(cal_start, '%d/%m/%Y %H:%M') + timedelta(days=120)).strftime('%d/%m/%Y %H:%M')
             # !!!! rewrite cfg parameters
             cfg.forcing_start = datetime.strptime(cal_start, '%d/%m/%Y %H:%M')
             cfg.forcing_end = datetime.strptime(cal_end, '%d/%m/%Y %H:%M')
             cfg.spinup_days = 0
+            cfg.deap_param.lambda_ = 2
+            cfg.deap_param.mu = 2
+            cfg.deap_param.pop = 2
 
         return cal_start, cal_end
 
