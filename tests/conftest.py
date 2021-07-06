@@ -33,10 +33,10 @@ class DummyConfig():
     def __init__(self):
 
         # paths
-        self.path_result = path.join(DATA_DIR, 'results')
         self.path_out = path.join(OUT_DIR)
         self.subcatchment_path = path.join(DATA_DIR)
         self.path_subcatch = path.join(self.subcatchment_path, '380')
+        self.stations_links = path.join(DATA_DIR, 'stations_links.csv')
 
         pcraster_path = ''
         self.pcraster_cmd = {}
@@ -47,11 +47,11 @@ class DummyConfig():
         self.deap_param = DummyDEAPParameters()
 
         # Load param ranges file
-        param_ranges_file = path.join(DATA_DIR, 'ParamRanges_LISFLOOD.csv')
+        param_ranges_file = path.join(DATA_DIR, 'param_ranges.csv')
         self.param_ranges = pandas.read_csv(param_ranges_file, sep=",", index_col=0)
 
         # template
-        self.lisflood_template = path.join(ROOT_DIR, 'templates','settings_LF_CUT.xml')
+        self.lisflood_template = path.join(ROOT_DIR, 'templates','settings_lisflood.xml')
 
         # Debug/test parameters
         self.fast_debug = False
@@ -59,7 +59,7 @@ class DummyConfig():
         # Date params
         self.forcing_start = datetime.strptime('31/12/2016 06:00', "%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-        self.WarmupDays = 30
+        self.spinup_days = 30
         self.calibration_freq = '6-hourly'
 
 

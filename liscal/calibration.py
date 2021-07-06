@@ -124,7 +124,7 @@ class Criteria():
 
 class CalibrationDeap():
 
-    def __init__(self, cfg, fun, n_obj=1):
+    def __init__(self, cfg, fun, objective_weights):
 
         deap_param = cfg.deap_param
 
@@ -132,17 +132,15 @@ class CalibrationDeap():
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
 
-        self.criteria = Criteria(deap_param, n_obj)
+        self.criteria = Criteria(deap_param, len(objective_weights))
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
 
         self.param_ranges = cfg.param_ranges
 
-        weights = [1.0 for i in range(n_obj)]
-
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=weights)
+        creator.create("FitnessMin", base.Fitness, weights=objective_weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
@@ -252,6 +250,7 @@ class CalibrationDeap():
         # Run the first generation, first random sampling of the parameter space
         fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
+            assert len(ind.fitness.weights) == len(fit)
             ind.fitness.values = fit
 
         halloffame.update(population) # DD this selects the best one
@@ -269,6 +268,7 @@ class CalibrationDeap():
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind) # DD this runs lisflood
         for ind, fit in zip(invalid_ind, fitnesses):
+            assert len(ind.fitness.weights) == len(fit)
             ind.fitness.values = fit
 
         # Update the hall of fame with the generated individuals

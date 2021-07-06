@@ -1,15 +1,13 @@
+#!/usr/bin/env python3
+
 from osgeo import gdal
 import pandas  as pd
 import xarray as xr
 import os
 import sys
 import numpy as np
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
+from configparser import ConfigParser # Python 3.8
+
 # import binFileIO
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 # import liscal.raster_operations as ro
@@ -27,35 +25,27 @@ file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 print("=================== START ===================")
 print(">> Reading settings file ("+sys.argv[1]+")...")
 
-if ver.find('3.') > -1:
-  parser = ConfigParser() # python 3.8
-else:
-  parser = SafeConfigParser()  # python 2.7-15
+parser = ConfigParser() # python 3.8
 parser.read(iniFile)
 
-path_maps = parser.get("Path", "CatchmentDataPath") + "../"
+path_maps = parser.get("Path", "input_maps_path")
 
-CatchmentDataPath = parser.get('Path','CatchmentDataPath')
-SubCatchmentPath = parser.get('Path','SubCatchmentPath')
-
-pcraster_path = parser.get('Path', 'PCRHOME')
+subcatchment_path = parser.get('Path','subcatchment_path')
 
 config = {}
 for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-    config[execname] = getPCrasterPath(pcraster_path,sys.argv[1],execname)
+    config[execname] = execname
 
 pcrcalc = config["pcrcalc"]
 col2map = config["col2map"]
 map2col = config["map2col"]
 resample = config["resample"]
 
-path_MeteoData = parser.get('Path', 'MeteoData')
-path_result = parser.get('Path', 'Result')
-switch_SubsetMeteoData = int(parser.get('DEFAULT', 'SubsetMeteoData'))
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
+stations_data_path = parser.get("CSV", "stations_data")
 
-print(">> Reading Qmeta2.csv file...")
-stationdata = pd.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
+print(">> Reading stations_data file...")
+stationdata = pd.read_csv(stations_data_path, sep=",", index_col='ObsID')
 stationdata_sorted = stationdata.sort_values(by=['DrainingArea.km2.LDD'],ascending=True)
 CatchmentsToProcess = pd.read_csv(file_CatchmentsToProcess,sep=",",header=None)
 
@@ -263,7 +253,7 @@ with dask.config.set(scheduler='threads'): #, pool=ThreadPool(cfg.ncpus)):  # [d
 
         #t = time.time()
         
-        path_subcatch = os.path.join(SubCatchmentPath,str(index))
+        path_subcatch = os.path.join(subcatchment_path,str(index))
         path_subcatch_maps = os.path.join(path_subcatch,'maps')
 
         # Cut bbox from ALL static maps and forcings for subcatchment

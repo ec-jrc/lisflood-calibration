@@ -17,7 +17,7 @@ def deleteOutput(subcatch_dir):
     ret, res = utils.run_cmd("rm -rf {}/*.csv".format(subcatch_dir))
 
 
-class ObjectiveDischargeTest(objective.ObjectiveDischarge):
+class ObjectiveKGETest(objective.ObjectiveKGE):
 
     def __init__(self, cfg, subcatch, param_target, tol):
 
@@ -49,11 +49,11 @@ if __name__ == '__main__':
     cfg = config.Config(args.settings)
 
     print(">> Reading stations.csv file...")
-    stations = pandas.read_csv(cfg.Qmeta_csv, sep=",", index_col=0)
+    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
     try:
-        station_data = stations.loc[obsid]
+        station_data = stations_meta.loc[obsid]
     except KeyError as e:
-        print(stations)
+        print(stations_meta)
         raise Exception('Station {} not found in stations file'.format(obsid))
 
     # hack shorter period
@@ -75,14 +75,14 @@ if __name__ == '__main__':
     # create objective and hydro model
     tol = float(args.tol)
     param_target = 0.5*np.ones(len(cfg.param_ranges))
-    obj = ObjectiveDischargeTest(cfg, subcatch, param_target, tol)
+    obj = ObjectiveKGETest(cfg, subcatch, param_target, tol)
     model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
     # load forcings and input maps in cache
     model.init_run()
 
     # create calib object and run
-    calib_deap = calibration.CalibrationDeap(cfg, model.run)
+    calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights)
     calib_deap.run(subcatch.path, lock_mgr)
 
     # process calibration results

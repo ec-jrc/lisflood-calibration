@@ -58,7 +58,7 @@ def filter_nan(s,o):
 
 
 
-def RSR(s,o,warmup):
+def RSR(s,o,spinup):
     """
     RMSE-observations standard deviation ratio
     input:
@@ -67,14 +67,14 @@ def RSR(s,o,warmup):
     output:
         RSR: RMSE-observations standard deviation ratio
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     RMSE = np.sqrt(np.sum((s-o) ** 2))
     STDEV_obs = np.sqrt(np.sum((o-np.mean(o)) ** 2))
     return RMSE/STDEV_obs
 
-def br(s,o,warmup):
+def br(s,o,spinup):
     """
     Bias ratio
     input:
@@ -83,12 +83,12 @@ def br(s,o,warmup):
     output:
         br: bias ratio
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 1 - abs(np.mean(s)/np.mean(o) - 1)
 
-def pc_bias(s,o,warmup):
+def pc_bias(s,o,spinup):
     """
     Percent Bias
     input:
@@ -97,12 +97,12 @@ def pc_bias(s,o,warmup):
     output:
         pc_bias: percent bias
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 100.0*sum(s-o)/sum(o)
 
-def pc_bias2(s,o,warmup):
+def pc_bias2(s,o,spinup):
     """
     Percent Bias 2
     input:
@@ -111,12 +111,12 @@ def pc_bias2(s,o,warmup):
     output:
         apb2: absolute percent bias 2
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 100*(np.mean(s)-np.mean(o))/np.mean(o)
 
-def apb(s,o,warmup):
+def apb(s,o,spinup):
     """
     Absolute Percent Bias
     input:
@@ -125,12 +125,12 @@ def apb(s,o,warmup):
     output:
         apb: absolute percent bias
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 100.0*sum(abs(s-o))/sum(o)
 
-def apb2(s,o,warmup):
+def apb2(s,o,spinup):
     """
     Absolute Percent Bias 2
     input:
@@ -139,12 +139,12 @@ def apb2(s,o,warmup):
     output:
         apb2: absolute percent bias 2
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 100*abs(np.mean(s)-np.mean(o))/np.mean(o)
 
-def rmse(s,o,warmup):
+def rmse(s,o,spinup):
     """
     Root Mean Squared Error
     input:
@@ -153,19 +153,19 @@ def rmse(s,o,warmup):
     output:
         rmses: root mean squared error
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return np.sqrt(np.mean((s-o)**2))
 
 # DD Total sum absolute error
-def sae(s, o, warmup):
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+def sae(s, o, spinup):
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return np.sum(abs(s-o))
 
-def mae(s,o,warmup):
+def mae(s,o,spinup):
     """
     Mean Absolute Error
     input:
@@ -174,15 +174,15 @@ def mae(s,o,warmup):
     output:
         maes: mean absolute error
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return np.mean(abs(s-o))
 
 # DD try using the MAE as objective function
-def maeSkill(s, o, warmup, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+def maeSkill(s, o, spinup, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     if lowFlowPercentileThreshold > 0:
         # DD Construct CDF of observation
@@ -195,9 +195,9 @@ def maeSkill(s, o, warmup, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
             # Filter out the low flow completely
             s = s[o > othr]
             o = o[o > othr]
-    return 1.0 - mae(s, o, warmup=-1)
+    return 1.0 - mae(s, o, spinup=-1)
 
-def bias(s,o,warmup):
+def bias(s,o,spinup):
     """
     Bias
     input:
@@ -206,12 +206,12 @@ def bias(s,o,warmup):
     output:
         bias: bias
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return np.mean(s-o)
 
-def NS(s,o,warmup):
+def NS(s,o,spinup):
     """
     Nash-Sutcliffe efficiency coefficient
     input:
@@ -220,12 +220,12 @@ def NS(s,o,warmup):
     output:
         NS: Nash-Sutcliffe efficient coefficient
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 1 - sum((s-o)**2)/(sum((o-np.mean(o))**2)+1e-20)
 
-def NSlog(s,o,warmup):
+def NSlog(s,o,spinup):
     """
     Nash-Sutcliffe efficiency coefficient from log-transformed data
     input:
@@ -234,14 +234,14 @@ def NSlog(s,o,warmup):
     output:
         NSlog: Nash-Sutcliffe efficient coefficient from log-transformed data
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     s = np.log(s)
     o = np.log(o)
     return 1 - sum((s-o)**2)/sum((o-np.mean(o))**2)
 
-def correlation(s,o,warmup):
+def correlation(s,o,spinup):
     """
     correlation coefficient
     input:
@@ -250,8 +250,8 @@ def correlation(s,o,warmup):
     output:
         correlation: correlation coefficient
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     if s.size == 0:
         corr = np.NaN
@@ -261,7 +261,7 @@ def correlation(s,o,warmup):
     return corr
 
 
-def index_agreement(s,o,warmup):
+def index_agreement(s,o,spinup):
     """
 	index of agreement
 	input:
@@ -270,13 +270,13 @@ def index_agreement(s,o,warmup):
     output:
         ia: index of agreement
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     ia = 1 -(np.sum((o-s)**2))/(np.sum((np.abs(s-np.mean(o))+np.abs(o-np.mean(o)))**2))
     return ia
 
-def KGE(s,o,warmup):
+def KGE(s,o,spinup):
     """
 	Modified Kling Gupta Efficiency (Kling et al., 2012, http://dx.doi.org/10.1016/j.jhydrol.2012.01.011)
 	input:
@@ -285,8 +285,8 @@ def KGE(s,o,warmup):
     output:
         KGE: Kling Gupta Efficiency
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     B = np.mean(s) / np.mean(o)
     y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
@@ -296,7 +296,7 @@ def KGE(s,o,warmup):
 
     return KGE
 
-def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
+def fKGE(s, o, spinup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
     """
 	Filtered Kling Gupta Efficiency (Kling et al., 2012, http://dx.doi.org/10.1016/j.jhydrol.2012.01.011)
 	input:
@@ -310,8 +310,8 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
     output:
         KGE: Kling Gupta Efficiency
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o) # This will also flatten the arrays
 
     r = np.corrcoef(o, s)[0,1]
@@ -335,7 +335,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
     else:
         B = np.mean(s) / np.mean(o)
         y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
-        se = sae(s, o, warmup=0)
+        se = sae(s, o, spinup=0)
     aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2)
     if aKGE < -100:
         aKGE = -100
@@ -362,7 +362,7 @@ def fKGE(s, o, warmup, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, us
 
     return (aKGE, r, B, y, se)
 
-def vr(s,o,warmup):
+def vr(s,o,spinup):
     """
 	Variability ratio
 	input:
@@ -371,7 +371,7 @@ def vr(s,o,warmup):
     output:
         vr: variability ratio
     """
-    s = s[warmup+1:]
-    o = o[warmup+1:]
+    s = s[spinup+1:]
+    o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 1 - abs((np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o)) - 1)

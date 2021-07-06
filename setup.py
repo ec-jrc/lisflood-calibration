@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import os
 
 exec(open('liscal/version.py').read())
 
@@ -12,9 +13,7 @@ setup(
     description="LISFLOOD calibration tool",
     long_description=long_description,    
     packages=find_packages(exclude=["test_*", "*.tests", "*.tests.*", "tests.*", "tests"]),
-    scripts=[
-        "bin/CAL_7_PERFORM_CAL.py",
-    ],
+    scripts=[os.path.join('bin', i) for i in os.listdir('bin')],
     install_requires=[
         "numpy",
         "pandas",
