@@ -49,11 +49,11 @@ if __name__ == '__main__':
     cfg = config.Config(args.settings)
 
     print(">> Reading stations.csv file...")
-    stations = pandas.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
     try:
-        station_data = stations.loc[obsid]
+        station_data = stations_meta.loc[obsid]
     except KeyError as e:
-        print(stations)
+        print(stations_meta)
         raise Exception('Station {} not found in stations file'.format(obsid))
 
     # hack shorter period
