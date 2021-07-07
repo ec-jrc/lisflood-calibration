@@ -31,6 +31,7 @@ def test_subcatchment_full(dummy_cfg):
     station_data = {}
     station_data['Cal_Start'] = '29/12/1984 00:00'  # my birthday, presents accepted ^^
     station_data['Cal_End'] = '01/06/2021 00:00'
+    station_data['CAL_TYPE'] = 'NRT_6h'
 
     gzip_inflow(os.path.join(dummy_cfg.subcatchment_path, str(380)))
 
@@ -52,6 +53,7 @@ def test_calibration_start_end(dummy_cfg):
     station_data = {}
     station_data['Cal_Start'] = '29/12/1984 00:00'  # my birthday, presents accepted ^^
     station_data['Cal_End'] = '01/06/2021 00:00'
+    station_data['CAL_TYPE'] = 'NRT_6h'
 
     subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
 

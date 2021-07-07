@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import pandas
+import pandas as pd
 from datetime import datetime, timedelta
 
 from liscal import hydro_stats, utils
@@ -17,6 +17,7 @@ class ObjectiveKGE():
         if read_observations:
             self.observed_streamflow = self.read_observed_streamflow()
 
+
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
         parameters = [None] * len(param_ranges)
@@ -27,71 +28,75 @@ class ObjectiveKGE():
 
     def read_observed_streamflow(self):
         cfg = self.cfg
-        subcatch = self.subcatch
+        start = self.subcatch.cal_start
+        end = self.subcatch.cal_end
         
-        streamflow_data = pandas.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+        streamflow_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
         # check that date format is correct
-        pandas.to_datetime(streamflow_data.index, format='%d/%m/%Y %H:%M', errors='raise')
+        pd.to_datetime(streamflow_data.index, format='%d/%m/%Y %H:%M', errors='raise')
         
-        observed_streamflow = streamflow_data[str(subcatch.obsid)]
-        observed_streamflow = observed_streamflow[cfg.forcing_start.strftime('%d/%m/%Y %H:%M'):cfg.forcing_end.strftime('%d/%m/%Y %H:%M')] # Keep only the part for which we run LISFLOOD
-        observed_streamflow = observed_streamflow[subcatch.cal_start:subcatch.cal_end]
+        observed_streamflow = streamflow_data[str(self.subcatch.obsid)]
+        observed_streamflow = observed_streamflow[start:end]
+        assert datetime.strptime(observed_streamflow.index[0], "%d/%m/%Y %H:%M") >= cfg.forcing_start
+        assert datetime.strptime(observed_streamflow.index[-1], "%d/%m/%Y %H:%M") <= cfg.forcing_end
 
         return observed_streamflow
 
+
     def read_simulated_streamflow(self, run_id):
+        start = self.subcatch.cal_start
+        end = self.subcatch.cal_end
+
         Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
             print("run_id: "+str(run_id))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
-        simulated_streamflow = utils.read_tss(Qsim_tss)
-        simulated_streamflow[1][simulated_streamflow[1]==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
-        simulated_streamflow.index = [(datetime.strptime(self.subcatch.cal_start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
+        simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
+        simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
+        simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
+        assert simulated_streamflow.index[-1] == end
 
         return simulated_streamflow
 
     def resample_streamflows(self, simulated_streamflow, observed_streamflow):
         cfg = self.cfg
-        cal_start = self.subcatch.cal_start
-        cal_end = self.subcatch.cal_end
+        start = self.subcatch.cal_start
+        end = self.subcatch.cal_end
 
         # check that dates are compatible
         if not simulated_streamflow.index.equals(observed_streamflow.index):
             raise Exception('Simulated and observed streamflow dates not aligned!')
 
-        # synchronise simulated and observed streamflows - NaN when missing obs
-        # Q = pandas.concat({"Sim": simulated_streamflow[1], "Obs": self.observed_streamflow}, axis=1)  # .reset_index()
-
         # Finally, extract equal-length arrays from it
-        Qobs = np.array(observed_streamflow[cal_start:cal_end])
-        Qsim = np.array(simulated_streamflow[cal_start:cal_end])
+        Qobs = np.array(observed_streamflow[start:end])
+        Qsim = np.array(simulated_streamflow[start:end])
 
         if cfg.calibration_freq == r"6-hourly":
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
                 # start and end have to be in datetime format to avoid "dayfirst" type bugs
-                start = datetime.strptime(cal_start, "%d/%m/%Y %H:%M")
-                end = datetime.strptime(cal_end, "%d/%m/%Y %H:%M")
-                date_range = pandas.date_range(start, end, freq="360min")
+                start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
+                end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
+                date_range = pd.date_range(start_pd, end_pd, freq="360min")
                 # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
-                Qsim = simulated_streamflow[cal_start:cal_end]
+                Qsim = simulated_streamflow[start:end]
                 Qsim.index = date_range
                 Qsim = Qsim.resample('24H', label="right", closed="right").mean()
                 Qsim = np.array(Qsim)
                 # Same for Qobs
-                Qobs = observed_streamflow[cal_start:cal_end]
+                Qobs = observed_streamflow[start:end]
                 Qobs.index = date_range
                 Qobs = Qobs.resample('24H', label="right", closed="right").mean()
                 Qobs = np.array(Qobs)
 
         elif cfg.calibration_freq == r"daily":
             # DD Untested code! DEBUG TODO
-            start = datetime.strptime(cal_start, "%d/%m/%Y %H:%M")
-            end = datetime.strptime(cal_end, "%d/%m/%Y %H:%M")
-            date_range = pandas.date_range(start, end, freq="360min")
-            Qobs = observed_streamflow[cal_start:cal_start]
+            start = datetime.strptime(start, "%d/%m/%Y %H:%M")
+            end = datetime.strptime(end, "%d/%m/%Y %H:%M")
+            date_range = pd.date_range(start, end, freq="360min")
+            Qobs = observed_streamflow[start:end]
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
             Qobs = np.array(Qobs) #[1].values + 0.001
@@ -107,23 +112,6 @@ class ObjectiveKGE():
         #     raise Exception('NaN found in Qobs')
 
         return Qsim, Qobs
-
-    def compute_KGE(self, Qsim, Qobs):
-        cfg = self.cfg
-
-        # Compute objective function score
-        # # DD A few attempts with filtering of peaks and low flows
-        if cfg.calibration_freq == r"6-hourly":
-            # DD: Check if daily or 6-hourly observed streamflow is available
-            # DD: Aggregate 6-hourly simulated streamflow to daily ones
-            if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
-                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
-            else:
-                fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=4*cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
-        elif cfg.calibration_freq == r"daily":
-            fKGEComponents = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=cfg.spinup_days, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOnly=False)
-
-        return fKGEComponents
 
     def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
 
@@ -177,6 +165,7 @@ class ObjectiveKGE():
         paramsHistoryFile.close()
 
     def compute_objectives(self, run_id):
+
         # DD Extract simulation
         simulated_streamflow = self.read_simulated_streamflow(run_id)
 
@@ -184,13 +173,41 @@ class ObjectiveKGE():
         if len(Qobs) != len(Qsim):
             raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
 
-        fKGEComponents = self.compute_KGE(Qsim, Qobs)
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
 
-        return fKGEComponents
+        return kge_components
+
+    def compute_statistics(self, run_id):
+
+        # DD Extract simulation
+        simulated_streamflow = self.read_simulated_streamflow(run_id)
+
+        Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
+        if len(Qobs) != len(Qsim):
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+
+        stats = {}
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
+        stats['kge'] = kge_components[0]
+        stats['corr'] = kge_components[1]
+        stats['bias'] = kge_components[2]
+        stats['spread'] = kge_components[3]
+        stats['sae'] = kge_components[4]
+        stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
+
+        index = simulated_streamflow.index
+        print(index)
+        print(Qsim)
+        print(Qobs)
+        Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
+
+        return Q, stats
+
 
     def read_param_history(self):
         path_subcatch = self.subcatch.path
-        pHistory = pandas.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
+        pHistory = pd.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
         return pHistory
 
     def write_ranked_solution(self, pHistory, path_out=None):
@@ -233,7 +250,7 @@ class ObjectiveKGE():
         paramvals[:] = np.NaN
         for ipar, par in enumerate(param_ranges.index):
             paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
-        pareto_front = pandas.DataFrame(
+        pareto_front = pd.DataFrame(
             {
                 'effover': pHistory["Kling Gupta Efficiency"].loc[bestParetoIndex],
                 'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]

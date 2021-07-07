@@ -1240,399 +1240,43 @@ def main(*args, **kwargs):
 
     #### CREATE PLOTS FROM HERE ###
 
-    # # FIGURE OF return periods
-    #
-    # fig = plt.figure()
-    # gs = GridSpec(3, 2, figure=fig)
-    # # create axes
-    # ax1 = fig.add_subplot(gs[0,0])
-    # Qf.plotReturnPeriods()
-    # # plotReturnPeriods(ax1, dFramesmonTfit[0][1], 'dis', fitsmonTfit, mode='T', tstep='M', Tfit=True)
-    # # drawReturnPeriods(ax1, mindate=0.95*Tmon[0], maxdate=Tmon[-1]*1.05)
+    # FIGURE OF return periods
+
+    fig = plt.figure()
+    gs = GridSpec(3, 2, figure=fig)
+    # create axes
+    ax1 = fig.add_subplot(gs[0,0])
+    Qf.plotReturnPeriods()
+    # plotReturnPeriods(ax1, dFramesmonTfit[0][1], 'dis', fitsmonTfit, mode='T', tstep='M', Tfit=True)
+    # drawReturnPeriods(ax1, mindate=0.95*Tmon[0], maxdate=Tmon[-1]*1.05)
+    # ax2 = fig.add_subplot(gs[0,1])
+    # plotReturnPeriods(ax2, dFramesmonpfit[0][1], 'dis', fitsmonpfit, mode='T', tstep='M', Tfit=False)
+    # drawReturnPeriods(ax2, mindate=0.95*Tmon[0], maxdate=Tmon[-1]*1.05)
     # # ax2 = fig.add_subplot(gs[0,1])
-    # # plotReturnPeriods(ax2, dFramesmonpfit[0][1], 'dis', fitsmonpfit, mode='T', tstep='M', Tfit=False)
-    # # drawReturnPeriods(ax2, mindate=0.95*Tmon[0], maxdate=Tmon[-1]*1.05)
-    # # # ax2 = fig.add_subplot(gs[0,1])
-    # # # plotReturnPeriods(ax2, dFrames[1][1], 'Obs', fits, mode='T', tstep='M')
-    # # ax3 = fig.add_subplot(gs[1,0])
-    # # plotReturnPeriods(ax3, dFrames[0][1], 'dis', fits, mode='cdf', tstep='M')
-    # # # ax4 = fig.add_subplot(gs[1,1])
-    # # # plotReturnPeriods(ax4, dFrames[1][1], 'Obs', fits, mode='cdf', tstep='Y')
-    # # ax5 = fig.add_subplot(gs[2, 0])
-    # # plotReturnPeriods(ax5, dFrames[0][1], 'dis', fits, mode='pdf', tstep='M')
-    # # # ax6 = fig.add_subplot(gs[2, 1])
-    # # # plotReturnPeriods(ax6, dFrames[1][1], 'Obs', fits, mode='pdf', tstep='M')
-    # maximizePlot()
-    # print("WAIT")
-    # # plt.scatter(ex['T'], ex[None], color=purple, linewidth=1)
-    # # # Esthetics
-    # # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
-    # # ax.grid(b=True, axis='y')
-    # # plt.rcParams["font.size"] = 14
-    # # plt.rcParams["font.weight"] = "bold"
-    # # plt.rcParams["axes.labelweight"] = "bold"
-    # # # horizontal axis
-    # # plt.xlabel(r'Month')
-    # # plt.xticks(range(1, 16), [""] + list(months))
-    # # plt.xlim([1.5, 15.5])
-    # # # vertical axis
-    # # plt.ylabel(r'Discharge [m3/s]')
-    # # # Add manually-made legend
-    # # genLegend()
-    # # # Restore the correct active axes
-    # # ax = fig.get_axes()[0]
-    # # plt.sca(ax)
-    # # # Maximize the window for optimal view
-    # # maximizePlot()
-    # # # linear scale
-    # # logscale = False
-    # # if logscale:
-    # # 	plt.yscale(r'log')
-    # # 	ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
-    # # 	ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
-    # # 	plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # else:
-    # # 	plt.yscale(r'linear')
-    # # 	plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # # Save the linear scale figure
-    # # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_linear.svg"), format='svg')
-    # # # Log scale for clearer skill cover
-    # # logscale = True
-    # # if logscale:
-    # # 	plt.yscale(r'log')
-    # # 	ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
-    # # 	ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
-    # # 	plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # else:
-    # # 	plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # # Save the logarithmic scale figure
-    # # plt.savefig(os.path.join(path_subcatch,"WEB", str(index) + "_Q_clim_log.svg"), format='svg')
-    # # plt.close("all")
-
-
-
-    # # ROEBBER DIAGRAM
-    # # Update the font before creating any plot objects
-    # rcParams['font.family'] = 'sans-serif'
-    # rcParams['font.sans-serif'] = ['Arial']
-    # rcParams.update()
-    # # Start figure
-    # fig = plt.figure()
-    # # Define a subplot positioning grid
-    # gs = GridSpec(3, 1, figure=fig)
-    # # ax = fig.add_subplot(gs[0, 0])
-    # ax = fig.add_subplot(gs[:2, :])
-    # # Threat Score (Critical Success Index)
-    # SRpoints = np.arange(0, 1.0001, 0.01)
-    # Hpoints = np.arange(0, 1.0001, 0.01)
-    # X, Y = np.meshgrid(SRpoints, Hpoints)
-    # Z = 1 / (1 / X + 1 / Y - 1)
-    # Z[np.logical_not(np.isfinite(Z))] = 0
-    # TS = ax.contour(X, Y, Z, levels=[0.1 * i for i in range(10)], colors='k', linewidths=0.5, zorder=0)
-    # cb = ax.clabel(TS, TS.levels, inline=False, fmt='TS=%.1f', fontsize=contFontSize, inline_spacing=0)
-    # [txt.set_bbox(dict(boxstyle='square,pad=0', fc='w', ec='w')) for txt in cb]
-    # # Bias
-    # # DD Using the contour, we get tightly-packed lines near (0, 0)
-    # Z = Y / X
-    # Z[np.logical_not(np.isfinite(Z))] = 0
-    # Bfit = ax.contour(X, Y, Z, levels=[i / 10. for i in range(1, 10)] + [10. / i for i in range(10, 0, -1)],
-    #                   colors='k', linewidths=0.5, linestyles='dashed')
-    # for c in Bfit.collections:
-    #   c.set_dashes([(0, (2.0, 2.0))])
-    # # cb = ax.clabel(B, B.levels, inline=False, fmt='B=%.1f', fontsize=contFontSize, inline_spacing=0)
-    # # [txt.set_bbox(dict(boxstyle='square,pad=0', fc='w', ec='w')) for txt in cb]
-    # # DD Manually draw the lines instead, but don't plot beyond the plot axes
-    # for b in [i / 10. for i in range(1, 10)] + [10. / i for i in range(10, 0, -1)]:
-    #   if b < 1:
-    #     # plt.plot([0, 1.0], [0, b], color='k', lineWidth=0.5, lineStyle='-.', zorder=0)
-    #     ax.text(x=1.01, y=b, s='B=%.1f' % b, color='k', verticalalignment='center', fontsize=axesFontSize,
-    #             fontfamily='Arial')
-    #   else:
-    #     # line1 = LineString([[0, 0], [1, b]])
-    #     # line2 = LineString([[0, 1], [1, 1]])
-    #     # int_pt = line1.intersection(line2)
-    #     # plt.plot([0, int_pt.x], [0, int_pt.y], color='k', lineWidth=0.5, lineStyle='-.', zorder=0)
-    #     ax.text(x=1 / b, y=1.025, s='B=%.1f' % (np.round(b * 10) / 10.0), color='k', horizontalalignment='center',
-    #             verticalalignment='center', fontsize=axesFontSize, fontfamily='Arial')
-    # # Plot the data points for the various return periods
-    # plt.plot(1 - bfs.FAR(*rp1_5ct), bfs.POD(*rp1_5ct), marker='X', color=green, markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp1_5ct))+0.05, bfs.POD(*rp1_5ct), s='1.5-year', color=green, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # plt.plot(1 - bfs.FAR(*rp2ct), bfs.POD(*rp2ct), marker='X', color=orange, markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp2ct))+0.05, bfs.POD(*rp2ct), s='2-year', color=orange, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # plt.plot(1 - bfs.FAR(*rp5ct), bfs.POD(*rp5ct), marker='X', color=red, markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp5ct))+0.05, bfs.POD(*rp5ct), s='5-year', color=red, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # plt.plot(1 - bfs.FAR(*rp10ct), bfs.POD(*rp10ct), marker='X', color='k', markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp10ct))+0.05, bfs.POD(*rp10ct), s='10-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # plt.plot(1 - bfs.FAR(*rp20ct), bfs.POD(*rp20ct), marker='X', color=magenta, markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp20ct))+0.05, bfs.POD(*rp20ct), s='20-year', color=magenta, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # plt.plot(1 - bfs.FAR(*rp50ct), bfs.POD(*rp50ct), marker='X', color='k', markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp50ct))+0.05, bfs.POD(*rp50ct), s='50-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # plt.plot(1 - bfs.FAR(*rp100ct), bfs.POD(*rp100ct), marker='X', color='k', markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp100ct))+0.05, bfs.POD(*rp100ct), s='100-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # plt.plot(1 - bfs.FAR(*rp200ct), bfs.POD(*rp200ct), marker='X', color='k', markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp200ct))+0.05, bfs.POD(*rp200ct), s='200-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # plt.plot(1 - bfs.FAR(*rp500ct), bfs.POD(*rp500ct), marker='X', color='k', markerSize=15, zorder=10)
-    # # ax.text((1-bfs.FAR(*rp500ct))+0.05, bfs.POD(*rp500ct), s='500-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
-    # # Add a table at the bottom of the axes
-    # tbl = plt.table(
-    #   cellText=[
-    #     ["{0:.2f}".format(1 - bfs.FAR(*rp1_5ct)), "{0:.2f}".format(1 - bfs.FAR(*rp2ct)),
-    #      "{0:.2f}".format(1 - bfs.FAR(*rp5ct)), "{0:.2f}".format(1 - bfs.FAR(*rp20ct))],
-    #     ["{0:.2f}".format(bfs.HR(*rp1_5ct)), "{0:.2f}".format(bfs.HR(*rp2ct)), "{0:.2f}".format(bfs.HR(*rp5ct)),
-    #      "{0:.2f}".format(bfs.HR(*rp20ct))],
-    #     ["{0:.2f}".format(bfs.B(*rp1_5ct)), "{0:.2f}".format(bfs.B(*rp2ct)), "{0:.2f}".format(bfs.B(*rp5ct)),
-    #      "{0:.2f}".format(bfs.B(*rp20ct))],
-    #     ["{0:.2f}".format(bfs.TS(*rp1_5ct)), "{0:.2f}".format(bfs.TS(*rp2ct)), "{0:.2f}".format(bfs.TS(*rp5ct)),
-    #      "{0:.2f}".format(bfs.TS(*rp20ct))],
-    #     ["{0:.4f}".format(bfs.PCR(*rp1_5ct)), "{0:.4f}".format(bfs.PCR(*rp2ct)), "{0:.4f}".format(bfs.PCR(*rp5ct)),
-    #      "{0:.4f}".format(bfs.PCR(*rp20ct))]
-    #   ],
-    #   rowLabels=['Succces Rate (SR)', 'Hit Rate (HR)', 'Bias (B)', 'Threat Score (TS)',
-    #              'Percent Correct Rejections (PCR)'],
-    #   rowColours=[KGEgrey for i in range(5)],
-    #   rowLoc='center',
-    #   colColours=[green, orange, red, magenta],
-    #   colLabels=['1.5-year', '2-year', '5-year', '20-year'],
-    #   colWidths=[0.1, 0.1, 0.1, 0.1, 0.1],
-    #   cellColours=[[green, orange, red, magenta] for i in range(5)],
-    #   cellLoc='center',
-    #   bbox=(0.33, -0.7, 0.6, 0.6)
-    # )
-    # tbl.auto_set_font_size(False)
-    # tbl.set_fontsize(tableFontSize)
-    # # tbl.set_text_props({'fontfamily': 'Arial'})
-    # tbl.scale(1, 1)
-    # # esthetics
-    # # ax.set_title('Roebber Diagram', fontsize=titleFontSize)
-    # ax.axis('equal', adjustable='box')
-    # plt.xlim([0, 1])
-    # plt.ylim([0, 1])
-    # ax.spines['bottom'].set_position(('data', 0))
-    # ax.spines['left'].set_position(('data', 0))
-    # ax.spines['top'].set_position(('data', 1))
-    # ax.spines['right'].set_position(('data', 1))
-    # ax.spines["bottom"].set_bounds(0, 1)
-    # ax.spines["left"].set_bounds(0, 1)
-    # ax.spines["top"].set_bounds(0, 1)
-    # ax.spines["right"].set_bounds(0, 1)
-    # ax.set_xticks(np.arange(0, 1.00001, 0.1))
-    # ax.set_yticks(np.arange(0, 1.00001, 0.1))
-    # ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
-    # ax.tick_params(size=4, width=1.5, which='minor')
-    # ax.xaxis.tick_bottom()
-    # ax.yaxis.tick_left()
-    # plt.xlabel('Success Rate (SR)', fontsize=labelFontSize)
-    # plt.ylabel('Hit Rate (H)', fontsize=labelFontSize)
-    # plt.subplots_adjust(bottom=0.35)
-    # maximizePlot()
-    # # Respace in between tick labesl
-    # N = 10
-    # plt.gca().margins(x=0, y=0)
-    # plt.gcf().canvas.draw()
-    # tl = plt.gca().get_xticklabels()
-    # maxsize = max([2 * t.get_window_extent().width for t in tl])
-    # m = 0.9  # inch margin
-    # s = maxsize / plt.gcf().dpi * N + 2 * m
-    # margin = m / plt.gcf().get_size_inches()[0]
-    # plt.gcf().subplots_adjust(left=margin, right=1. - margin)
-    # plt.gcf().set_size_inches(1.2 * plt.gcf().get_size_inches()[0], 1.2 * plt.gcf().get_size_inches()[1])
-    # # Save the figure
-    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_roebber.svg"), format='svg')
-    # plt.close("all")
-
-    # # KGE SPEEDOMETERS
-    # # Update the font before creating any plot objects
-    # rcParams['font.family'] = 'sans-serif'
-    # rcParams['font.sans-serif'] = ['Arial']
-    # rcParams.update()
-    # # Calculate relative position in %
-    # mini = 0.3;
-    # maxi = 1.7
-    # Bp = max(min((B - mini) / (maxi - mini), 1), 0)
-    # # Extract values for spread
-    # Sp = max(min((S - mini) / (maxi - mini), 1), 0)
-    # # Start figure
-    # fig = plt.figure()
-    # # Define a subplot positioning grid
-    # gs = GridSpec(3, 3, figure=fig)
-    # # KGE
-    # ax1 = fig.add_subplot(gs[:2, :])
-    # gauge(ax1, labels=['$<$ 0.2', '0.2\n-\n0.4', '0.4\n-\n0.6', '0.6\n-\n0.8', '0.8\n-\n1.0'],
-    #       colors=[KGEgrey, KGElighestblue, KGElighterblue, KGEdarkerblue, KGEdarkestblue], arrow=KGE, title='KGE',
-    #       score=KGE, fontSize=titleFontSize)
-    # # Correlation
-    # ax2 = fig.add_subplot(gs[2, 0])
-    # gauge(ax2, labels=['$<$ 0.2', '0.2\n-\n0.4', '0.4\n-\n0.6', '0.6\n-\n0.8', '0.8\n-\n1.0'],
-    #       colors=[KGEgrey, KGElighestblue, KGElighterblue, KGEdarkerblue, KGEdarkestblue], arrow=r,
-    #       title='Correlation', score=r, fontSize=2+labelFontSize/2)
-    # # Bias ratio
-    # ax3 = fig.add_subplot(gs[2, 1])
-    # gauge(ax3,
-    #       labels=['$<$ 0.5', '0.5\n-\n0.7', '0.7\n-\n0.9', '0.9\n-\n1.1', '1.1\n-\n1.3', '1.3\n-\n1.5', '$>$ 1.5'],
-    #       colors=[KGEgrey, KGElighterblue, KGEdarkerblue, KGEdarkestblue, KGEdarkerblue, KGElighterblue, KGEgrey],
-    #       arrow=Bp, title='Bias ratio', score=B, fontSize=2 + labelFontSize/2)
-    # # Spread ratio
-    # ax4 = fig.add_subplot(gs[2, 2])
-    # gauge(ax4,
-    #       labels=['$<$ 0.5', '0.5\n-\n0.7', '0.7\n-\n0.9', '0.9\n-\n1.1', '1.1\n-\n1.3', '1.3\n-\n1.5', '$>$ 1.5'],
-    #       colors=[KGEgrey, KGElighterblue, KGEdarkerblue, KGEdarkestblue, KGEdarkerblue, KGElighterblue, KGEgrey],
-    #       arrow=Sp, title='Variability ratio', score=S, fontSize=2 + labelFontSize/2)
-    # maximizePlot()
-    # # Save the logarithmic scale figure
-    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_speedometers.svg"), format='svg')
-    # plt.close("all")
-    #
-    #
-    #
-    # # FIGURE OF CALIBRATION PERIOD TIME SERIES
-    # # Update the font before creating any plot objects
-    # rcParams['font.family'] = 'sans-serif'
-    # rcParams['font.sans-serif'] = ['Arial']
-    # rcParams.update()
-    # fig = plt.figure()
-    # ax = plt.axes()
-    # # Qsim
-    # plt.plot([i.value * 1e-9 for i in Dates_Cal], Q_sim_Cal, color=purple, linewidth=1)
-    # # Qobs
-    # ax.fill_between([i.value * 1e-9 for i in Dates_Cal], np.zeros(len(Q_obs_Cal)), Q_obs_Cal, facecolor=lighterblue,
-    #                 alpha=1.0, edgecolor=darkestblue, linewidth=0.5)
-    # # Return period
-    # mindate = Dates_Cal[0].value * 1e-9
-    # maxdate = Dates_Cal[-1].value * 1e-9
-    # # 1.5-year
-    # plt.hlines(rp1_5, color=green, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # ax.text(x=maxdate + 40, y=rp1_5, s='1.5-year', color=green, verticalalignment='center', fontsize=contFontSize)
-    # # 2-year
-    # plt.hlines(rp2, color=orange, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # ax.text(x=maxdate + 40, y=rp2, s='2-year', color=orange, verticalalignment='center', fontsize=contFontSize)
-    # # 5-year
-    # plt.hlines(rp5, color=red, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # ax.text(x=maxdate + 40, y=rp5, s='5-year', color=red, verticalalignment='center', fontsize=contFontSize)
-    # # # 10-year
-    # # plt.hlines(rp10, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # # ax.text(x=maxdate + 1, y=rp10, s='10-year', color='black', verticalalignment='center', fontsize=contFontSize)
-    # # 20-year
-    # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp20:
-    #   plt.hlines(rp20, color=magenta, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    #   ax.text(x=maxdate + 40, y=rp20, s='20-year', color=magenta, verticalalignment='center', fontsize=contFontSize)
-    # # # 50-year
-    # # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp50:
-    # # 	plt.hlines(rp50, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # # 	ax.text(x=maxdate + 10, y=rp50, s='50-year', color='black', verticalalignment='center', fontsize=contFontSize)
-    # # # 100-year
-    # # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp100:
-    # # 	plt.hlines(rp100, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # # 	ax.text(x=maxdate + 10, y=rp100, s='100-year', color='black', verticalalignment='center', fontsize=contFontSize)
-    # # # 200-year
-    # # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp200:
-    # # 	plt.hlines(rp200, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # # 	ax.text(x=maxdate + 10, y=rp200, s='200-year', color='black', verticalalignment='center', fontsize=contFontSize)
-    # # # 500-year
-    # # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp500:
-    # # 	plt.hlines(rp500, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-    # # 	ax.text(x=maxdate + 10, y=rp500, s='500-year', color='black', verticalalignment='center', fontsize=contFontSize)
-    # # Title
-    # # ax.set_title('Discharge time series for calibration period', fontsize=titleFontSize)
-    # plt.ylabel(r'Discharge [m3/s]', fontsize=labelFontSize)  # ³
-    # # Activate major ticks at the beginning of each boreal season
-    # if period > 10:
-    #   majorticks = [
-    #     calendar.timegm(dt.datetime(k, j, 1).timetuple())
-    #     for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
-    #     for j in [9]
-    #     if dt.datetime(k, j, 1) >= Dates_Cal[0] and dt.datetime(k, j, 1) <= Dates_Cal[-1]
-    #   ]
-    # else:
-    #   majorticks = [
-    #     calendar.timegm(dt.datetime(k, j, 1).timetuple())
-    #     for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
-    #     for j in [3, 6, 9, 12]
-    #     if dt.datetime(k, j, 1) >= Dates_Cal[0] and dt.datetime(k, j, 1) <= Dates_Cal[-1]
-    #   ]
-    # ax.set_xticks(majorticks)
-    # # Rewrite labels
-    # locs, intlabels = plt.xticks()
-    # plt.setp(intlabels, rotation=70)
-    # labels = [dt.datetime.strftime(dt.datetime.fromtimestamp(i), "%b %Y") for i in majorticks]
-    # ax.set_xticklabels(labels)
-    # # Activate minor ticks every month
-    # minorticks = [
-    #   calendar.timegm(dt.datetime(k, j + 1, 1).timetuple())
-    #   for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
-    #   for j in range(12)
-    #   if dt.datetime(k, j + 1, 1) >= Dates_Cal[0] and dt.datetime(k, j + 1, 1) <= Dates_Cal[-1]
-    # ]
-    # # For the minor ticks, use no labels; default NullFormatter.
-    # ax.xaxis.set_minor_locator(ticker.FixedLocator(minorticks))
-    # ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
-    # ax.tick_params(size=4, width=1.5, which='minor')
-    # # Maximize the window for optimal view
-    # maximizePlot()
-    # # DD better to always place the legend box to avoid random placement and risking not being able to read KGE NSE etc.
-    # leg = ax.legend(['Qsim', 'Qobs'], fancybox=True, framealpha=0.8, prop={'size': contFontSize*.75}, labelspacing=0.1,
-    #                 loc='center', bbox_to_anchor=(0.5, -0.3))
-    # leg.get_frame().set_edgecolor('white')
-    # # linear scale
-    # logscale = False
-    # if logscale:
-    #   plt.yscale(r'log')
-    #   ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
-    #   ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
-    #   plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # else:
-    #   plt.yscale(r'linear')
-    #   plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # Save the linear scale figure
-    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_tseries_linear.svg"), format='svg')
-    # # # Log scale for clearer skill cover
-    # # logscale = True
-    # # if logscale:
-    # #   plt.yscale(r'log')
-    # #   ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
-    # #   ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
-    # #   plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # else:
-    # #   plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # # Save the logarithmic scale figure
-    # # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_tseries_log.svg"), format='svg')
-    # plt.close("all")
-    #
-    #
-    #
-    # # FIGURE OF MONTHLY CLIMATOLOGY FOR CALIBRATION PERIOD
-    # # Update the font before creating any plot objects
-    # rcParams['font.family'] = 'sans-serif'
-    # rcParams['font.sans-serif'] = ['Arial']
-    # rcParams.update()
-    # months = np.array([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # water year
-    # fig = plt.figure()
-    # # Get obs data from boxplot and delete it
-    # axd = plt.axes()
-    # Q_obs_box = axd.boxplot([Q_obs_monthData[i - 1] for i in months])
-    # plt.delaxes(axd)
-    # # create axes
-    # ax = plt.axes()
-    # # Make the obs wings plot
-    # (p1, p5, p25, median, p75, p95, p99) = wingplot(Q_obs_box, ax)
-    # # Plot the sim as boxplots
-    # Q_sim_box = ax.boxplot([np.ones((len(months))) * np.nan] + [Q_sim_monthData[i - 1] for i in months],
-    #                        notch=True, sym='.', bootstrap=10000, showmeans=False, meanline=True, patch_artist=True,
-    #                        widths=0.5)
-    # applyBoxplotTheme(Q_sim_box)
+    # # plotReturnPeriods(ax2, dFrames[1][1], 'Obs', fits, mode='T', tstep='M')
+    # ax3 = fig.add_subplot(gs[1,0])
+    # plotReturnPeriods(ax3, dFrames[0][1], 'dis', fits, mode='cdf', tstep='M')
+    # # ax4 = fig.add_subplot(gs[1,1])
+    # # plotReturnPeriods(ax4, dFrames[1][1], 'Obs', fits, mode='cdf', tstep='Y')
+    # ax5 = fig.add_subplot(gs[2, 0])
+    # plotReturnPeriods(ax5, dFrames[0][1], 'dis', fits, mode='pdf', tstep='M')
+    # # ax6 = fig.add_subplot(gs[2, 1])
+    # # plotReturnPeriods(ax6, dFrames[1][1], 'Obs', fits, mode='pdf', tstep='M')
+    maximizePlot()
+    print("WAIT")
+    # plt.scatter(ex['T'], ex[None], color=purple, linewidth=1)
     # # Esthetics
-    # # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
+    # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
     # ax.grid(b=True, axis='y')
     # plt.rcParams["font.size"] = 14
     # plt.rcParams["font.weight"] = "bold"
     # plt.rcParams["axes.labelweight"] = "bold"
     # # horizontal axis
-    # plt.xlabel(r'Month', fontsize=labelFontSize)
-    # plt.xticks(range(1, 16), [""] + [month2string(m) for m in months])
+    # plt.xlabel(r'Month')
+    # plt.xticks(range(1, 16), [""] + list(months))
     # plt.xlim([1.5, 15.5])
     # # vertical axis
-    # plt.ylabel(r'Discharge [m3/s]', fontsize=labelFontSize)
-    # ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
-    # ax.tick_params(size=4, width=1.5, which='minor')
+    # plt.ylabel(r'Discharge [m3/s]')
     # # Add manually-made legend
     # genLegend()
     # # Restore the correct active axes
@@ -1643,27 +1287,383 @@ def main(*args, **kwargs):
     # # linear scale
     # logscale = False
     # if logscale:
+    # 	plt.yscale(r'log')
+    # 	ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+    # 	ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+    # 	plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # else:
+    # 	plt.yscale(r'linear')
+    # 	plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # # Save the linear scale figure
+    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_linear.svg"), format='svg')
+    # # Log scale for clearer skill cover
+    # logscale = True
+    # if logscale:
+    # 	plt.yscale(r'log')
+    # 	ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+    # 	ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+    # 	plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # else:
+    # 	plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # # Save the logarithmic scale figure
+    # plt.savefig(os.path.join(path_subcatch,"WEB", str(index) + "_Q_clim_log.svg"), format='svg')
+    # plt.close("all")
+
+
+
+    # ROEBBER DIAGRAM
+    # Update the font before creating any plot objects
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['font.sans-serif'] = ['Arial']
+    rcParams.update()
+    # Start figure
+    fig = plt.figure()
+    # Define a subplot positioning grid
+    gs = GridSpec(3, 1, figure=fig)
+    # ax = fig.add_subplot(gs[0, 0])
+    ax = fig.add_subplot(gs[:2, :])
+    # Threat Score (Critical Success Index)
+    SRpoints = np.arange(0, 1.0001, 0.01)
+    Hpoints = np.arange(0, 1.0001, 0.01)
+    X, Y = np.meshgrid(SRpoints, Hpoints)
+    Z = 1 / (1 / X + 1 / Y - 1)
+    Z[np.logical_not(np.isfinite(Z))] = 0
+    TS = ax.contour(X, Y, Z, levels=[0.1 * i for i in range(10)], colors='k', linewidths=0.5, zorder=0)
+    cb = ax.clabel(TS, TS.levels, inline=False, fmt='TS=%.1f', fontsize=contFontSize, inline_spacing=0)
+    [txt.set_bbox(dict(boxstyle='square,pad=0', fc='w', ec='w')) for txt in cb]
+    # Bias
+    # DD Using the contour, we get tightly-packed lines near (0, 0)
+    Z = Y / X
+    Z[np.logical_not(np.isfinite(Z))] = 0
+    Bfit = ax.contour(X, Y, Z, levels=[i / 10. for i in range(1, 10)] + [10. / i for i in range(10, 0, -1)],
+                      colors='k', linewidths=0.5, linestyles='dashed')
+    for c in Bfit.collections:
+      c.set_dashes([(0, (2.0, 2.0))])
+    # cb = ax.clabel(B, B.levels, inline=False, fmt='B=%.1f', fontsize=contFontSize, inline_spacing=0)
+    # [txt.set_bbox(dict(boxstyle='square,pad=0', fc='w', ec='w')) for txt in cb]
+    # DD Manually draw the lines instead, but don't plot beyond the plot axes
+    for b in [i / 10. for i in range(1, 10)] + [10. / i for i in range(10, 0, -1)]:
+      if b < 1:
+        # plt.plot([0, 1.0], [0, b], color='k', lineWidth=0.5, lineStyle='-.', zorder=0)
+        ax.text(x=1.01, y=b, s='B=%.1f' % b, color='k', verticalalignment='center', fontsize=axesFontSize,
+                fontfamily='Arial')
+      else:
+        # line1 = LineString([[0, 0], [1, b]])
+        # line2 = LineString([[0, 1], [1, 1]])
+        # int_pt = line1.intersection(line2)
+        # plt.plot([0, int_pt.x], [0, int_pt.y], color='k', lineWidth=0.5, lineStyle='-.', zorder=0)
+        ax.text(x=1 / b, y=1.025, s='B=%.1f' % (np.round(b * 10) / 10.0), color='k', horizontalalignment='center',
+                verticalalignment='center', fontsize=axesFontSize, fontfamily='Arial')
+    # Plot the data points for the various return periods
+    plt.plot(1 - bfs.FAR(*rp1_5ct), bfs.POD(*rp1_5ct), marker='X', color=green, markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp1_5ct))+0.05, bfs.POD(*rp1_5ct), s='1.5-year', color=green, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    plt.plot(1 - bfs.FAR(*rp2ct), bfs.POD(*rp2ct), marker='X', color=orange, markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp2ct))+0.05, bfs.POD(*rp2ct), s='2-year', color=orange, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    plt.plot(1 - bfs.FAR(*rp5ct), bfs.POD(*rp5ct), marker='X', color=red, markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp5ct))+0.05, bfs.POD(*rp5ct), s='5-year', color=red, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # plt.plot(1 - bfs.FAR(*rp10ct), bfs.POD(*rp10ct), marker='X', color='k', markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp10ct))+0.05, bfs.POD(*rp10ct), s='10-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    plt.plot(1 - bfs.FAR(*rp20ct), bfs.POD(*rp20ct), marker='X', color=magenta, markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp20ct))+0.05, bfs.POD(*rp20ct), s='20-year', color=magenta, horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # plt.plot(1 - bfs.FAR(*rp50ct), bfs.POD(*rp50ct), marker='X', color='k', markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp50ct))+0.05, bfs.POD(*rp50ct), s='50-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # plt.plot(1 - bfs.FAR(*rp100ct), bfs.POD(*rp100ct), marker='X', color='k', markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp100ct))+0.05, bfs.POD(*rp100ct), s='100-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # plt.plot(1 - bfs.FAR(*rp200ct), bfs.POD(*rp200ct), marker='X', color='k', markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp200ct))+0.05, bfs.POD(*rp200ct), s='200-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # plt.plot(1 - bfs.FAR(*rp500ct), bfs.POD(*rp500ct), marker='X', color='k', markerSize=15, zorder=10)
+    # ax.text((1-bfs.FAR(*rp500ct))+0.05, bfs.POD(*rp500ct), s='500-year', color='k', horizontalalignment='left', verticalalignment='center', fontSize=12, fontWeight='bold', zorder=10)
+    # Add a table at the bottom of the axes
+    tbl = plt.table(
+      cellText=[
+        ["{0:.2f}".format(1 - bfs.FAR(*rp1_5ct)), "{0:.2f}".format(1 - bfs.FAR(*rp2ct)),
+         "{0:.2f}".format(1 - bfs.FAR(*rp5ct)), "{0:.2f}".format(1 - bfs.FAR(*rp20ct))],
+        ["{0:.2f}".format(bfs.HR(*rp1_5ct)), "{0:.2f}".format(bfs.HR(*rp2ct)), "{0:.2f}".format(bfs.HR(*rp5ct)),
+         "{0:.2f}".format(bfs.HR(*rp20ct))],
+        ["{0:.2f}".format(bfs.B(*rp1_5ct)), "{0:.2f}".format(bfs.B(*rp2ct)), "{0:.2f}".format(bfs.B(*rp5ct)),
+         "{0:.2f}".format(bfs.B(*rp20ct))],
+        ["{0:.2f}".format(bfs.TS(*rp1_5ct)), "{0:.2f}".format(bfs.TS(*rp2ct)), "{0:.2f}".format(bfs.TS(*rp5ct)),
+         "{0:.2f}".format(bfs.TS(*rp20ct))],
+        ["{0:.4f}".format(bfs.PCR(*rp1_5ct)), "{0:.4f}".format(bfs.PCR(*rp2ct)), "{0:.4f}".format(bfs.PCR(*rp5ct)),
+         "{0:.4f}".format(bfs.PCR(*rp20ct))]
+      ],
+      rowLabels=['Succces Rate (SR)', 'Hit Rate (HR)', 'Bias (B)', 'Threat Score (TS)',
+                 'Percent Correct Rejections (PCR)'],
+      rowColours=[KGEgrey for i in range(5)],
+      rowLoc='center',
+      colColours=[green, orange, red, magenta],
+      colLabels=['1.5-year', '2-year', '5-year', '20-year'],
+      colWidths=[0.1, 0.1, 0.1, 0.1, 0.1],
+      cellColours=[[green, orange, red, magenta] for i in range(5)],
+      cellLoc='center',
+      bbox=(0.33, -0.7, 0.6, 0.6)
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(tableFontSize)
+    # tbl.set_text_props({'fontfamily': 'Arial'})
+    tbl.scale(1, 1)
+    # esthetics
+    # ax.set_title('Roebber Diagram', fontsize=titleFontSize)
+    ax.axis('equal', adjustable='box')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    ax.spines['bottom'].set_position(('data', 0))
+    ax.spines['left'].set_position(('data', 0))
+    ax.spines['top'].set_position(('data', 1))
+    ax.spines['right'].set_position(('data', 1))
+    ax.spines["bottom"].set_bounds(0, 1)
+    ax.spines["left"].set_bounds(0, 1)
+    ax.spines["top"].set_bounds(0, 1)
+    ax.spines["right"].set_bounds(0, 1)
+    ax.set_xticks(np.arange(0, 1.00001, 0.1))
+    ax.set_yticks(np.arange(0, 1.00001, 0.1))
+    ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
+    ax.tick_params(size=4, width=1.5, which='minor')
+    ax.xaxis.tick_bottom()
+    ax.yaxis.tick_left()
+    plt.xlabel('Success Rate (SR)', fontsize=labelFontSize)
+    plt.ylabel('Hit Rate (H)', fontsize=labelFontSize)
+    plt.subplots_adjust(bottom=0.35)
+    maximizePlot()
+    # Respace in between tick labesl
+    N = 10
+    plt.gca().margins(x=0, y=0)
+    plt.gcf().canvas.draw()
+    tl = plt.gca().get_xticklabels()
+    maxsize = max([2 * t.get_window_extent().width for t in tl])
+    m = 0.9  # inch margin
+    s = maxsize / plt.gcf().dpi * N + 2 * m
+    margin = m / plt.gcf().get_size_inches()[0]
+    plt.gcf().subplots_adjust(left=margin, right=1. - margin)
+    plt.gcf().set_size_inches(1.2 * plt.gcf().get_size_inches()[0], 1.2 * plt.gcf().get_size_inches()[1])
+    # Save the figure
+    plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_roebber.svg"), format='svg')
+    plt.close("all")
+
+    # KGE SPEEDOMETERS
+    # Update the font before creating any plot objects
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['font.sans-serif'] = ['Arial']
+    rcParams.update()
+    # Calculate relative position in %
+    mini = 0.3;
+    maxi = 1.7
+    Bp = max(min((B - mini) / (maxi - mini), 1), 0)
+    # Extract values for spread
+    Sp = max(min((S - mini) / (maxi - mini), 1), 0)
+    # Start figure
+    fig = plt.figure()
+    # Define a subplot positioning grid
+    gs = GridSpec(3, 3, figure=fig)
+    # KGE
+    ax1 = fig.add_subplot(gs[:2, :])
+    gauge(ax1, labels=['$<$ 0.2', '0.2\n-\n0.4', '0.4\n-\n0.6', '0.6\n-\n0.8', '0.8\n-\n1.0'],
+          colors=[KGEgrey, KGElighestblue, KGElighterblue, KGEdarkerblue, KGEdarkestblue], arrow=KGE, title='KGE',
+          score=KGE, fontSize=titleFontSize)
+    # Correlation
+    ax2 = fig.add_subplot(gs[2, 0])
+    gauge(ax2, labels=['$<$ 0.2', '0.2\n-\n0.4', '0.4\n-\n0.6', '0.6\n-\n0.8', '0.8\n-\n1.0'],
+          colors=[KGEgrey, KGElighestblue, KGElighterblue, KGEdarkerblue, KGEdarkestblue], arrow=r,
+          title='Correlation', score=r, fontSize=2+labelFontSize/2)
+    # Bias ratio
+    ax3 = fig.add_subplot(gs[2, 1])
+    gauge(ax3,
+          labels=['$<$ 0.5', '0.5\n-\n0.7', '0.7\n-\n0.9', '0.9\n-\n1.1', '1.1\n-\n1.3', '1.3\n-\n1.5', '$>$ 1.5'],
+          colors=[KGEgrey, KGElighterblue, KGEdarkerblue, KGEdarkestblue, KGEdarkerblue, KGElighterblue, KGEgrey],
+          arrow=Bp, title='Bias ratio', score=B, fontSize=2 + labelFontSize/2)
+    # Spread ratio
+    ax4 = fig.add_subplot(gs[2, 2])
+    gauge(ax4,
+          labels=['$<$ 0.5', '0.5\n-\n0.7', '0.7\n-\n0.9', '0.9\n-\n1.1', '1.1\n-\n1.3', '1.3\n-\n1.5', '$>$ 1.5'],
+          colors=[KGEgrey, KGElighterblue, KGEdarkerblue, KGEdarkestblue, KGEdarkerblue, KGElighterblue, KGEgrey],
+          arrow=Sp, title='Variability ratio', score=S, fontSize=2 + labelFontSize/2)
+    maximizePlot()
+    # Save the logarithmic scale figure
+    plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_speedometers.svg"), format='svg')
+    plt.close("all")
+
+
+
+    # FIGURE OF CALIBRATION PERIOD TIME SERIES
+    # Update the font before creating any plot objects
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['font.sans-serif'] = ['Arial']
+    rcParams.update()
+    fig = plt.figure()
+    ax = plt.axes()
+    # Qsim
+    plt.plot([i.value * 1e-9 for i in Dates_Cal], Q_sim_Cal, color=purple, linewidth=1)
+    # Qobs
+    ax.fill_between([i.value * 1e-9 for i in Dates_Cal], np.zeros(len(Q_obs_Cal)), Q_obs_Cal, facecolor=lighterblue,
+                    alpha=1.0, edgecolor=darkestblue, linewidth=0.5)
+    # Return period
+    mindate = Dates_Cal[0].value * 1e-9
+    maxdate = Dates_Cal[-1].value * 1e-9
+    # 1.5-year
+    plt.hlines(rp1_5, color=green, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    ax.text(x=maxdate + 40, y=rp1_5, s='1.5-year', color=green, verticalalignment='center', fontsize=contFontSize)
+    # 2-year
+    plt.hlines(rp2, color=orange, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    ax.text(x=maxdate + 40, y=rp2, s='2-year', color=orange, verticalalignment='center', fontsize=contFontSize)
+    # 5-year
+    plt.hlines(rp5, color=red, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    ax.text(x=maxdate + 40, y=rp5, s='5-year', color=red, verticalalignment='center', fontsize=contFontSize)
+    # # 10-year
+    # plt.hlines(rp10, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    # ax.text(x=maxdate + 1, y=rp10, s='10-year', color='black', verticalalignment='center', fontsize=contFontSize)
+    # 20-year
+    if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp20:
+      plt.hlines(rp20, color=magenta, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+      ax.text(x=maxdate + 40, y=rp20, s='20-year', color=magenta, verticalalignment='center', fontsize=contFontSize)
+    # # 50-year
+    # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp50:
+    # 	plt.hlines(rp50, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    # 	ax.text(x=maxdate + 10, y=rp50, s='50-year', color='black', verticalalignment='center', fontsize=contFontSize)
+    # # 100-year
+    # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp100:
+    # 	plt.hlines(rp100, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    # 	ax.text(x=maxdate + 10, y=rp100, s='100-year', color='black', verticalalignment='center', fontsize=contFontSize)
+    # # 200-year
+    # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp200:
+    # 	plt.hlines(rp200, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    # 	ax.text(x=maxdate + 10, y=rp200, s='200-year', color='black', verticalalignment='center', fontsize=contFontSize)
+    # # 500-year
+    # if max(max(Q_sim_Cal), max(Q_obs_Cal)) > rp500:
+    # 	plt.hlines(rp500, color='black', linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+    # 	ax.text(x=maxdate + 10, y=rp500, s='500-year', color='black', verticalalignment='center', fontsize=contFontSize)
+    # Title
+    # ax.set_title('Discharge time series for calibration period', fontsize=titleFontSize)
+    plt.ylabel(r'Discharge [m3/s]', fontsize=labelFontSize)  # ³
+    # Activate major ticks at the beginning of each boreal season
+    if period > 10:
+      majorticks = [
+        calendar.timegm(dt.datetime(k, j, 1).timetuple())
+        for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
+        for j in [9]
+        if dt.datetime(k, j, 1) >= Dates_Cal[0] and dt.datetime(k, j, 1) <= Dates_Cal[-1]
+      ]
+    else:
+      majorticks = [
+        calendar.timegm(dt.datetime(k, j, 1).timetuple())
+        for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
+        for j in [3, 6, 9, 12]
+        if dt.datetime(k, j, 1) >= Dates_Cal[0] and dt.datetime(k, j, 1) <= Dates_Cal[-1]
+      ]
+    ax.set_xticks(majorticks)
+    # Rewrite labels
+    locs, intlabels = plt.xticks()
+    plt.setp(intlabels, rotation=70)
+    labels = [dt.datetime.strftime(dt.datetime.fromtimestamp(i), "%b %Y") for i in majorticks]
+    ax.set_xticklabels(labels)
+    # Activate minor ticks every month
+    minorticks = [
+      calendar.timegm(dt.datetime(k, j + 1, 1).timetuple())
+      for k in np.arange(Dates_Cal[0].year, Dates_Cal[-1].year + 1, 1)
+      for j in range(12)
+      if dt.datetime(k, j + 1, 1) >= Dates_Cal[0] and dt.datetime(k, j + 1, 1) <= Dates_Cal[-1]
+    ]
+    # For the minor ticks, use no labels; default NullFormatter.
+    ax.xaxis.set_minor_locator(ticker.FixedLocator(minorticks))
+    ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
+    ax.tick_params(size=4, width=1.5, which='minor')
+    # Maximize the window for optimal view
+    maximizePlot()
+    # DD better to always place the legend box to avoid random placement and risking not being able to read KGE NSE etc.
+    leg = ax.legend(['Qsim', 'Qobs'], fancybox=True, framealpha=0.8, prop={'size': contFontSize*.75}, labelspacing=0.1,
+                    loc='center', bbox_to_anchor=(0.5, -0.3))
+    leg.get_frame().set_edgecolor('white')
+    # linear scale
+    logscale = False
+    if logscale:
+      plt.yscale(r'log')
+      ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+      ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+      plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    else:
+      plt.yscale(r'linear')
+      plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # Save the linear scale figure
+    plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_tseries_linear.svg"), format='svg')
+    # # Log scale for clearer skill cover
+    # logscale = True
+    # if logscale:
     #   plt.yscale(r'log')
     #   ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
     #   ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
     #   plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
     # else:
-    #   plt.yscale(r'linear')
     #   plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # Save the linear scale figure
-    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_linear.svg"), format='svg')
-    # # # Log scale for clearer skill cover
-    # # logscale = True
-    # # if logscale:
-    # #   plt.yscale(r'log')
-    # #   ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
-    # #   ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
-    # #   plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # else:
-    # #   plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
-    # # # Save the logarithmic scale figure
-    # # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_log.svg"), format='svg')
-    # plt.close("all")
+    # # Save the logarithmic scale figure
+    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_tseries_log.svg"), format='svg')
+    plt.close("all")
+
+
+
+    # FIGURE OF MONTHLY CLIMATOLOGY FOR CALIBRATION PERIOD
+    # Update the font before creating any plot objects
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['font.sans-serif'] = ['Arial']
+    rcParams.update()
+    months = np.array([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # water year
+    fig = plt.figure()
+    # Get obs data from boxplot and delete it
+    axd = plt.axes()
+    Q_obs_box = axd.boxplot([Q_obs_monthData[i - 1] for i in months])
+    plt.delaxes(axd)
+    # create axes
+    ax = plt.axes()
+    # Make the obs wings plot
+    (p1, p5, p25, median, p75, p95, p99) = wingplot(Q_obs_box, ax)
+    # Plot the sim as boxplots
+    Q_sim_box = ax.boxplot([np.ones((len(months))) * np.nan] + [Q_sim_monthData[i - 1] for i in months],
+                           notch=True, sym='.', bootstrap=10000, showmeans=False, meanline=True, patch_artist=True,
+                           widths=0.5)
+    applyBoxplotTheme(Q_sim_box)
+    # Esthetics
+    # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
+    ax.grid(b=True, axis='y')
+    plt.rcParams["font.size"] = 14
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["axes.labelweight"] = "bold"
+    # horizontal axis
+    plt.xlabel(r'Month', fontsize=labelFontSize)
+    plt.xticks(range(1, 16), [""] + [month2string(m) for m in months])
+    plt.xlim([1.5, 15.5])
+    # vertical axis
+    plt.ylabel(r'Discharge [m3/s]', fontsize=labelFontSize)
+    ax.tick_params(labelsize=axesFontSize, size=8, width=2, which='major')
+    ax.tick_params(size=4, width=1.5, which='minor')
+    # Add manually-made legend
+    genLegend()
+    # Restore the correct active axes
+    ax = fig.get_axes()[0]
+    plt.sca(ax)
+    # Maximize the window for optimal view
+    maximizePlot()
+    # linear scale
+    logscale = False
+    if logscale:
+      plt.yscale(r'log')
+      ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+      ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+      plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    else:
+      plt.yscale(r'linear')
+      plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # Save the linear scale figure
+    plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_linear.svg"), format='svg')
+    # # Log scale for clearer skill cover
+    # logscale = True
+    # if logscale:
+    #   plt.yscale(r'log')
+    #   ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+    #   ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+    #   plt.ylim([1, 2 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # else:
+    #   plt.ylim([1, 1.05 * np.nanmax([Q_obs_Cal, Q_sim_Cal])])
+    # # Save the logarithmic scale figure
+    # plt.savefig(os.path.join(path_subcatch, "WEB", str(index) + "_Q_clim_log.svg"), format='svg')
+    plt.close("all")
 
 
 

@@ -46,7 +46,7 @@ if __name__ == '__main__':
     print('  - obsid: {}'.format(args.obsid))
     print('  - settings file: {}'.format(args.settings))
     obsid = int(args.obsid)
-    cfg = config.Config(args.settings)
+    cfg = config.ConfigCalibration(args.settings)
 
     print(">> Reading stations.csv file...")
     stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')

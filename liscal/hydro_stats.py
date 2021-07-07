@@ -375,3 +375,22 @@ def vr(s,o,spinup):
     o = o[spinup+1:]
     s,o = filter_nan(s,o)
     return 1 - abs((np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o)) - 1)
+
+
+def split_monthly(Q,spinup):
+
+    s = s[spinup+1:]
+    o = o[spinup+1:]
+    mask = ~np.isnan(o) & ~np.isnan(s)
+    obs_monthly = []
+    sim_monthly = []
+    for month in range(1, 13):
+        month_mask = (i.month == month) & mask
+        # Obs
+        obs_month = o[month_mask]
+        obs_monthly.append(obs_month)
+        # Sim
+        sim_month = s[month_mask]
+        sim_monthly.append(sim_month)
+
+    return sim_monthly, obs_monthly

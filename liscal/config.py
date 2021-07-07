@@ -21,46 +21,65 @@ class DEAPParameters():
 class Config():
 
     def __init__(self, settings_file):
-
-        parser = ConfigParser()
+        self.parser = ConfigParser()
         if os.path.isfile(settings_file):
-            parser.read(settings_file)
+            self.parser.read(settings_file)
         else:
             raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
-        print('Calibration settings:')
-        for section in parser.sections():
+        print('Settings:')
+        for section in self.parser.sections():
             print('- {}'.format(section))
-            for key, value in dict(parser[section]).items():
+            for key, value in dict(self.parser[section]).items():
                 print('  - {}: {}'.format(key, value)) 
 
         # paths
-        self.subcatchment_path = parser.get('Path','subcatchment_path')
+        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
+
+        # Date parameters
+        self.observations_start = datetime.strptime(self.parser.get('Main', 'observations_start'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.observations_end = datetime.strptime(self.parser.get('Main', 'observations_end'), "%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.spinup_days = int(self.parser.get('Main', 'spinup_days'))
+        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+
+        # observations
+        self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
+        self.stations_data = self.parser.get('Stations', 'stations_data')
+
+
+class ConfigCalibration(Config):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
 
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
 
         # deap
-        self.param_ranges = pandas.read_csv(parser.get('Path','param_ranges'), sep=",", index_col=0)
-        self.deap_param = DEAPParameters(parser)
+        self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)
+        self.deap_param = DEAPParameters(self.parser)
         # Load param ranges file
 
         # template
-        self.lisflood_template = parser.get('Templates','LISFLOODSettings')
+        self.lisflood_template = self.parser.get('Templates','LISFLOODSettings')
 
         # Debug/test parameters
-        self.fast_debug = bool(int(parser.get('MAIN', 'fast_debug')))
+        self.fast_debug = bool(int(self.parser.get('Main', 'fast_debug')))
 
-        # Date parameters
-        self.observations_start = datetime.strptime(parser.get('MAIN', 'observations_start'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.observations_end = datetime.strptime(parser.get('MAIN', 'observations_end'), "%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_start = datetime.strptime(parser.get('MAIN','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime(parser.get('MAIN','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.spinup_days = int(parser.get('MAIN', 'spinup_days'))
-        self.calibration_freq = parser.get('MAIN', 'calibration_freq')
+        # stations
+        self.stations_links = self.parser.get('Stations', 'stations_links')
 
-        # observations
-        self.observed_discharges = parser.get('CSV', 'observed_discharges')
-        self.stations_data = parser.get('CSV', 'stations_data')
-        self.stations_links = parser.get('CSV', 'stations_links')
+
+class ConfigPostProcessing(Config):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
+
+        self.validation_start = datetime.strptime(self.parser.get('Main','validation_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.validation_end = datetime.strptime(self.parser.get('Main','validation_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+
+        # stations
+        self.return_periods = self.parser.get('Stations', 'return_periods')

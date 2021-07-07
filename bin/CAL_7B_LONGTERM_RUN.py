@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     settings_file = args.settings_file
 
-    cfg = config.Config(settings_file)
+    cfg = config.ConfigCalibration(settings_file)
 
     # Read full list of stations, index is obsid
     print(">> Reading stations_data file...")

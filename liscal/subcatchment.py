@@ -10,17 +10,26 @@ from liscal import pcr_utils, utils
 
 class SubCatchment():
 
-    def __init__(self, cfg, obsid, station_data, initialise=True):
+    def __init__(self, cfg, obsid, station_data, start_date=None, end_date=None, initialise=True):
 
         self.obsid = obsid
         self.data = station_data
         self.path = os.path.join(cfg.subcatchment_path, str(obsid))
         self.path_out = os.path.join(self.path, 'out')
 
-        if self.data is not None:
+        if (start_date is None or end_date is None) and self.data is not None:
             cal_start, cal_end = self.calibration_start_end(cfg)
             self.cal_start = cal_start
             self.cal_end = cal_end
+        else:
+            self.cal_start = start_date
+            self.cal_end = end_date
+
+        self.spinup = cfg.spinup_days
+        if self.data is not None:
+            if cfg.calibration_freq == r"6-hourly":
+                if self.data["CAL_TYPE"].find("_6h") > -1:
+                    self.spinup = 4*cfg.spinup_days
 
         if initialise:
 

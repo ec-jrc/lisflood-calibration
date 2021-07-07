@@ -3,7 +3,7 @@ import gzip
 from datetime import datetime
 import numpy as np
 import xarray as xr
-from liscal import subcatchment, objective, utils
+from liscal import subcatchment, objective, utils, hydro_stats
 import matplotlib.pyplot as plt
 
 
@@ -127,7 +127,7 @@ def test_kge_synthetic(dummy_cfg):
     print(Qsim)
     print(Qobs)
 
-    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    kge_comp = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=subcatch.spinup)
     print(kge_comp)
 
     os.remove(dummy_cfg.observed_discharges)
@@ -164,6 +164,7 @@ def test_kge_fail(dummy_cfg):
 
     os.remove(dummy_cfg.observed_discharges)
 
+
 def test_kge_real(dummy_cfg):
     path_subcatch = dummy_cfg.path_subcatch
     param_ranges = dummy_cfg.param_ranges
@@ -194,7 +195,7 @@ def test_kge_real(dummy_cfg):
     print(Qsim)
     print(Qobs)
 
-    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    kge_comp = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=subcatch.spinup)
     print(kge_comp)
 
     os.remove(dummy_cfg.observed_discharges)
@@ -234,7 +235,7 @@ def test_kge_24h(dummy_cfg):
     print(Qsim[dummy_cfg.spinup_days:])
     print(Qobs[dummy_cfg.spinup_days:])
 
-    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    kge_comp = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=subcatch.spinup)
     print(kge_comp)
 
     os.remove(dummy_cfg.observed_discharges)
@@ -274,10 +275,44 @@ def test_kge_6h(dummy_cfg):
     print(Qsim[dummy_cfg.spinup_days:])
     print(Qobs[dummy_cfg.spinup_days:])
 
-    kge_comp = obj.compute_KGE(Qsim, Qobs)
+    kge_comp = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=subcatch.spinup)
     print(kge_comp)
 
     os.remove(dummy_cfg.observed_discharges)
     os.remove(os.path.join(subcatch.path_out, 'dis001497862365.tss'))
 
     assert kge_comp == (0.8087191318516062, 0.8992883303124082, 1.1618604067180205, 0.9842920769858771, 109250.76130000001)
+
+
+def test_stats(dummy_cfg):
+    path_subcatch = dummy_cfg.path_subcatch
+    param_ranges = dummy_cfg.param_ranges
+    path_out = dummy_cfg.path_out
+
+    dummy_cfg.observed_discharges = os.path.join(dummy_cfg.path_subcatch, 'Qtss_380.csv')
+    gzip_file(dummy_cfg.observed_discharges)
+    dummy_cfg.forcing_start = datetime.strptime('2/1/1990 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
+    dummy_cfg.spinup_days = 1095
+
+    print('checking kge function')
+
+    station_data = {}
+    station_data['Cal_Start'] = '02/01/2009 06:00'
+    station_data['Cal_End'] = '07/11/2017 12:00'
+    station_data['CAL_TYPE'] = 'NRT_6h'
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data, initialise=False)
+    obj = objective.ObjectiveKGE(dummy_cfg, subcatch)
+
+    gzip_file(os.path.join(subcatch.path_out, 'dis0.tss'))
+    Q, stats = obj.compute_statistics('0')
+
+    assert stats['kge'] == 0.583961732802424
+    assert stats['corr'] == 0.7703130232405978
+    assert stats['bias'] == 1.3460817211190588
+    assert stats['spread'] == 1.023646876900714
+    assert stats['sae'] == 69039.41991299999
+    assert stats['nse'] == 0.195407737254919
+
+    os.remove(os.path.join(subcatch.path_out, 'dis0.tss'))
