@@ -5,10 +5,6 @@ from datetime import datetime, timedelta
 
 from liscal import hydro_stats, utils
 
-class ObjectiveKGEMulti(ObjectiveKGE):
-    def __init__(self, cfg, subcatch, read_observations=True):
-
-        self
 
 class ObjectiveKGE():
 
