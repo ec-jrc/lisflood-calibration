@@ -1,10 +1,13 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
+import calendar
 import matplotlib.pyplot as plt
+from datetime import datetime
 from matplotlib import gridspec
 from matplotlib import patches
 from matplotlib import transforms
+from matplotlib import ticker
 
 from liscal import binary_scores, hydro_stats
 
@@ -530,5 +533,113 @@ class MonthlyBoxPlot():
           plt.yscale(r'linear')
           plt.ylim([1, 1.05 * max_value])
         
+        # Save the linear scale figure
+        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+
+
+class TimeSeriesPlot():
+
+    magenta = [i / 255. for i in (191, 81, 225)]
+    red = [i / 255. for i in (255, 29, 29)]
+    orange = [i / 255. for i in (250, 167, 63)]
+    green = [i / 255. for i in (112, 173, 71)]
+    purple = [i / 255. for i in (91, 63, 159)]
+    lighterblue = [i / 255. for i in (131, 179, 223)]
+    darkestblue = [i / 255. for i in (23, 125, 245)]
+
+    def __init__(self, plot_params):
+        self.plot_params = plot_params
+
+        self.axes_size = plot_params.axes_size
+        self.label_size = plot_params.label_size
+        self.threshold_size = plot_params.threshold_size
+
+    def plot_threshold(self, ax, mindate, maxdate, max_value, threshold, color, label):
+        if max_value > threshold:
+            plt.hlines(threshold, color=color, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
+            ax.text(x=maxdate + 40, y=threshold, s=label, color=color, verticalalignment='center', fontsize=self.threshold_size)
+
+
+    def plot(self, path_out, index, sim, obs, thresholds):
+
+        # FIGURE OF CALIBRATION PERIOD TIME SERIES
+        # Update the font before creating any plot objects
+        plt.rc('font', **self.plot_params.text['font'])
+
+        fig = plt.figure()
+        ax = plt.axes()
+        # Qsim
+        plt.plot([i.value * 1e-9 for i in index], sim, color=self.purple, linewidth=1)
+        # Qobs
+        ax.fill_between([i.value * 1e-9 for i in index], np.zeros(len(obs)), obs, facecolor=self.lighterblue,
+                        alpha=1.0, edgecolor=self.darkestblue, linewidth=0.5)
+        # Return period
+        mindate = index[0].value * 1e-9
+        maxdate = index[-1].value * 1e-9
+        max_value = np.nanmax([sim, obs])
+        self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl1.5'], self.green, label='1.5-year')
+        self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl2'], self.orange, label='2-year')
+        self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl5'], self.red, label='5-year')
+        self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl20'], self.magenta, label='20-year')
+        
+        plt.ylabel(r'Discharge [m3/s]', fontsize=self.label_size)  # ³
+        
+        # Activate major ticks at the beginning of each boreal season
+        period = (index[-1] - index[0]).days/365.25
+        if period > 10:
+            majorticks = [
+                calendar.timegm(datetime(k, j, 1).timetuple())
+                for k in np.arange(index[0].year, index[-1].year + 1, 1)
+                for j in [9]
+                if datetime(k, j, 1) >= index[0] and datetime(k, j, 1) <= index[-1]
+            ]
+        else:
+            majorticks = [
+                calendar.timegm(datetime(k, j, 1).timetuple())
+                for k in np.arange(index[0].year, index[-1].year + 1, 1)
+                for j in [3, 6, 9, 12]
+                if datetime(k, j, 1) >= index[0] and datetime(k, j, 1) <= index[-1]
+            ]
+        ax.set_xticks(majorticks)
+        
+        # Rewrite labels
+        locs, intlabels = plt.xticks()
+        plt.setp(intlabels, rotation=70)
+        labels = [datetime.strftime(datetime.fromtimestamp(i), "%b %Y") for i in majorticks]
+        ax.set_xticklabels(labels)
+        
+        # Activate minor ticks every month
+        minorticks = [
+            calendar.timegm(datetime(k, j + 1, 1).timetuple())
+            for k in np.arange(index[0].year, index[-1].year + 1, 1)
+            for j in range(12)
+            if datetime(k, j + 1, 1) >= index[0] and datetime(k, j + 1, 1) <= index[-1]
+        ]
+        
+        # For the minor ticks, use no labels; default NullFormatter.
+        ax.xaxis.set_minor_locator(ticker.FixedLocator(minorticks))
+        ax.tick_params(labelsize=self.axes_size, size=8, width=2, which='major')
+        ax.tick_params(size=4, width=1.5, which='minor')
+
+        # Maximize the window for optimal view
+        fig.set_size_inches(16.5, 11.7) # A3 size
+        fig.subplots_adjust(left=0.1, bottom=0, right=1, top=1, wspace=-0.2, hspace=0.0)
+
+        # DD better to always place the legend box to avoid random placement and risking not being able to read KGE NSE etc.
+        leg = ax.legend(['Qsim', 'Qobs'], fancybox=True, framealpha=0.8, prop={'size': self.threshold_size*.75}, labelspacing=0.1,
+                        loc='center', bbox_to_anchor=(0.5, -0.3))
+        leg.get_frame().set_edgecolor('white')
+        
+        # linear scale
+        logscale = False
+        if logscale:
+          plt.yscale(r'log')
+          ax.set_yticks([0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000, 10000])
+          ax.get_yaxis().set_major_formatter(ticker.ScalarFormatter())
+          plt.ylim([1, 2 * max_value])
+        else:
+          plt.yscale(r'linear')
+          plt.ylim([1, 1.05 * max_value])
+
         # Save the linear scale figure
         plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
