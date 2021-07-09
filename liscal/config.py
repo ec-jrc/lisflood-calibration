@@ -73,6 +73,27 @@ class ConfigCalibration(Config):
         self.stations_links = self.parser.get('Stations', 'stations_links')
 
 
+class PlotParameters():
+
+    # Return periods
+    magenta = [i / 255. for i in (191, 81, 225)]
+    red = [i / 255. for i in (255, 29, 29)]
+    orange = [i / 255. for i in (250, 167, 63)]
+    green = [i / 255. for i in (112, 173, 71)]
+
+    legendFontSize = 27
+    tableFontSize = 30
+    contFontSize = 24
+    
+    title_size_big = 36
+    title_size_small = 18
+    label_size = 30
+    axes_size = 24
+    legend_size_small = 12
+
+    file_format = 'svg'
+
+
 class ConfigPostProcessing(Config):
 
     def __init__(self, settings_file):

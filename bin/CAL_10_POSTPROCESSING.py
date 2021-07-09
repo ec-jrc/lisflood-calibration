@@ -32,8 +32,8 @@ if __name__ == '__main__':
     
     subcatch = subcatchment.SubCatchment(
         cfg, obsid, station_data, 
-        start_date=datetime.strptime(cfg.validation_start, '%d/%m/%Y %H:%M'),
-        end_date=datetime.strptime(cfg.validation_end, '%d/%m/%Y %H:%M'),
+        start_date=cfg.validation_start,
+        end_date=cfg.validation_end,
         initialise=False
         )
     if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
