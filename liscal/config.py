@@ -75,23 +75,26 @@ class ConfigCalibration(Config):
 
 class PlotParameters():
 
-    # Return periods
-    magenta = [i / 255. for i in (191, 81, 225)]
-    red = [i / 255. for i in (255, 29, 29)]
-    orange = [i / 255. for i in (250, 167, 63)]
-    green = [i / 255. for i in (112, 173, 71)]
-
-    legendFontSize = 27
-    tableFontSize = 30
-    contFontSize = 24
-    
-    title_size_big = 36
+    title_size_big = 32
     title_size_small = 18
     label_size = 30
     axes_size = 24
-    legend_size_small = 12
+    legend_size_small = 16
+    threshold_size = 24
 
     file_format = 'svg'
+
+    text = {
+        'figure': {'autolayout': True},
+        'font': {
+            'size': 14,
+            'family':'sans-serif',
+            'sans-serif':['Arial'],
+            'weight': 'bold'
+        },
+        'text': {'usetex': True},
+        'axes': {'labelweight': 'bold'},
+    }
 
 
 class ConfigPostProcessing(Config):
@@ -99,8 +102,17 @@ class ConfigPostProcessing(Config):
     def __init__(self, settings_file):
         super().__init__(settings_file)
 
-        self.validation_start = datetime.strptime(self.parser.get('Main','validation_start'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.validation_end = datetime.strptime(self.parser.get('Main','validation_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.summary_path = self.parser.get('Path','summary_path')
+
+        # parse validation dates as string and make sure format is correct
+        self.validation_start = datetime.strptime(self.parser.get('Main','validation_start'),"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+        self.validation_end = datetime.strptime(self.parser.get('Main','validation_end'),"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+
+        # we don't use it but required for objectives object
+        self.param_ranges = None
 
         # stations
         self.return_periods = self.parser.get('Stations', 'return_periods')
+
+        # plot parameters
+        self.plot_params = PlotParameters()

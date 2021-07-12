@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import xarray as xr
 import pandas as pd
@@ -14,24 +15,45 @@ from liscal import binary_scores, hydro_stats
 
 def create_products(cfg, subcatch, obj):
 
+    # create output directory
+    os.makedirs(cfg.summary_path, exist_ok=True)
+
     # Long term run has run_id X
     run_id = 'X'
 
     # compute statistics (KGE, NSE, etc.)
     Q, stats = obj.compute_statistics(run_id)
+    print(Q)
+    print(stats)
+    print(Q.index)
 
     # compute monthly discharge data
-    sim_monthly, obs_monthly = hydro_stats.split_monthly(Q.index.values, Q['Qsim'].values, Q['Qobs'].values, spinup=subcatch.spinup)
+    sim_monthly, obs_monthly = hydro_stats.split_monthly(Q.index, Q['Sim'].values, Q['Obs'].values, spinup=subcatch.spinup)
 
     # get return periods at station coordinates
     thresholds = xr.open_dataset(cfg.return_periods).sel(x=subcatch.data['LisfloodX'], y=subcatch.data['LisfloodY'])
     print(thresholds)
 
+    # create speedometer plots
+    speedo = SpeedometerPlot(cfg.plot_params)
+    speedo.plot(os.path.join(subcatch.path_out, 'speedo'), stats)
+    os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'speedo')))
+
+    # create box plot
+    box = MonthlyBoxPlot(cfg.plot_params)
+    box.plot(os.path.join(subcatch.path_out, 'boxy'), sim_monthly, obs_monthly)
+    os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'boxy')))
+
+    # create time series plot
+    ts = TimeSeriesPlot(cfg.plot_params)
+    ts.plot(os.path.join(subcatch.path_out, 'timmy'), Q.index, Q['Sim'].values, Q['Obs'].values, thresholds)
+    os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'timmy')))
+
     # compute contingency table and export
-    contingency_values = binary_scores.contingency_table(thresholds, Q)
-    contingency_df = pd.DataFrame(data=contingency_values, index=subcatch.obsid)
-    print(contingency_df)
-    contingency_df.to_csv(path.join(subcatch.path_out, 'contingency_table.csv'))
+    # contingency_values = binary_scores.contingency_table(thresholds, Q)
+    # contingency_df = pd.DataFrame(data=contingency_values, index=subcatch.obsid)
+    # print(contingency_df)
+    # contingency_df.to_csv(path.join(cfg.summary_path, 'contingency_table_{}.csv'.format(subcatch.obsid)))
 
 
 # Plotting class for speedometer gauges, modified to match Louise Arnal's EFAS4.0 designs
@@ -556,8 +578,10 @@ class TimeSeriesPlot():
 
     def plot_threshold(self, ax, mindate, maxdate, max_value, threshold, color, label):
         if max_value > threshold:
+            time_period = maxdate-mindate
             plt.hlines(threshold, color=color, linewidth=2, linestyle=':', xmin=mindate, xmax=maxdate)
-            ax.text(x=maxdate + 40, y=threshold, s=label, color=color, verticalalignment='center', fontsize=self.threshold_size)
+            ax.text(x=maxdate+time_period*0.01, y=threshold, s=label, color=color, verticalalignment='center', fontsize=self.threshold_size)
+            ax.set_xlim(mindate-time_period*0.05, maxdate+time_period*0.1)
 
 
     def plot(self, path_out, index, sim, obs, thresholds):
@@ -568,20 +592,21 @@ class TimeSeriesPlot():
 
         fig = plt.figure()
         ax = plt.axes()
+        dates = [i.value * 1e-09 for i in index]
         # Qsim
-        plt.plot([i.value * 1e-9 for i in index], sim, color=self.purple, linewidth=1)
+        plt.plot(dates, sim, color=self.purple, linewidth=1)
         # Qobs
-        ax.fill_between([i.value * 1e-9 for i in index], np.zeros(len(obs)), obs, facecolor=self.lighterblue,
+        ax.fill_between(dates, np.zeros(len(obs)), obs, facecolor=self.lighterblue,
                         alpha=1.0, edgecolor=self.darkestblue, linewidth=0.5)
         # Return period
-        mindate = index[0].value * 1e-9
-        maxdate = index[-1].value * 1e-9
+        mindate = index[0].value * 1e-09
+        maxdate = index[-1].value * 1e-09
         max_value = np.nanmax([sim, obs])
         self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl1.5'], self.green, label='1.5-year')
         self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl2'], self.orange, label='2-year')
         self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl5'], self.red, label='5-year')
         self.plot_threshold(ax, mindate, maxdate, max_value, thresholds['rl20'], self.magenta, label='20-year')
-        
+
         plt.ylabel(r'Discharge [m3/s]', fontsize=self.label_size)  # ³
         
         # Activate major ticks at the beginning of each boreal season

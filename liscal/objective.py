@@ -49,7 +49,8 @@ class ObjectiveKGE():
 
         Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
-            print("run_id: "+str(run_id))
+            print('run_id: {}'.format(str(run_id)))
+            print('Discharge file path: {}'.format(Qsim_tss))
             raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
@@ -63,43 +64,43 @@ class ObjectiveKGE():
         cfg = self.cfg
         start = self.subcatch.cal_start
         end = self.subcatch.cal_end
+        start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
+        end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
 
         # check that dates are compatible
         if not simulated_streamflow.index.equals(observed_streamflow.index):
             raise Exception('Simulated and observed streamflow dates not aligned!')
 
         # Finally, extract equal-length arrays from it
-        Qobs = np.array(observed_streamflow[start:end])
-        Qsim = np.array(simulated_streamflow[start:end])
-
+        Qobs = observed_streamflow[start:end]
+        Qsim = simulated_streamflow[start:end]
+        date_range = pd.date_range(start_pd, end_pd, freq="360min")
         if cfg.calibration_freq == r"6-hourly":
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
                 # start and end have to be in datetime format to avoid "dayfirst" type bugs
-                start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
-                end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
-                date_range = pd.date_range(start_pd, end_pd, freq="360min")
                 # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
-                Qsim = simulated_streamflow[start:end]
                 Qsim.index = date_range
                 Qsim = Qsim.resample('24H', label="right", closed="right").mean()
-                Qsim = np.array(Qsim)
                 # Same for Qobs
-                Qobs = observed_streamflow[start:end]
                 Qobs.index = date_range
                 Qobs = Qobs.resample('24H', label="right", closed="right").mean()
-                Qobs = np.array(Qobs)
+                # return date range 
+                date_range = Qobs.index
 
+        
         elif cfg.calibration_freq == r"daily":
             # DD Untested code! DEBUG TODO
-            start = datetime.strptime(start, "%d/%m/%Y %H:%M")
-            end = datetime.strptime(end, "%d/%m/%Y %H:%M")
-            date_range = pd.date_range(start, end, freq="360min")
-            Qobs = observed_streamflow[start:end]
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
-            Qobs = np.array(Qobs) #[1].values + 0.001
+            date_range = Qobs.index
+        
+        else:
+            raise Exception('Calibration freq {} not supported'.format(cfg.calibration_freq))
+       
+        Qsim = np.array(Qsim)
+        Qobs = np.array(Qobs)
 
         # Trim nans
         # Qsim = Qsim[~np.isnan(Qobs)]
@@ -111,7 +112,10 @@ class ObjectiveKGE():
         # if np.isnan(Qobs).any():
         #     raise Exception('NaN found in Qobs')
 
-        return Qsim, Qobs
+        if len(date_range) != len(Qsim) or len(date_range) != len(Qobs):
+            raise Exception('dates, observaed and simulated streamflows not aligned: sizes({}, {}, {})'.format(len(date_range), len(Qobs), len(Qsim)))
+
+        return date_range, Qsim, Qobs
 
     def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
 
@@ -169,7 +173,7 @@ class ObjectiveKGE():
         # DD Extract simulation
         simulated_streamflow = self.read_simulated_streamflow(run_id)
 
-        Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
+        date_range, Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
             raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
 
@@ -182,10 +186,9 @@ class ObjectiveKGE():
         # DD Extract simulation
         simulated_streamflow = self.read_simulated_streamflow(run_id)
 
-        Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
+        date_range, Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
             raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
-
 
         stats = {}
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
@@ -196,10 +199,10 @@ class ObjectiveKGE():
         stats['sae'] = kge_components[4]
         stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
 
-        index = simulated_streamflow.index
+        print(Qsim.shape)
+        print(Qobs.shape)
+        index = pd.to_datetime(date_range, format='%d/%m/%Y %H:%M')
         print(index)
-        print(Qsim)
-        print(Qobs)
         Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
 
         return Q, stats

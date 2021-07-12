@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 import pandas
 
@@ -113,7 +114,7 @@ def simulated_best_tss2csv(path_subcatch, run_id, forcing_start, dataname, outna
         os.remove(os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
     except:
         pass
-    os.rename(tss_file, os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
+    shutil.copy(tss_file, os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
 
 
 def stage_inflows(path_subcatch):

@@ -2,32 +2,12 @@ import os
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from liscal import products, hydro_stats
-
-
-class PlotParametersSpeedo():
-    
-    title_size_big = 36
-    title_size_small = 18
-    label_size = 30
-    axes_size = 24
-    legend_size_small = 12
-
-    file_format = 'svg'
-
-    text = {
-        'figure': {'autolayout': True},
-        'font': {
-            'family':'sans-serif',
-            'sans-serif':['Arial']
-        },
-        'text': {'usetex': True},
-    }
+from liscal import products, hydro_stats, config
 
 
 def test_speedometers():
 
-    speedo = products.SpeedometerPlot(PlotParametersSpeedo())
+    speedo = products.SpeedometerPlot(config.PlotParameters())
 
     stats = {}
     stats['kge'] = 0.55
@@ -39,29 +19,6 @@ def test_speedometers():
     # os.remove('speedo.svg')
 
 
-class PlotParametersBox():
-    
-    title_size_big = 36
-    title_size_small = 18
-    label_size = 30
-    axes_size = 24
-    legend_size_small = 16
-
-    file_format = 'svg'
-
-    text = {
-        'figure': {'autolayout': True},
-        'font': {
-            'size': 14,
-            'family':'sans-serif',
-            'sans-serif':['Arial'],
-            'weight': 'bold'
-        },
-        'text': {'usetex': True},
-        'axes': {'labelweight': 'bold'},
-    }
-
-
 def test_monthly_box_plot():
 
     index = pd.date_range(datetime(1985,7,1), datetime(2015,7,1))
@@ -71,31 +28,9 @@ def test_monthly_box_plot():
     # compute monthly discharge data
     sim_monthly, obs_monthly = hydro_stats.split_monthly(index, sim, obs, spinup=0)
 
-    box = products.MonthlyBoxPlot(PlotParametersBox())
+    box = products.MonthlyBoxPlot(config.PlotParameters())
     box.plot('boxy', sim_monthly, obs_monthly)
     # os.remove('boxy.svg')
-
-class PlotParametersTimeSeries():
-    
-    threshold_size = 24
-    title_size_small = 18
-    label_size = 30
-    axes_size = 24
-    legend_size_small = 16
-
-    file_format = 'svg'
-
-    text = {
-        'figure': {'autolayout': True},
-        'font': {
-            'size': 14,
-            'family':'sans-serif',
-            'sans-serif':['Arial'],
-            'weight': 'bold'
-        },
-        'text': {'usetex': True},
-        'axes': {'labelweight': 'bold'},
-    }
 
 
 # @pytest.mark.parametrize('catch', [2823, 380])
@@ -108,10 +43,10 @@ def test_time_series_plot():
         'rl20': 100,
     }
 
-    index = pd.date_range(datetime(2005,7,1), datetime(2015,7,1))
+    index = pd.to_datetime(pd.date_range(datetime(2015,1,25), datetime(2015,10,10)))
     sim = (5+np.random.randn(len(index)))*30
     obs = (5+np.random.randn(len(index)))*30
 
-    ts = products.TimeSeriesPlot(PlotParametersTimeSeries())
+    ts = products.TimeSeriesPlot(config.PlotParameters())
     ts.plot('timmy', index, sim, obs, thresholds)
-    # os.remove('boxy.svg')
+    # os.remove('timmy.svg')

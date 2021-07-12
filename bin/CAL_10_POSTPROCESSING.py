@@ -1,10 +1,9 @@
+#!/usr/bin/env python3
 import os
 import argparse
 import pandas as pd
 from liscal import config, subcatchment, objective, products
 
-
-def plot_subcatchment(cfg, obsid, station_data):
 
 if __name__ == '__main__':
 

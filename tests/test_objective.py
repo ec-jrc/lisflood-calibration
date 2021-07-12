@@ -123,7 +123,7 @@ def test_kge_synthetic(dummy_cfg):
     sim = obj.read_simulated_streamflow('1')
     print(sim)
 
-    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    dates, Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
     print(Qsim)
     print(Qobs)
 
@@ -191,7 +191,7 @@ def test_kge_real(dummy_cfg):
     sim = obj.read_simulated_streamflow('0')
     print(sim)
 
-    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    dates, Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
     print(Qsim)
     print(Qobs)
 
@@ -231,7 +231,7 @@ def test_kge_24h(dummy_cfg):
     sim = obj.read_simulated_streamflow('008133470374')
     print(sim)
 
-    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    dates, Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
     print(Qsim[dummy_cfg.spinup_days:])
     print(Qobs[dummy_cfg.spinup_days:])
 
@@ -271,7 +271,7 @@ def test_kge_6h(dummy_cfg):
     sim = obj.read_simulated_streamflow('001497862365')
     print(sim)
 
-    Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
+    dates, Qsim, Qobs = obj.resample_streamflows(sim, obj.observed_streamflow)
     print(Qsim[dummy_cfg.spinup_days:])
     print(Qobs[dummy_cfg.spinup_days:])
 

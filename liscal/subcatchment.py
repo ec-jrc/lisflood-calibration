@@ -30,6 +30,7 @@ class SubCatchment():
             if cfg.calibration_freq == r"6-hourly":
                 if self.data["CAL_TYPE"].find("_6h") > -1:
                     self.spinup = 4*cfg.spinup_days
+        print('Spinup is {}'.format(self.spinup))
 
         if initialise:
 
