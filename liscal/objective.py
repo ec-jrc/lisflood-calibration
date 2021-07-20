@@ -53,7 +53,6 @@ class ObjectiveKGE():
         simulated_streamflow = os.path.join(self.subcatch.path_out, 'streamflow_simulated_best.csv')
         simulated_streamflow = pd.read_csv(simulated_streamflow, sep=",", index_col=0)
         simulated_streamflow = simulated_streamflow[str(self.subcatch.obsid)]
-        print(simulated_streamflow)
         print('Simulated streamflow best:')
         print('---------------------------------------')
         print(simulated_streamflow)

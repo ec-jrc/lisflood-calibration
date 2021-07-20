@@ -59,7 +59,6 @@ class DummyConfig():
         # Date params
         self.forcing_start = datetime.strptime('31/12/2016 06:00', "%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-        self.spinup_days = 30
         self.calibration_freq = '6-hourly'
 
 

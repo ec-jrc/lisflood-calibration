@@ -45,7 +45,6 @@ class ConfigCalibration(Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.spinup_days = int(self.parser.get('Main', 'spinup_days'))
         self.calibration_freq = self.parser.get('Main', 'calibration_freq')
 
         # deap
@@ -66,7 +65,6 @@ class ConfigCalibration(Config):
             self.deap_param.pop = 2
 
         # stations
-        self.stations_data = self.parser.get('Stations', 'stations_data')
         self.stations_links = self.parser.get('Stations', 'stations_links')
 
         # pcraster commands

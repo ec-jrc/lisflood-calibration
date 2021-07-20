@@ -43,7 +43,6 @@ class ConfigPostProcessing(config.Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.spinup_days = int(self.parser.get('Main', 'spinup_days'))
         self.calibration_freq = self.parser.get('Main', 'calibration_freq')
 
         # we don't use it but required for objectives object

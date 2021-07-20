@@ -1,14 +1,11 @@
 [Main]
 forcing_start = 02/01/1990 06:00
 forcing_end = 31/12/2017 06:00
-spinup_days = 1095
 calibration_freq = 6-hourly
 fast_debug = 0
 min_obs_years = 3.5
 
 [Stations]
-stations_type = T
-stations_list = STATIONS/stations_data.csv
 stations_data = STATIONS/stations_data.csv
 stations_links = STATIONS/stations_links.csv
 observed_discharges = OBS

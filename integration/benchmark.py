@@ -20,8 +20,9 @@ def deleteOutput(subcatch_dir):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('obsid', help='Station obsid')
     parser.add_argument('settings', help='Settings file')
+    parser.add_argument('stations_data', help='Stations metadata CSV file')
+    parser.add_argument('obsid', help='Station obsid')
     args = parser.parse_args()
 
     print('  - obsid: {}'.format(args.obsid))
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     cfg = config.ConfigCalibration(args.settings)
 
     print(">> Reading stations.csv file...")
-    stations = pandas.read_csv(cfg.stations_data, sep=",", index_col=0)
+    stations = pandas.read_csv(args.stations_data, sep=",", index_col=0)
     try:
         station_data = stations.loc[obsid]
     except KeyError as e:
