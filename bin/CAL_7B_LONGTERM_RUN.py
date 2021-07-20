@@ -17,7 +17,6 @@ from liscal import templates, config, subcatchment, hydro_model
 def longtermrun_subcatchment(cfg, obsid, station_data):
 
     print("=================== "+str(obsid)+" ====================")
-    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
     if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
@@ -47,11 +46,9 @@ if __name__ == '__main__':
 
     # Long term run for specified station
     obsid = int(args.station)
-    try:
-        station_data = stations_meta.loc[obsid]
-    except KeyError as e:
-        raise Exception('Station {} not found in stations file'.format(obsid))
 
-    longtermrun_subcatchment(cfg, obsid, station_data)
+    subcatch = subcatchment.SubCatchment(cfg, obsid)
+
+    longtermrun_subcatchment(cfg, obsid, subcatch)
 
     print("==================== END ====================")

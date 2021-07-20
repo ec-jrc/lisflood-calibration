@@ -1,20 +1,23 @@
 [Main]
-observations_start = 1/1/1990 00:00
-observations_end = 01/07/2018 00:00
 forcing_start = 31/12/2016 06:00
 forcing_end = 31/12/2017 06:00
 spinup_days = 30
 calibration_freq = 6-hourly
 fast_debug = 0
+min_obs_years = 0.5
 
 [Stations]
+stations_type = T
+stations_list = STATIONS/stations_data_synthetic.csv
 stations_data = STATIONS/stations_data_synthetic.csv
 stations_links = STATIONS/stations_links.csv
 observed_discharges = OBS
+return_periods = STATIONS/return_levels.nc
 
 [Path]
 param_ranges = TEMPLATES/param_ranges.csv
 subcatchment_path = CATCHMENTS_DIR
+summary_path = SUMMARY_DIR
 
 [Templates]
 LISFLOODSettings = TEMPLATES/settings_lisflood.xml

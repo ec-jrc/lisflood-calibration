@@ -1,0 +1,56 @@
+,380
+StationName,Borgotaro
+Provider ID,1016
+Country code,IT
+StationLat,44.514057
+StationLon,9.842189999999999
+Height,354
+Height Units,m
+DrainingArea.km2.Provider,-
+Catchment Area Units,km2
+Added Date,18/09/2012 19:00
+River,Taro
+Catchment,Po
+EC_Catchments,Po
+Calibration ID,-
+DrainingArea.km2.LDD,400
+LisfloodX,4307500
+LisfloodY,2377500
+RealTime,False
+PostProcess,FALSE
+FixedRepPoint,True
+HasWL,1
+HasD,0
+Alive D,1
+StartDate_hist_24,21/09/2006 00:00
+EndDate_hist_24,01/07/2008 00:00
+StartDate_nrt_24,09/05/2012 00:00
+EndDate_nrt_24,08/11/2017 00:00
+StartDate_hist_6,20/09/2006 18:00
+EndDate_hist_6,01/07/2008 00:00
+StartDate_nrt_6,08/05/2012 12:00
+EndDate_nrt_6,07/11/2017 12:00
+DiffDays_hist_24,649
+DiffDays_nrt_24,2009
+DiffDays_hist_6,649
+DiffDays_nrt_6,2009
+cal_hist_24h,False
+cal_nrt_24h,True
+cal_hist_6h,False
+cal_nrt_6h,True
+CAL_TYPE,NRT_6h
+Notes,-
+EC_calib,T
+Dam/Lake,-
+EnoughQdata,1
+Val_Start,08/05/2012 12:00
+Val_End,02/01/2012 06:00
+Cal_Start,31/12/2016 06:00
+Cal_End,31/12/2017 06:00
+CatchmentArea,16
+SamplingFrequency,2
+Spinup_days,30
+Obs_start,30/01/2017 12:00
+Obs_end,31/12/2017 06:00
+Split_date,30/01/2017 12:00
+N_data,1341

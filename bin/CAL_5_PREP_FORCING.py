@@ -33,7 +33,7 @@ subcatchment_path = parser.get('Path','subcatchment_path')
 path_gauges = parser.get("Path", "gauges_path")
 interstation_regions = parser.get("Path", "interstation_regions")
 inlets =parser.get("Path", "inlets")
-stations_data_path = parser.get("CSV", "stations_data")
+stations_data_path = parser.get("Stations", "stations_data")
 
 config = {}
 for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:

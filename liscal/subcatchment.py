@@ -5,32 +5,30 @@ import numpy as np
 import pcraster as pcr
 from datetime import datetime, timedelta
 
-from liscal import pcr_utils, utils
+from liscal import pcr_utils, utils, stations
 
 
 class SubCatchment():
 
-    def __init__(self, cfg, obsid, station_data, start_date=None, end_date=None, initialise=True):
+    def __init__(self, cfg, obsid, station_data=None, initialise=True):
 
         self.obsid = obsid
-        self.data = station_data
         self.path = os.path.join(cfg.subcatchment_path, str(obsid))
         self.path_out = os.path.join(self.path, 'out')
+        self.path_station = os.path.join(self.path, 'station')
 
-        if (start_date is None or end_date is None) and self.data is not None:
-            cal_start, cal_end = self.calibration_start_end(cfg)
-            self.cal_start = cal_start
-            self.cal_end = cal_end
+        if station_data is None:
+            # Read full list of stations, index is obsid
+            station_file = os.path.join(self.path_station, 'station_data.csv')
+            print(">> Reading stations_data file {}".format(station_file))
+            self.data = pandas.read_csv(station_file, sep=",", index_col=0)
+            self.data = self.data[str(self.obsid)]
         else:
-            self.cal_start = start_date
-            self.cal_end = end_date
-
-        self.spinup = cfg.spinup_days
-        if self.data is not None:
-            if cfg.calibration_freq == r"6-hourly":
-                if self.data["CAL_TYPE"].find("_6h") > -1:
-                    self.spinup = 4*cfg.spinup_days
-        print('Spinup is {}'.format(self.spinup))
+            self.data = station_data
+        print('Station data:')
+        print('---------------------------------------')
+        print(self.data)
+        print('---------------------------------------')
 
         if initialise:
 
@@ -43,26 +41,6 @@ class SubCatchment():
             self.inflowflag, n_inflows = self.prepare_inflows(cfg)
             print('Found {} inflows'.format(n_inflows))
             self.resample_inflows(cfg)
-
-
-    def calibration_start_end(self, cfg):
-        # Compute the time steps at which the calibration should start and end - check that format is correct with datetime
-        cal_start = datetime.strptime(self.data['Cal_Start'], '%d/%m/%Y %H:%M').strftime('%d/%m/%Y %H:%M')
-        cal_end = datetime.strptime(self.data['Cal_End'], '%d/%m/%Y %H:%M').strftime('%d/%m/%Y %H:%M')
-
-        if cfg.fast_debug:
-            # Turn this on for debugging faster. You can speed up further by setting maxGen = 1
-            cal_start = (datetime.strptime(cal_start, '%d/%m/%Y %H:%M') + timedelta(days=cfg.spinup_days)).strftime('%d/%m/%Y %H:%M')
-            cal_end = (datetime.strptime(cal_start, '%d/%m/%Y %H:%M') + timedelta(days=120)).strftime('%d/%m/%Y %H:%M')
-            # !!!! rewrite cfg parameters
-            cfg.forcing_start = datetime.strptime(cal_start, '%d/%m/%Y %H:%M')
-            cfg.forcing_end = datetime.strptime(cal_end, '%d/%m/%Y %H:%M')
-            cfg.spinup_days = 0
-            cfg.deap_param.lambda_ = 2
-            cfg.deap_param.mu = 2
-            cfg.deap_param.pop = 2
-
-        return cal_start, cal_end
 
     def extract_gauge_loc(self, outlet_file):
 

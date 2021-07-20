@@ -1,7 +1,8 @@
 import os
 import shutil
 import numpy as np
-import pandas
+import pandas as pd
+from datetime import datetime, timedelta
 
 import subprocess
 import traceback
@@ -26,6 +27,18 @@ class HydrologicalModel():
 
         self.objective = objective
 
+        if cfg.fast_debug:
+            self.obs_start = datetime.strptime(subcatch.data['Split_date'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+            self.obs_end = (datetime.strptime(self.obs_start,"%d/%m/%Y %H:%M") + timedelta(days=120)).strftime('%d/%m/%Y %H:%M')
+            self.cal_start = self.obs_start
+            self.cal_end = self.obs_end
+        else:
+            spinup = int(subcatch.data['Spinup_days'])
+            self.obs_start = datetime.strptime(subcatch.data['Split_date'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+            self.obs_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+            self.cal_start = (datetime.strptime(self.obs_start,"%d/%m/%Y %H:%M") - timedelta(days=spinup)).strftime('%d/%m/%Y %H:%M')
+            self.cal_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+
     def init_run(self):
 
         # dummy Individual, doesn't matter here
@@ -38,7 +51,7 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
 
@@ -61,7 +74,7 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.subcatch.cal_start, self.subcatch.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
         run_file = self.lis_template.settings_path('-Run', run_id)
@@ -73,7 +86,8 @@ class HydrologicalModel():
             traceback.print_exc()
             raise Exception("")
 
-        objectives = self.objective.compute_objectives(run_id)
+        simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
+        objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
 
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
@@ -83,7 +97,7 @@ class HydrologicalModel():
 
 def read_parameters(path_subcatch):
 
-    paramvals = pandas.read_csv(os.path.join(path_subcatch, "pareto_front.csv"),sep=",")
+    paramvals = pd.read_csv(os.path.join(path_subcatch, "pareto_front.csv"),sep=",")
 
     name_params= paramvals.columns
     names=name_params[3:]
@@ -98,23 +112,33 @@ def read_parameters(path_subcatch):
     return parameters
 
 
-def simulated_best_tss2csv(path_subcatch, run_id, forcing_start, dataname, outname):
+def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outname):
 
-    tss_file = os.path.join(path_subcatch, "out", dataname + run_id + '.tss')
+    tss_file = os.path.join(subcatch.path_out, dataname + run_id + '.tss')
 
     tss = utils.read_tss(tss_file)
 
     tss[1][tss[1]==1e31] = np.nan
     tss_values = tss[1].values
 
-    df = pandas.DataFrame(data=tss_values, index=pandas.date_range(forcing_start, periods=len(tss_values), freq='6H'))
-    df.to_csv(os.path.join(path_subcatch, 'out', outname+"_simulated_best.csv"), ',', header="")
+    if cfg.calibration_freq == '6-hourly':
+        freq = '6H'
+    elif cfg.calibration_freq == 'daily':
+        freq = 'D'
+    else:
+        raise Exception('Calibration freq {} not supported'.format(cfg.calibration_freq))
+
+    index = pd.date_range(forcing_start, periods=len(tss_values), freq=freq).strftime('%d/%m/%Y %H:%M')
+    df = pd.DataFrame(data=tss_values, index=index)
+    df.columns = [str(subcatch.obsid)]
+    df.index.name = 'Timestamp'
+    df.to_csv(os.path.join(subcatch.path_out, outname+"_simulated_best.csv"))
 
     try:
-        os.remove(os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
+        os.remove(os.path.join(subcatch.path_out, outname+"_simulated_best.tss"))
     except:
         pass
-    shutil.copy(tss_file, os.path.join(path_subcatch, 'out', outname+"_simulated_best.tss"))
+    shutil.copy(tss_file, os.path.join(subcatch.path_out, outname+"_simulated_best.tss"))
 
 
 def stage_inflows(path_subcatch):
@@ -161,11 +185,11 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
-    simulated_best_tss2csv(subcatch.path, run_id, cfg.forcing_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(subcatch.path, run_id, cfg.forcing_start, 'chanq', 'chanq')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
-def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
+def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
     run_id = 'X'
 
@@ -174,7 +198,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
         
-    lis_template.write_template(run_id, subcatch.cal_start, subcatch.cal_end, param_ranges, parameters)
+    lis_template.write_template(run_id, start, end, param_ranges, parameters)
 
     prerun_file = lis_template.settings_path('-PreRun', run_id)
     run_file = lis_template.settings_path('-Run', run_id)
@@ -188,11 +212,12 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile):
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
-    Qsim = pandas.DataFrame(data=Qsim, index=pandas.date_range(subcatch.cal_start, subcatch.cal_end, freq='6H'))
+    index = pd.to_datetime(pd.date_range(start, end, freq='6H'), format='%d/%m/%Y %H:%M', errors='raise')
+    Qsim = pd.DataFrame(data=Qsim, index=index)
     Qsim.columns = [str(subcatch.obsid)]
     Qsim.index.name = 'Timestamp'
     Qsim.to_csv(outfile, ',', date_format='%d/%m/%Y %H:%M')
 
     # required for downstream catchments
-    simulated_best_tss2csv(subcatch.path, run_id, subcatch.cal_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(subcatch.path, run_id, subcatch.cal_start, 'chanq', 'chanq')
+    simulated_best_tss2csv(cfg, subcatch, run_id, start, 'dis', 'streamflow')
+    simulated_best_tss2csv(cfg, subcatch, run_id, start, 'chanq', 'chanq')

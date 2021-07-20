@@ -14,10 +14,10 @@ import traceback
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 
-def calibrate_subcatchment(cfg, obsid, station_data):
+
+def calibrate_subcatchment(cfg, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")
-    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
     if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
@@ -55,17 +55,11 @@ if __name__ == '__main__':
 
     cfg = config.ConfigCalibration(settings_file)
 
-    # Read full list of stations, index is obsid
-    print(">> Reading stations_data file...")
-    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
-
     # Calibrate lisflood fo specified station
     obsid = int(args.station)
-    try:
-        station_data = stations_meta.loc[obsid]
-    except KeyError as e:
-        raise Exception('Station {} not found in stations file'.format(obsid))
 
-    calibrate_subcatchment(cfg, obsid, station_data)
+    subcatch = subcatchment.SubCatchment(cfg, obsid)
+
+    calibrate_subcatchment(cfg, obsid, subcatch)
 
     print("==================== END ====================")

@@ -15,7 +15,8 @@ class ObjectiveKGE():
         self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
-            self.observed_streamflow = self.read_observed_streamflow()
+            observations_file = os.path.join(subcatch.path_station, 'observations.csv')
+            self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
 
     def get_parameters(self, Individual):
@@ -26,26 +27,41 @@ class ObjectiveKGE():
 
         return parameters
 
-    def read_observed_streamflow(self):
+    def read_observed_streamflow(self, observations_file):
         cfg = self.cfg
-        start = self.subcatch.cal_start
-        end = self.subcatch.cal_end
         
-        streamflow_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+        observed_streamflow = pd.read_csv(observations_file, sep=",", index_col=0)
         # check that date format is correct
-        pd.to_datetime(streamflow_data.index, format='%d/%m/%Y %H:%M', errors='raise')
-        
-        observed_streamflow = streamflow_data[str(self.subcatch.obsid)]
-        observed_streamflow = observed_streamflow[start:end]
-        assert datetime.strptime(observed_streamflow.index[0], "%d/%m/%Y %H:%M") >= cfg.forcing_start
-        assert datetime.strptime(observed_streamflow.index[-1], "%d/%m/%Y %H:%M") <= cfg.forcing_end
+        pd.to_datetime(observed_streamflow.index, format='%d/%m/%Y %H:%M', errors='raise')
+        observed_streamflow = observed_streamflow[str(self.subcatch.obsid)]
+        print('Observations:')
+        print('---------------------------------------')
+        print(observed_streamflow)
+        print('---------------------------------------')
+
+        print(self.subcatch.data.loc['Obs_start'], self.subcatch.data.loc['Obs_end'])
+
+        if (observed_streamflow.index[0] != self.subcatch.data.loc['Obs_start'] or 
+            observed_streamflow.index[-1] != self.subcatch.data.loc['Obs_end']):
+            raise ValueError('Dates in observations ({} - {}) not coherent with station data({} - {})',
+                observed_streamflow.index[0], observed_streamflow.index[-1],
+                self.subcatch.data.loc['Obs_start'], self.subcatch.data.loc['Obs_end'])
 
         return observed_streamflow
 
+    def read_simulated_streamflow_best(self):
+        simulated_streamflow = os.path.join(self.subcatch.path_out, 'streamflow_simulated_best.csv')
+        simulated_streamflow = pd.read_csv(simulated_streamflow, sep=",", index_col=0)
+        simulated_streamflow = simulated_streamflow[str(self.subcatch.obsid)]
+        print(simulated_streamflow)
+        print('Simulated streamflow best:')
+        print('---------------------------------------')
+        print(simulated_streamflow)
+        print('---------------------------------------')
 
-    def read_simulated_streamflow(self, run_id):
-        start = self.subcatch.cal_start
-        end = self.subcatch.cal_end
+        return simulated_streamflow
+
+    def read_simulated_streamflow(self, run_id, start, end):
 
         Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
@@ -56,20 +72,16 @@ class ObjectiveKGE():
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
         simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
-        assert simulated_streamflow.index[-1] == end
+        
+        if simulated_streamflow.index[-1] != end:
+            raise ValueError('Simulated streamflow with run_id {} not consistent: end date is {} and should be {}'.format(run_id, simulated_streamflow.index[-1], end))
 
         return simulated_streamflow
 
-    def resample_streamflows(self, simulated_streamflow, observed_streamflow):
+    def resample_streamflows(self, start, end, simulated_streamflow, observed_streamflow):
         cfg = self.cfg
-        start = self.subcatch.cal_start
-        end = self.subcatch.cal_end
         start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
         end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
-
-        # check that dates are compatible
-        if not simulated_streamflow.index.equals(observed_streamflow.index):
-            raise Exception('Simulated and observed streamflow dates not aligned!')
 
         # Finally, extract equal-length arrays from it
         Qobs = observed_streamflow[start:end]
@@ -89,7 +101,6 @@ class ObjectiveKGE():
                 # return date range 
                 date_range = Qobs.index
 
-        
         elif cfg.calibration_freq == r"daily":
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
@@ -112,10 +123,40 @@ class ObjectiveKGE():
         # if np.isnan(Qobs).any():
         #     raise Exception('NaN found in Qobs')
 
-        if len(date_range) != len(Qsim) or len(date_range) != len(Qobs):
-            raise Exception('dates, observaed and simulated streamflows not aligned: sizes({}, {}, {})'.format(len(date_range), len(Qobs), len(Qsim)))
+        # if len(date_range) != len(Qsim) or len(date_range) != len(Qobs):
+        #     raise Exception('dates, observaed and simulated streamflows not aligned: sizes({}, {}, {})'.format(len(date_range), len(Qobs), len(Qsim)))
 
         return date_range, Qsim, Qobs
+
+    def compute_objectives(self, run_id, start, end, simulated_streamflow):
+
+        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
+        if len(Qobs) != len(Qsim):
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+
+        return kge_components
+
+    def compute_statistics(self, start, end, simulated_streamflow):
+
+        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
+        if len(Qobs) != len(Qsim):
+            raise Exception("Observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        stats = {}
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+        stats['kge'] = kge_components[0]
+        stats['corr'] = kge_components[1]
+        stats['bias'] = kge_components[2]
+        stats['spread'] = kge_components[3]
+        stats['sae'] = kge_components[4]
+        stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs)
+
+        index = pd.to_datetime(date_range, format='%d/%m/%Y %H:%M')
+        Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
+
+        return Q, stats
 
     def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
 
@@ -167,46 +208,6 @@ class ObjectiveKGE():
         paramsHistory += "\n"
         paramsHistoryFile.write(paramsHistory)
         paramsHistoryFile.close()
-
-    def compute_objectives(self, run_id):
-
-        # DD Extract simulation
-        simulated_streamflow = self.read_simulated_streamflow(run_id)
-
-        date_range, Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
-        if len(Qobs) != len(Qsim):
-            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
-
-        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
-
-        return kge_components
-
-    def compute_statistics(self, run_id):
-
-        # DD Extract simulation
-        simulated_streamflow = self.read_simulated_streamflow(run_id)
-
-        date_range, Qsim, Qobs = self.resample_streamflows(simulated_streamflow, self.observed_streamflow)
-        if len(Qobs) != len(Qsim):
-            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
-
-        stats = {}
-        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
-        stats['kge'] = kge_components[0]
-        stats['corr'] = kge_components[1]
-        stats['bias'] = kge_components[2]
-        stats['spread'] = kge_components[3]
-        stats['sae'] = kge_components[4]
-        stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs, spinup=self.subcatch.spinup)
-
-        print(Qsim.shape)
-        print(Qobs.shape)
-        index = pd.to_datetime(date_range, format='%d/%m/%Y %H:%M')
-        print(index)
-        Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
-
-        return Q, stats
-
 
     def read_param_history(self):
         path_subcatch = self.subcatch.path

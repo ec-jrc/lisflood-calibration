@@ -48,20 +48,8 @@ if __name__ == '__main__':
     obsid = int(args.obsid)
     cfg = config.ConfigCalibration(args.settings)
 
-    print(">> Reading stations.csv file...")
-    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
-    try:
-        station_data = stations_meta.loc[obsid]
-    except KeyError as e:
-        print(stations_meta)
-        raise Exception('Station {} not found in stations file'.format(obsid))
-
-    # hack shorter period
-    assert station_data.loc['Cal_Start'] == cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-    assert station_data.loc['Cal_End'] == cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-
     print("=================== "+str(obsid)+" ====================")
-    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
+    subcatch = subcatchment.SubCatchment(cfg, obsid)
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv")):
         deleteOutput(subcatch.path)
         os.makedirs(subcatch.path_out, exist_ok=True)

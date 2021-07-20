@@ -38,8 +38,8 @@ if __name__ == '__main__':
         raise Exception('Station {} not found in stations file'.format(obsid))
 
     # hack shorter period
-    assert station_data.loc['Cal_Start'] == cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-    assert station_data.loc['Cal_End'] == cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+    start_date = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
+    end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     print("=================== "+str(obsid)+" ====================")
     subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
@@ -53,4 +53,4 @@ if __name__ == '__main__':
 
     # first generate synthetic observations
     param_target = 0.5*np.ones(len(cfg.param_ranges))
-    hydro_model.generate_benchmark(cfg, subcatch, lis_template, param_target, out_file)
+    hydro_model.generate_benchmark(cfg, subcatch, lis_template, param_target, out_file, start_date, end_date)

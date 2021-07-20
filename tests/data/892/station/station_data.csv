@@ -1,0 +1,51 @@
+,892
+StationName,Wiblingen
+Provider ID,1025
+Country code,DE
+StationLat,48.3708
+StationLon,9.9874
+Height,46824
+Height Units,cm
+DrainingArea.km2.Provider,2040.21
+Catchment Area Units,km2
+Added Date,18/09/2012 19:00
+River,Iller
+Catchment,Danube
+EC_Catchments,Danube
+Calibration ID,C053
+DrainingArea.km2.LDD,2300
+LisfloodX,4322500
+LisfloodY,2802500
+RealTime,True
+PostProcess,FALSE
+FixedRepPoint,True
+HasWL,1
+HasD,1
+Alive D,1
+StartDate_hist_24,02/01/1991 00:00
+EndDate_hist_24,01/01/2007 00:00
+StartDate_nrt_24,14/01/2013 00:00
+EndDate_nrt_24,31/08/2018 00:00
+StartDate_hist_6,-
+EndDate_hist_6,-
+StartDate_nrt_6,14/01/2013 00:00
+EndDate_nrt_6,30/08/2018 12:00
+DiffDays_hist_24,5843
+DiffDays_nrt_24,2055
+DiffDays_hist_6,-
+DiffDays_nrt_6,2054
+cal_hist_24h,True
+cal_nrt_24h,True
+cal_hist_6h,False
+cal_nrt_6h,True
+CAL_TYPE,NRT_6h
+Notes,-
+EC_calib,T
+Dam/Lake,-
+EnoughQdata,1.0
+Val_Start,14/01/2013 00:00
+Val_End,02/01/2013 06:00
+Cal_Start,31/12/2016 06:00
+Cal_End,31/12/2017 06:00
+CatchmentArea,92.0
+SamplingFrequency,1.0

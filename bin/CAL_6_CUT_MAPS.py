@@ -42,7 +42,7 @@ map2col = config["map2col"]
 resample = config["resample"]
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
-stations_data_path = parser.get("CSV", "stations_data")
+stations_data_path = parser.get("Stations", "stations_data")
 
 print(">> Reading stations_data file...")
 stationdata = pd.read_csv(stations_data_path, sep=",", index_col='ObsID')
