@@ -1,9 +1,9 @@
 import subprocess
-import pandas
+import pandas as pd
 
 
 def read_tss(tss_file, skiprows=4):
-    df = pandas.read_csv(tss_file, sep=r"\s+", index_col=0, skiprows=skiprows, header=None, skipinitialspace=True)
+    df = pd.read_csv(tss_file, sep=r"\s+", index_col=0, skiprows=skiprows, header=None, skipinitialspace=True)
     return df
 
 

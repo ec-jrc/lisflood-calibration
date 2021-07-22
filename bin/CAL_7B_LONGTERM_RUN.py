@@ -40,10 +40,6 @@ if __name__ == '__main__':
 
     cfg = config.ConfigCalibration(settings_file)
 
-    # Read full list of stations, index is obsid
-    print(">> Reading stations_data file...")
-    stations_meta = pandas.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
-
     # Long term run for specified station
     obsid = int(args.station)
 

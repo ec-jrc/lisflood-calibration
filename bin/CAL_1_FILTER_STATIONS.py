@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 from liscal import config, stations
@@ -29,8 +29,8 @@ if __name__ == '__main__':
     print("=================== START ===================")
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
-    parser.add_argument('output_station', help='Output station file')
-    parser.add_argument('stations_type', default=, help='Calibration pre-processing settings file')
+    parser.add_argument('stations_csv', help='Input station csv file')
+    parser.add_argument('stations_type', help='Station type (EC_calib value)')
     args = parser.parse_args()
 
     settings_file = args.settings_file
@@ -38,9 +38,10 @@ if __name__ == '__main__':
     cfg = ConfigFilter(settings_file)
 
     # Read stations data and selection stations of interest
-    stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
+    print('Reading input stations data {}'.format(args.stations_csv))
+    stations_meta = pd.read_csv(args.stations_csv, sep=",", index_col='ObsID')
     print(stations_meta)
-    stations_meta = stations_meta[stations_meta['EC_calib'] == args.stations_type]
+    stations_meta = stations_meta[stations_meta['EC_calib'] == int(args.stations_type)]
     print('Found {} calibration stations to check'.format(len(stations_meta)))
 
     observed_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
@@ -52,7 +53,7 @@ if __name__ == '__main__':
 
         # A calibration requires a spinup
         # first valid observation point will be at forcing start + spinup
-        start_date = (cfg.forcing_start + datetime.timedelta(days=int(row['Spinup_days']))).strftime('%d/%m/%Y %H:%M')
+        start_date = (cfg.forcing_start + timedelta(days=int(row['Spinup_days']))).strftime('%d/%m/%Y %H:%M')
         end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
         # Retrieve observed streamflow and extract observation period
@@ -75,6 +76,6 @@ if __name__ == '__main__':
     valid_stations = stations_meta.loc[valid_stations]
     unvalid_stations = stations_meta.loc[unvalid_stations]
     print(valid_stations)
-    valid_stations.to_csv(args.output_station)
-    unvalid_stations.to_csv(args.output_station+'_unvalid')
+    valid_stations.to_csv(cfg.stations_data)
+    unvalid_stations.to_csv(cfg.stations_data+'_unvalid')
     print("==================== END ====================")
