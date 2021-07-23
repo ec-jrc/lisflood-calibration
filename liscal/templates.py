@@ -6,7 +6,10 @@ class LisfloodSettingsTemplate():
     def __init__(self, cfg, subcatch):
 
         self.obsid = subcatch.obsid
-        self.outfix = os.path.join(subcatch.path, os.path.basename(cfg.lisflood_template[:-4]))
+        settings_dir = os.path.join(subcatch.path, 'settings')
+        os.makedirs(settings_dir, exist_ok=True)
+
+        self.outfix = os.path.join(settings_dir, os.path.basename(cfg.lisflood_template[:-4]))
         self.lisflood_template = cfg.lisflood_template
         with open(os.path.join('templates', cfg.lisflood_template), "r") as f:
             template_xml = f.read()

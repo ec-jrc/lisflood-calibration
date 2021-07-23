@@ -6,14 +6,18 @@ import pandas as pd
 
 def time_step_from_type(station_type):
 
-    if int(station_type) == 6 or int(station_type) == 24:
-        dt = int(station_type)
-    elif str(station_type).find("_6h") > -1:
-        dt = 6
-    elif str(station_type).find("_24h") > -1:
-        dt = 24
+    if type(station_type) == float:
+        if (station_type == 6.0 or int(station_type) == 24.0):
+            dt = int(station_type)
+        else:
+            raise Exception('Calibration type {} not supported'.format(station_type))
     else:
-        raise Exception('Calibration type {} not supported'.format(station_type))
+        if station_type.find("_6h") > -1:
+            dt = 6
+        elif station_type.find("_24h") > -1:
+            dt = 24
+        else:
+            raise Exception('Calibration type {} not supported'.format(station_type))
 
     return dt
 

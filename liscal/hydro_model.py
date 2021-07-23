@@ -10,6 +10,7 @@ import random
 
 # lisflood
 import lisf1
+from lisflood import cache
 
 from liscal import utils
 
@@ -60,7 +61,11 @@ class HydrologicalModel():
             lisf1.main(prerun_file, '-i')
         except:
             traceback.print_exc()
-            raise Exception("")
+            raise Exception("Lisflood failed!")
+
+        # store lisflood cache size to make sure we don't load anything else after that
+        self.lisflood_cache_size = cache.cache_size()
+
 
     def run(self, Individual):
 
@@ -84,7 +89,11 @@ class HydrologicalModel():
             lisf1.main(run_file, '-v')
         except:
             traceback.print_exc()
-            raise Exception("")
+            raise Exception("Lisflood failed!")
+
+        # check lisflood cache size to make sure we don't load the same map multiple times
+        cache_size = cache.cache_size()
+        assert cache_size == self.lisflood_cache_size
 
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)

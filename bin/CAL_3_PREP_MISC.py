@@ -1,87 +1,54 @@
-# -*- coding: utf-8 -*-
-"""Please refer to quick_guide.pdf for usage instructions"""
-
+#!/usr/bin/env python3
 import os
 import sys
-import pdb
+import argparse
 import pandas
-import string
 import datetime
-import time
 import numpy as np
-import re
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
-import array
-import logging
-import random
+
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 
 if __name__=="__main__":
 
+	print("=================== START ===================")
+	parser = argparse.ArgumentParser()
+	parser.add_argument('stations_data', help='Stations data csv file')
+	parser.add_argument('ldd', help='Path to ldd map')
+	parser.add_argument('tmp_dir', help='Temporary directory')
+	parser.add_argument('results_dir', help='Results directory')
+	args = parser.parse_args()
+
 	########################################################################
 	#   Read settings file
 	########################################################################
+	path_result = args.results_dir
 
-	iniFile = os.path.normpath(sys.argv[1])
-	print("=================== START ===================")
-	print(">> Reading settings file ("+sys.argv[1]+")...")
+	stations_file = args.stations_data
 
-	if ver.find('3.') > -1:
-		parser = ConfigParser()  # python 3.8
-	else:
-		parser = SafeConfigParser()  # python 2.7-15
-	parser.read(iniFile)
+	pcrcalc = "pcrcalc"
+	col2map = "col2map"
+	map2col = "map2col"
+	resample = "resample"
 
-	path_temp = parser.get('Path', 'Temp')
-	path_maps = os.path.join(parser.get('Path', 'CatchmentDataPath'))
-	path_result = parser.get('Path', 'Result')
-
-	ForcingStart = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing
-	ForcingEnd = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing
-
-	Qtss_csv = parser.get('CSV', 'Qtss')
-	Qmeta_csv = parser.get('CSV', 'Qmeta')
-
-	pcraster_path = parser.get('Path', 'PCRHOME')
-
-	config = {}
-	for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-		config[execname] = getPCrasterPath(pcraster_path,sys.argv[1],execname)
-
-	pcrcalc = config["pcrcalc"]
-	col2map = config["col2map"]
-	map2col = config["map2col"]
-	resample = config["resample"]
-	
+	path_temp = args.tmp_dir
 	tmp_map = os.path.join(path_temp,"tmp.map")
 	tmp2_map = os.path.join(path_temp,"tmp2.map")
 	tmp_txt = os.path.join(path_temp,"tmp.txt")
 	tmp2_txt = os.path.join(path_temp,"tmp2.txt")
-	
-	ldd_map = os.path.join(parser.get('Path', 'lddPath'))
-	station_map = os.path.join(parser.get('Path', 'gaugesPath'))
 
-		
-	
+	ldd_map = os.path.join(args.ldd)
+	station_map = os.path.join(path_result, 'gauges.map')
+
 	########################################################################
-	#   Make stationdata array from the Qmeta csv
+	#   Read stations data file
 	########################################################################
-
-	print(">> Reading Qmeta2.csv file...")
-	stationdata = pandas.read_csv(os.path.join(path_result,"Qmeta2.csv"),sep=",",index_col=0)
-
+	print(">> Reading stations data csv file...")
+	stationdata = pandas.read_csv(stations_file, sep=",", index_col=0)
 	
 	########################################################################
 	#   Make map with station locations
 	########################################################################
-
 	print(">> Make map with station locations (outlet.map)...")
-
 	if not os.path.exists(path_temp): os.makedirs(path_temp)
 	if not os.path.exists(path_result): os.makedirs(path_result)
 
