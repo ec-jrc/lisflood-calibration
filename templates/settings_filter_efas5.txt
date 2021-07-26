@@ -1,0 +1,10 @@
+[Main]
+forcing_start = 02/01/1990 06:00
+forcing_end = 01/07/2021 00:00
+spinup_days = 1095
+calibration_freq = 6-hourly
+min_obs_years = 4
+
+[Stations]
+stations_data = stations_data.csv
+observed_discharges = Qts_calib_9021.csv 
