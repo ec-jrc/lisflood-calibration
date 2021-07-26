@@ -6,5 +6,5 @@ calibration_freq = 6-hourly
 min_obs_years = 4
 
 [Stations]
-stations_data = hres_calib_stations.csv 
+stations_data = stations_data.csv 
 observed_discharges = Qts_calib_9021.csv 
