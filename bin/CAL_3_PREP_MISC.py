@@ -14,14 +14,14 @@ if __name__=="__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('stations_data', help='Stations data csv file')
 	parser.add_argument('ldd', help='Path to ldd map')
+	parser.add_argument('stations_dir', help='Output stations directory')
 	parser.add_argument('tmp_dir', help='Temporary directory')
-	parser.add_argument('results_dir', help='Results directory')
 	args = parser.parse_args()
 
 	########################################################################
 	#   Read settings file
 	########################################################################
-	path_result = args.results_dir
+	path_result = args.stations_dir
 
 	stations_file = args.stations_data
 
@@ -171,7 +171,7 @@ if __name__=="__main__":
 	sys.stdout.write("\n>> Compute links and inflow locations (inlets.map and direct_links.csv)")
 
 	stationdata['SamplingFrequency'] = np.nan
-	direct_links_csv = os.path.join(path_result,"direct_links.csv")
+	direct_links_csv = os.path.join(path_result, "direct_links.csv")
 	for index, row in stationdata.iterrows():
 		sys.stdout.write(".")
 
@@ -254,8 +254,3 @@ if __name__=="__main__":
 		f2.write(text2)
 	f2.close()	
 	
-	# save dataframe with catchment area and cal val period columns
-	print("\n>> Saving Qmeta file including CatchmentArea, columns (Qmeta2.csv)...")
-	stationdata_sorted = stationdata.sort_values(by=['CatchmentArea'],ascending=True)
-	stationdata_sorted.to_csv(os.path.join(path_result,"Qmeta2.csv"),',')
-	print("==================== END ====================")

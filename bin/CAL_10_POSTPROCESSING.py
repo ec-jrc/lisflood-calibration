@@ -55,7 +55,6 @@ class ConfigPostProcessing(config.Config):
         # plot parameters
         self.plot_params = PlotParameters()
 
-        
 
 if __name__ == '__main__':
 

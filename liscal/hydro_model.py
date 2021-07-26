@@ -34,7 +34,7 @@ class HydrologicalModel():
             self.cal_start = self.obs_start
             self.cal_end = self.obs_end
         else:
-            spinup = int(subcatch.data['Spinup_days'])
+            spinup = int(float(subcatch.data['Spinup_days']))
             self.obs_start = datetime.strptime(subcatch.data['Split_date'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
             self.obs_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
             self.cal_start = (datetime.strptime(self.obs_start,"%d/%m/%Y %H:%M") - timedelta(days=spinup)).strftime('%d/%m/%Y %H:%M')

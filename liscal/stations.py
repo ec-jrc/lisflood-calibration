@@ -6,7 +6,7 @@ import pandas as pd
 
 def time_step_from_type(station_type):
 
-    if type(station_type) == float:
+    if isinstance(station_type , float) or isinstance(station_type, np.float64):
         if (station_type == 6.0 or int(station_type) == 24.0):
             dt = int(station_type)
         else:
@@ -72,17 +72,18 @@ def extract_station_data(cfg, obsid, station_data):
 
     # A calibration requires a spinup
     # first valid observation point will be at forcing start + spinup
-    start_date = (cfg.forcing_start + datetime.timedelta(days=int(station_data['Spinup_days']))).strftime('%d/%m/%Y %H:%M')
+    start_date = (cfg.forcing_start + datetime.timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
     end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     # Retrieve observed streamflow and extract observation period
     observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
     observed_streamflow = observations[str(obsid)]
     observed_streamflow = observed_streamflow[start_date:end_date]
-    obs_period_years = observation_period_years(station_data['CAL_TYPE'], observed_streamflow)
-    # min 3.5 years data to calibrate
-    if obs_period_years < cfg.min_obs_years:
-        raise Exception('Station {} only contains {} years of data!'.format(obsid, obs_period_years))
+    obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+    obs_period_years = obs_period_days/365.25
+
+    if obs_period_days < float(station_data['Min_calib_days']):
+        raise Exception('Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
 
     # Extract valid calibration period
     observations_filtered = observed_streamflow[observed_streamflow.notna()]

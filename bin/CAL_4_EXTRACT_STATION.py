@@ -18,7 +18,6 @@ class ConfigStation(config.Config):
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
         self.calibration_freq = self.parser.get('Main', 'calibration_freq')
-        self.min_obs_years = float(self.parser.get('Main', 'min_obs_years'))
         
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
