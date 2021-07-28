@@ -168,10 +168,10 @@ if __name__=="__main__":
 	#   subcatchments and 2) the corresponding inflow locations
 	########################################################################
 
-	sys.stdout.write("\n>> Compute links and inflow locations (inlets.map and direct_links.csv)")
+	sys.stdout.write("\n>> Compute links and inflow locations (inlets.map and stations_links.csv)")
 
 	stationdata['SamplingFrequency'] = np.nan
-	direct_links_csv = os.path.join(path_result, "direct_links.csv")
+	stations_links_csv = os.path.join(path_result, "stations_links.csv")
 	for index, row in stationdata.iterrows():
 		sys.stdout.write(".")
 
@@ -194,7 +194,7 @@ if __name__=="__main__":
 	tmp3_map = os.path.join(path_temp,"tmp3.map")
 	inlets_map = os.path.join(path_result,"inlets.map")
 	pcrasterCommand(pcrcalc + " 'F0 = scalar(F1)*0'", {"F0":inlets_map,"F1":ldd_map})
-	f2 = open(direct_links_csv,"w")
+	f2 = open(stations_links_csv,"w")
 	f2.write("ID,IDs of directly connected nested subcatchments,,,,,,,,,,,,,,,,,,,\n")
 	for index, row in stationdata.iterrows():
 		sys.stdout.write(".")
