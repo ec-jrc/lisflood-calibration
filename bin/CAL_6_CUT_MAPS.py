@@ -17,139 +17,6 @@ import dask
 from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
 import pcraster as pcr
 
-########################################################################
-#   Read settings file
-########################################################################
-iniFile = os.path.normpath(sys.argv[1])
-file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
-print("=================== START ===================")
-print(">> Reading settings file ("+sys.argv[1]+")...")
-
-parser = ConfigParser() # python 3.8
-parser.read(iniFile)
-
-path_maps = parser.get("Path", "input_maps_path")
-
-subcatchment_path = parser.get('Path','subcatchment_path')
-
-config = {}
-for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
-    config[execname] = execname
-
-pcrcalc = config["pcrcalc"]
-col2map = config["col2map"]
-map2col = config["map2col"]
-resample = config["resample"]
-
-file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
-stations_data_path = parser.get("Stations", "stations_data")
-
-print(">> Reading stations_data file...")
-stationdata = pd.read_csv(stations_data_path, sep=",", index_col='ObsID')
-stationdata_sorted = stationdata.sort_values(by=['DrainingArea.km2.LDD'],ascending=True)
-CatchmentsToProcess = pd.read_csv(file_CatchmentsToProcess,sep=",",header=None)
-
-
-def getMapAttributes(res, projection, domain, rasterOrigin=None, nxny=None):
-  if rasterOrigin is None:
-    if domain == "Eric":
-      rasterOrigin = (2500000, 5430000)
-    elif domain == "XDOM":
-      rasterOrigin = (2500000, 5500000)
-    elif domain == "oldDom":
-      rasterOrigin = (-1700000, 1360000)
-    elif domain == "PRONEWS":
-      rasterOrigin = (5035000, 2260000)
-    elif domain == "SEEMHEWS":
-      rasterOrigin = (4790000, 2550000)
-  if nxny is None:
-    if domain == "Eric":
-      nxny = (1000, 936)
-    elif domain == "XDOM":
-      nxny = (1000, 950)
-    elif domain == "oldDom":
-      nxny = (3570, 2980)
-    elif domain == "PRONEWS":
-      nxny = (50, 76)
-    elif domain == "SEEMHEWS":
-      nxny = (61, 51)
-  mapAttributes = {
-    'projection':projection,
-    'rasterOrigin':rasterOrigin,
-    'pixelWidth':5000,
-    'pixelHeight':-5000,
-    'pixelLength':5000,
-    'nx':nxny[0],
-    'ny':nxny[1]
-  }
-  if projection == "EPSG:3035":
-    if domain == "Eric":
-      mapAttributes['rasterOrigin'] = rasterOrigin
-    if res == 1:
-      # 1km grid
-      mapAttributes['pixelWidth'] = 5000 / 5
-      mapAttributes['pixelHeight'] = -5000 / 5
-      mapAttributes['pixelLength'] = 5000 / 5
-      mapAttributes['nx'] = nxny[0] * 5
-      mapAttributes['ny'] = nxny[1] * 5
-      if domain == "Eric":
-        mapAttributes['ny'] = nxny[1] * 5 # This is for Eric area, which has a few latitudes less in the North
-    elif res == 5:
-      # 5km grid
-      mapAttributes['pixelWidth'] = 5000
-      mapAttributes['pixelHeight'] = -5000
-      mapAttributes['pixelLength'] = 5000
-      mapAttributes['nx'] = nxny[0]
-      mapAttributes['ny'] = nxny[1]
-      if domain == "Eric":
-        mapAttributes['ny'] = nxny[1]
-  elif projection == "EPSG:4326":
-    mapAttributes['rasterOrigin'] = (15, 45)
-    if res == 1:
-      # 1km grid
-      mapAttributes['pixelWidth'] = 0.05 / 5
-      mapAttributes['pixelHeight'] = -0.05 / 5
-      mapAttributes['pixelLength'] = 5000 / 5
-      mapAttributes['nx'] = 200 * 5
-      mapAttributes['ny'] = 200 * 5
-    elif res == 5:
-      # 5km grid
-      mapAttributes['pixelWidth'] = 0.05
-      mapAttributes['pixelHeight'] = -0.05
-      mapAttributes['pixelLength'] = 5000
-      mapAttributes['nx'] = 200
-      mapAttributes['ny'] = 200
-  elif projection == 'oldDom':
-    mapAttributes['projection'] = "+proj=laea +lat_0=48 +lon_0=9 +x_0=0 +y_0=0 +a=6378388 +b=6378388 +units=m +no_defs"
-    mapAttributes['rasterOrigin'] = rasterOrigin
-    mapAttributes['pixelWidth'] = 1000
-    mapAttributes['pixelHeight'] = -1000
-    mapAttributes['pixelLength'] = 1000
-    mapAttributes['nx'] = nxny[0]
-    mapAttributes['ny'] = nxny[1]
-  else:
-    raise("Unknown projection. Please define your chosen projection in the getMapDimensions function.")
-    sys.exit(1)
-  return mapAttributes
-
-
-def setProj(dsOut, projection):
-  # Find the name of the main variable
-  newVar = findMainVar(dsOut)
-  # Set the ESRI string
-  # For regular latlon (WGS84)
-  if projection == "EPSG:4326":
-    dsOut.variables[newVar].attrs['esri_pe_string']='GEOGCS[\"GCS_WGS_1984\",DATUM[\"D_WGS_1984\",SPHEROID[\"WGS_1984\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"Degree\",0.0174532925199433]]"'
-  # For EPSG:3035
-  else:
-    try:
-      dsOut.variables[newVar].attrs["esri_pe_string"] = "PROJCS[\"ETRS_1989_LAEA\",GEOGCS[\"GCS_ETRS_1989\",DATUM[\"D_ETRS_1989\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]],PROJECTION[\"Lambert_Azimuthal_Equal_Area\"],PARAMETER[\"false_easting\",4321000.0],PARAMETER[\"false_northing\",3210000.0],PARAMETER[\"central_meridian\",10.0],PARAMETER[\"latitude_of_origin\",52.0],UNIT[\"Meter\",1.0]]"
-    except KeyError:
-      newVar = afile[:afile.find(".")]
-      dsOut.variables[newVar].attrs["esri_pe_string"] = "PROJCS[\"ETRS_1989_LAEA\",GEOGCS[\"GCS_ETRS_1989\",DATUM[\"D_ETRS_1989\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]],PROJECTION[\"Lambert_Azimuthal_Equal_Area\"],PARAMETER[\"false_easting\",4321000.0],PARAMETER[\"false_northing\",3210000.0],PARAMETER[\"central_meridian\",10.0],PARAMETER[\"latitude_of_origin\",52.0],UNIT[\"Meter\",1.0]]"
-    dsOut.variables[newVar].attrs["grid_mapping"] = "lambert_azimuthal_equal_area"
-  return dsOut
-
 
 def clipPCRasterMap(inputFilename, outputFilename, mask):
 
@@ -192,40 +59,37 @@ def findMainVar(ds):
   return value
 
 
-def createOutputFile(outputFile, ds, smallArray, dims):
-  try:
-    tArray = ds.variables['time'].data
-    yArray = np.array(ds.variables['y'].data[dims['y1']:dims['y2']+1])
-    xArray = np.array(ds.variables['x'].data[dims['x1']:dims['x2']+1])
-    dsOut = xr.Dataset({os.path.basename(outputFile).replace('.nc', ""): smallArray},
-                       coords={'time': tArray, 'ySmall': yArray, 'xSmall': xArray})
-  except:
-    yArray = np.array(ds.variables['y'].data[dims['y1']:dims['y2'] + 1])
-    xArray = np.array(ds.variables['x'].data[dims['x1']:dims['x2'] + 1])
-    dsOut = xr.Dataset({os.path.basename(outputFile).replace('.nc', ''): smallArray},
-                       coords={'ySmall': yArray, 'xSmall': xArray})
-  return dsOut
+########################################################################
+#   Read settings file
+########################################################################
+iniFile = os.path.normpath(sys.argv[1])
+file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
+print("=================== START ===================")
+print(">> Reading settings file ("+sys.argv[1]+")...")
 
+parser = ConfigParser() # python 3.8
+parser.read(iniFile)
 
+path_maps = parser.get("Path", "input_maps_path")
 
-def sliceArray(inArray, dims):
-  if len(inArray.shape) == 3:
-    outArray = inArray[:, dims['y1']:dims['y2']+1, dims['x1']:dims['x2']+1]
-  else:
-    outArray = inArray[dims['y1']:dims['y2']+1, dims['x1']:dims['x2']+1]
-  return outArray
+subcatchment_path = parser.get('Path','subcatchment_path')
 
+config = {}
+for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
+    config[execname] = execname
 
+pcrcalc = config["pcrcalc"]
+col2map = config["col2map"]
+map2col = config["map2col"]
+resample = config["resample"]
 
-def sliceArrayXapply(inArray, dims):
-  return xr.apply_ufunc(sliceArray, inArray,
-                        input_core_dims=[['y', 'x']],
-                        output_core_dims=[['ySmall', 'xSmall']],
-                        output_sizes={'ySmall': dims['y2']-dims['y1']+1, 'xSmall': dims['x2']-dims['x1']+1},
-                        dask='parallelized',
-                        output_dtypes=[float],
-                        kwargs={'dims': dims})
+file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
+stations_data_path = parser.get("Stations", "stations_data")
 
+print(">> Reading stations_data file...")
+stationdata = pd.read_csv(stations_data_path, sep=",", index_col='ObsID')
+stationdata_sorted = stationdata.sort_values(by=['DrainingArea.km2.LDD'],ascending=True)
+CatchmentsToProcess = pd.read_csv(file_CatchmentsToProcess,sep=",",header=None)
 
 prof = Profiler()
 rprof = ResourceProfiler(dt=0.25)
@@ -277,6 +141,7 @@ with dask.config.set(scheduler='threads'): #, pool=ThreadPool(cfg.ncpus)):  # [d
                     print("skipping already existing %s" % fileout)
                     continue
                 else:
+
                     print('creating...',fileout)
                     if ext == ".map": # and (not os.path.isfile(filenc.replace(ext, ".nc")) or os.path.getsize(filenc.replace(ext, ".nc")) == 0):
                         pcr.setclone(maskpcr)

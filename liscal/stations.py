@@ -7,8 +7,13 @@ import pandas as pd
 def time_step_from_type(station_type):
 
     if isinstance(station_type , float) or isinstance(station_type, np.float64):
-        if (station_type == 6.0 or int(station_type) == 24.0):
+        if (station_type == 6.0 or station_type == 24.0):
             dt = int(station_type)
+        else:
+            raise Exception('Calibration type {} not supported'.format(station_type))
+    elif isinstance(station_type , int) or isinstance(station_type, np.int64):
+        if (station_type == 6 or station_type == 24):
+            dt = station_type
         else:
             raise Exception('Calibration type {} not supported'.format(station_type))
     else:
