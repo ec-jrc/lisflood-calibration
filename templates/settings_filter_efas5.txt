@@ -7,4 +7,4 @@ min_obs_years = 4
 
 [Stations]
 stations_data = stations_data.csv
-observed_discharges = Qts_calib_9021.csv 
+observed_discharges = observed_discharges.csv
