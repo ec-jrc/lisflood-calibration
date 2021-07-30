@@ -61,8 +61,6 @@ def findMainVar(ds):
 
 def cut_map(maskpcr, filenc, fileout):
 
-  if filenc.find("bak") > -1:
-    return
   ext = filenc[-4:][filenc[-4:].find("."):]
 
   print('creating...',fileout)
@@ -173,8 +171,12 @@ with dask.config.set(scheduler='threads'): #, pool=ThreadPool(cfg.ncpus)):  # [d
                 else:
 
                     filenc = os.path.join(root, afile)
+
+                    if filenc.find("bak") > -1:
+                        continue
+
                     compute_stack.append(dask.delayed(cut_map)(maskpcr, filenc, fileout))
-        
+
         dask.compute(*compute_stack)
 
         # # Transform into numpy binary
