@@ -200,7 +200,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
-    run_id = 'X'
+    run_id = 'Z'
 
     param_ranges = cfg.param_ranges
     parameters = [None] * len(param_ranges)
