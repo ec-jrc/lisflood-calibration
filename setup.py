@@ -13,7 +13,9 @@ setup(
     description="LISFLOOD calibration tool",
     long_description=long_description,    
     packages=find_packages(exclude=["test_*", "*.tests", "*.tests.*", "tests.*", "tests"]),
-    scripts=[os.path.join('bin', i) for i in os.listdir('bin')],
+    scripts=[*[os.path.join('bin', i) for i in os.listdir('bin')],
+        os.path.join('integration', 'benchmark.py'),
+        os.path.join('integration', 'test_synthetic.py')],
     install_requires=[
         "numpy",
         "pandas",
