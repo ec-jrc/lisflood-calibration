@@ -11,7 +11,7 @@ from matplotlib import transforms
 from matplotlib import ticker
 
 from plotflood import evaluation
-from liscal import hydro_stats
+from liscal import hydro_stats, thresholds
 
 
 def create_products(cfg, subcatch, obj):
@@ -32,8 +32,9 @@ def create_products(cfg, subcatch, obj):
     sim_monthly, obs_monthly = hydro_stats.split_monthly(Q.index, Q['Sim'].values, Q['Obs'].values)
 
     # get return periods at station coordinates
-    thresholds = xr.open_dataset(cfg.return_periods).sel(x=subcatch.data['LisfloodX'], y=subcatch.data['LisfloodY'])
-    print(thresholds)
+    return_periods = thresholds.compute_thresholds(simulated_streamflow)
+    # thresholds = xr.open_dataset(cfg.return_periods).sel(x=subcatch.data['LisfloodX'], y=subcatch.data['LisfloodY'])
+    print(return_periods)
 
     # create speedometer plots
     speedo = evaluation.SpeedometerPlot(cfg.plot_params)
@@ -47,7 +48,7 @@ def create_products(cfg, subcatch, obj):
 
     # create time series plot
     ts = evaluation.TimeSeriesPlot(cfg.plot_params)
-    ts.plot(os.path.join(subcatch.path_out, 'timmy'), Q.index, Q['Sim'].values, Q['Obs'].values, thresholds)
+    ts.plot(os.path.join(subcatch.path_out, 'timmy'), Q.index, Q['Sim'].values, Q['Obs'].values, return_periods)
     os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'timmy')))
 
     # compute contingency table and export

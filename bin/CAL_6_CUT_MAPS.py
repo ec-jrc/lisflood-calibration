@@ -59,6 +59,39 @@ def findMainVar(ds):
   return value
 
 
+def cut_map(maskpcr, filenc, fileout):
+
+  if filenc.find("bak") > -1:
+    return
+  ext = filenc[-4:][filenc[-4:].find("."):]
+
+  print('creating...',fileout)
+  if ext == ".map":
+      pcr.setclone(maskpcr)
+      clipPCRasterMap(filenc, fileout, maskpcr)
+  elif ext == ".nc":
+      try:
+          ds = xr.open_dataset(filenc, chunks = {'time': 'auto'})
+      except:
+          ds = xr.open_dataset(filenc, decode_coords=True)
+
+      if 'lon' in ds.coords and 'lat' in ds.coords:
+          ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
+      elif 'x' in ds.coords and 'y' in ds.coords:
+          ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
+      else:
+          raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
+
+      ds_out.to_netcdf(fileout)
+
+      # Close memory access
+      ds.close()
+      ds_out.close()
+  else:
+      os.system("cp " + filenc + " " + fileout)
+  print('done with {}'.format(fileout))
+
+
 ########################################################################
 #   Read settings file
 ########################################################################
@@ -130,44 +163,19 @@ with dask.config.set(scheduler='threads'): #, pool=ThreadPool(cfg.ncpus)):  # [d
         y_max = np.max(mask_filter[0])
         
         # Enter in maps dir and walk through subfolders
+        compute_stack = []
         for root,dirs,files in os.walk(path_maps, topdown=False, followlinks=True):
             for afile in files:
-                filenc = os.path.join(root, afile)
-                if filenc.find("bak") > -1:
-                  continue
-                ext = filenc[-4:][filenc[-4:].find("."):]
                 fileout = os.path.join(path_subcatch_maps, afile)
                 if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
                     print("skipping already existing %s" % fileout)
                     continue
                 else:
 
-                    print('creating...',fileout)
-                    if ext == ".map": # and (not os.path.isfile(filenc.replace(ext, ".nc")) or os.path.getsize(filenc.replace(ext, ".nc")) == 0):
-                        pcr.setclone(maskpcr)
-                        clipPCRasterMap(filenc, fileout, maskpcr)
-                    elif ext == ".nc":
-                        try:
-                            ds = xr.open_dataset(filenc, chunks = {'time': 'auto'})
-                        except:
-                            ds = xr.open_dataset(filenc, decode_coords=True)
-
-                        if 'lon' in ds.coords and 'lat' in ds.coords:
-                            ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
-                        elif 'x' in ds.coords and 'y' in ds.coords:
-                            ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
-                        else:
-                            raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
-
-                        # DD: Domenico's fix to avoid bug of having different grid point values in cut map than the original map
-                        var = findMainVar(ds)
-                        ds_out.to_netcdf(fileout, encoding={var: {'zlib': False}})
-
-                        # Close memory access
-                        ds.close()
-                        ds_out.close()
-                    else:
-                        os.system("cp " + filenc + " " + fileout)
+                    filenc = os.path.join(root, afile)
+                    compute_stack.append(dask.delayed(cut_map)(maskpcr, filenc, fileout))
+        
+        dask.compute(*compute_stack)
 
         # # Transform into numpy binary
         # if ver.find('3.') > -1:
