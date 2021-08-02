@@ -72,3 +72,33 @@ class ConfigCalibration(Config):
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
 
+
+
+class ConfigTiming(Config):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
+
+        # paths
+        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
+
+        # Date parameters
+        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+
+        # Load param ranges file
+        self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)
+
+        # template
+        self.lisflood_template = self.parser.get('Templates','LISFLOODSettings')
+
+        # Debug/test parameters
+        self.fast_debug = bool(int(self.parser.get('Main', 'fast_debug')))
+
+        # stations
+        self.stations_links = self.parser.get('Stations', 'stations_links')
+
+        # pcraster commands
+        self.pcraster_cmd = {}
+        for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
+            self.pcraster_cmd[execname] = execname

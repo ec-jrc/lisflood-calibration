@@ -28,7 +28,7 @@ if __name__ == '__main__':
     print('  - obsid: {}'.format(args.obsid))
     print('  - settings file: {}'.format(args.settings))
     obsid = int(args.obsid)
-    cfg = config.ConfigCalibration(args.settings)
+    cfg = config.ConfigTiming(args.settings)
 
     print(">> Reading stations.csv file...")
     stations = pandas.read_csv(args.stations_data, sep=",", index_col=0)
