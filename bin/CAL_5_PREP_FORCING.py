@@ -26,8 +26,6 @@ print(">> Reading settings file ("+sys.argv[1]+")...")
 parser = ConfigParser()  # python 3.8
 parser.read(iniFile)
 
-path_result = parser.get('Path', 'Result')
-
 subcatchment_path = parser.get('Path','subcatchment_path')
 
 path_gauges = parser.get("Path", "gauges_path")
