@@ -40,7 +40,7 @@ if __name__ == '__main__':
     print('Reading input stations data {}'.format(args.stations_csv))
     stations_meta = pd.read_csv(args.stations_csv, sep=",", index_col='ObsID')
     print(stations_meta)
-    stations_meta = stations_meta[stations_meta['EC_calib'] == int(args.stations_type)]
+    stations_meta = stations_meta[stations_meta['EC_calib'] >= int(args.stations_type)]
     print('Found {} calibration stations to check'.format(len(stations_meta)))
 
     observed_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
