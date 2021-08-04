@@ -113,9 +113,9 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
         mask_filter = np.where(masknp)
         clip_box = []
         clip_box.append(np.min(mask_filter[1]))
-        clip_box.append(np.min(mask_filter[1]))
+        clip_box.append(np.max(mask_filter[1]))
         clip_box.append(np.min(mask_filter[0]))
-        clip_box.append(np.min(mask_filter[0]))
+        clip_box.append(np.max(mask_filter[0]))
         
         # Enter in maps dir and walk through subfolders
         for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
