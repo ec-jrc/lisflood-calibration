@@ -117,21 +117,26 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
         clip_box.append(np.min(mask_filter[0]))
         clip_box.append(np.max(mask_filter[0]))
         
-        # Enter in maps dir and walk through subfolders
-        for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
-            for afile in files:
-                
-                fileout = os.path.join(path_subcatch_maps, afile)
-                
-                if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
-                    print("skipping already existing %s" % fileout)
-                    continue
-                
-                else:
-                    filenc = os.path.join(root, afile)
-                    if filenc.find("bak") > -1:
+        if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
+            afile = os.path.basename(path_maps)
+            fileout = os.path.join(path_subcatch_maps, afile)
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
+            else:
+                cut_map(maskpcr, path_maps, fileout, clip_box)
+        else:
+            # Enter in maps dir and walk through subfolders
+            for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
+                for afile in files:
+                    fileout = os.path.join(path_subcatch_maps, afile)
+                    if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                        print("skipping already existing %s" % fileout)
                         continue
-                    cut_map(maskpcr, filenc, fileout, clip_box)
+                    else:
+                        filenc = os.path.join(root, afile)
+                        if filenc.find("bak") > -1:
+                            continue
+                        cut_map(maskpcr, filenc, fileout, clip_box)
 
     print('finito...')
 
