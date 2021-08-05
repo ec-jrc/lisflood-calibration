@@ -72,17 +72,17 @@ def clip_netcdf(filenc, fileout, clip_box):
     # print('NetCDF file {} done'.format(filenc))
 
 
-def cut_map(maskpcr, filenc, fileout, clip_box):
+def cut_map(maskpcr, filein, fileout, clip_box):
 
-  ext = filenc[-4:][filenc[-4:].find("."):]
+  ext = filein[-4:][filein[-4:].find("."):]
 
   print('creating...',fileout)
   if ext == ".map":
-      clip_pcr(filenc, fileout, maskpcr)
+      clip_pcr(filein, fileout, maskpcr)
   elif ext == ".nc":
-      clip_netcdf(filenc, fileout, clip_box)
+      clip_netcdf(filein, fileout, clip_box)
   else:
-      copy_file(filenc, fileout)
+      copy_file(filein, fileout)
 
 
 def cut_maps_station(cfg, path_maps, stations_data, obsid):

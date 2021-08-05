@@ -110,13 +110,10 @@ def read_parameters(path_subcatch):
 
     name_params= paramvals.columns
     names=name_params[3:]
-    print('names',names)
     parameters=list()
     for indx in range(0,len(names)):
-        print('name[idx]', names[indx],'paramvals',paramvals[names[indx]])
+        print(names[indx], paramvals[names[indx]].values[0])
         parameters.append(paramvals[names[indx]].values[0])
-
-    print('param', parameters)
 
     return parameters
 
