@@ -85,7 +85,8 @@ class ConfigTiming(Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
-
+        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+        
         # Load param ranges file
         self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)
 
@@ -97,7 +98,12 @@ class ConfigTiming(Config):
 
         # stations
         self.stations_links = self.parser.get('Stations', 'stations_links')
-
+        if not os.path.exists(self.stations_links) or os.path.getsize(self.stations_links) == 0:
+            raise FileNotFoundError("stations_links missing: {}".format(self.stations_links))
+        stations_links = pandas.read_csv(self.stations_links, sep=",", index_col=0)
+        stations_links = pandas.DataFrame(columns=stations_links.columns, index=stations_links.index)
+        stations_links.to_csv(self.stations_links)
+                
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
