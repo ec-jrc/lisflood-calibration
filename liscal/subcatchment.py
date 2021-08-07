@@ -78,37 +78,38 @@ class SubCatchment():
 
         count = 1
         all_inflows = None
-        header = ""
-        for subcatchment in upstream_catchments:
-            
-            subcatchment = str(subcatchment)
+        if not cfg.timing:
+            header = ""
+            for subcatchment in upstream_catchments:
+                
+                subcatchment = str(subcatchment)
 
-            print('Retrieving inflow for subcatchment {}'.format(subcatchment))
-                            
-            Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
+                print('Retrieving inflow for subcatchment {}'.format(subcatchment))
+                                
+                Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
 
-            if not os.path.exists(Qsim_tss) or os.path.getsize(Qsim_tss) == 0:
-                raise Exception("ERROR: Missing " + Qsim_tss)
+                if not os.path.exists(Qsim_tss) or os.path.getsize(Qsim_tss) == 0:
+                    raise Exception("ERROR: Missing " + Qsim_tss)
 
-            try:
-                simulated_streamflow = utils.read_tss(Qsim_tss)
-            except:
-                print("Could not find streamflow_simulated_best.tss for upstream catchment "+subcatchment+", hence cannot run this catchment...")
-                raise Exception("Stopping...")
+                try:
+                    simulated_streamflow = utils.read_tss(Qsim_tss)
+                except:
+                    print("Could not find streamflow_simulated_best.tss for upstream catchment "+subcatchment+", hence cannot run this catchment...")
+                    raise Exception("Stopping...")
 
-            simulated_streamflow.index = pandas.date_range(cfg.forcing_start, periods=len(simulated_streamflow), freq='6H')
-            if simulated_streamflow.index[-1] != cfg.forcing_end:
-                raise Exception('Forcing start and end dates not coherent with inflow data, expecting {}, got {}',
-                    cfg.forcing_end, simulated_streamflow.index[-1])
-            simulated_streamflow.index = [i+1 for i in range(len(simulated_streamflow))]
-                    
-            if count == 1: 
-                all_inflows = simulated_streamflow  # type: object
-            else:
-                all_inflows[str(count)] = simulated_streamflow.values
-            count += 1
-            header = header+subcatchment+"\n"
-            print('Found inflow for subcatchment {}'.format(subcatchment))
+                simulated_streamflow.index = pandas.date_range(cfg.forcing_start, periods=len(simulated_streamflow), freq='6H')
+                if simulated_streamflow.index[-1] != cfg.forcing_end:
+                    raise Exception('Forcing start and end dates not coherent with inflow data, expecting {}, got {}',
+                        cfg.forcing_end, simulated_streamflow.index[-1])
+                simulated_streamflow.index = [i+1 for i in range(len(simulated_streamflow))]
+                        
+                if count == 1: 
+                    all_inflows = simulated_streamflow  # type: object
+                else:
+                    all_inflows[str(count)] = simulated_streamflow.values
+                count += 1
+                header = header+subcatchment+"\n"
+                print('Found inflow for subcatchment {}'.format(subcatchment))
 
         n_inflows =  count - 1
 
