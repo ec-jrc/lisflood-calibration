@@ -195,6 +195,24 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'chanq', 'chanq')
 
 
+def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
+
+    run_id = 'T'
+
+    param_ranges = cfg.param_ranges
+    parameters = [None] * len(param_ranges)
+    for ii in range(len(param_ranges)):
+        parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
+        
+    lis_template.write_template(run_id, start, end, param_ranges, parameters)
+
+    prerun_file = lis_template.settings_path('-PreRun', run_id)
+    run_file = lis_template.settings_path('-Run', run_id)
+
+    lisf1.main(prerun_file, '-v')
+    lisf1.main(run_file, '-q')
+    
+
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
     run_id = 'Z'
