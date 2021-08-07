@@ -115,10 +115,10 @@ def extract_station_data(cfg, obsid, station_data):
     obs_df.to_csv(os.path.join(out_dir, 'observations.csv'))
 
     # Export station data at station
-    station_data['Obs_start'] = valid_start
-    station_data['Obs_end'] = valid_end
-    station_data['Split_date'] = split_date
-    station_data['N_data'] = len(observations_filtered)
+    station_data.loc['Obs_start'] = valid_start
+    station_data.loc['Obs_end'] = valid_end
+    station_data.loc['Split_date'] = split_date
+    station_data.loc['N_data'] = len(observations_filtered)
     station_df = pd.DataFrame(data=station_data)
     print('Station data:')
     print(station_df)
