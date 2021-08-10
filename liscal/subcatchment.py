@@ -47,8 +47,8 @@ class SubCatchment():
         # outlet = pcr.readmap(outlet_file)
         # x = pcr.pcr2numpy(pcr.xcoordinate(outlet == 1), mv=-1)
         # y = pcr.pcr2numpy(pcr.ycoordinate(outlet == 1), mv=-1)
-        x = self.data['lisfloodX']
-        y = self.data['lisfloodY']
+        x = self.data['LisfloodX']
+        y = self.data['LisfloodY']
         gaugeloc = str(float(x[x!=-1]))+" "+str(float(y[y!=-1]))
         
         return gaugeloc
