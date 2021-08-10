@@ -43,11 +43,14 @@ class SubCatchment():
             self.resample_inflows(cfg)
 
     def extract_gauge_loc(self, outlet_file):
-
-        outlet = pcr.readmap(outlet_file)
-        x = pcr.pcr2numpy(pcr.xcoordinate(outlet == 1), mv=-1)
-        y = pcr.pcr2numpy(pcr.ycoordinate(outlet == 1), mv=-1)
+        # # Bug found for station 625: Guadalope En Caspe ES Ebro where CAL_5_PREP_FORCING's resample -c 0 creates a spurious grid point in the masksmall.map and outletsmall.map
+        # outlet = pcr.readmap(outlet_file)
+        # x = pcr.pcr2numpy(pcr.xcoordinate(outlet == 1), mv=-1)
+        # y = pcr.pcr2numpy(pcr.ycoordinate(outlet == 1), mv=-1)
+        x = self.data['lisfloodX']
+        y = self.data['lisfloodY']
         gaugeloc = str(float(x[x!=-1]))+" "+str(float(y[y!=-1]))
+        
         return gaugeloc
 
     def resample_inflows(self, cfg):
