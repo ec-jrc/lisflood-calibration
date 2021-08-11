@@ -7,24 +7,24 @@ from liscal import pcr_utils, calibration
 
 class Config():
 
-    def __init__(self, settings_file):
+    def __init__(self, settings_file, print_settings=True):
         self.parser = ConfigParser()
         if os.path.isfile(settings_file):
             self.parser.read(settings_file)
         else:
             raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
-        print('Settings:')
-        for section in self.parser.sections():
-            print('- {}'.format(section))
-            for key, value in dict(self.parser[section]).items():
-                print('  - {}: {}'.format(key, value)) 
+        if print_settings:
+            print('Settings:')
+            for section in self.parser.sections():
+                print('- {}'.format(section))
+                for key, value in dict(self.parser[section]).items():
+                    print('  - {}: {}'.format(key, value)) 
 
 
 class DEAPParameters():
 
     def __init__(self, parser):
-        self.num_cpus = int(parser.get('DEAP','numCPUs'))
         self.min_gen = int(parser.get('DEAP','min_gen'))
         self.max_gen = int(parser.get('DEAP','max_gen'))
         self.pop = int(parser.get('DEAP','pop'))
@@ -36,8 +36,10 @@ class DEAPParameters():
 
 class ConfigCalibration(Config):
 
-    def __init__(self, settings_file):
+    def __init__(self, settings_file, n_cpus=1):
         super().__init__(settings_file)
+
+        self.num_cpus = int(n_cpus)
 
         # paths
         self.subcatchment_path = self.parser.get('Path','subcatchment_path')
@@ -66,41 +68,7 @@ class ConfigCalibration(Config):
 
         # stations
         self.stations_links = self.parser.get('Stations', 'stations_links')
-        self.timing = False
         
-        # pcraster commands
-        self.pcraster_cmd = {}
-        for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
-            self.pcraster_cmd[execname] = execname
-
-
-
-class ConfigTiming(Config):
-
-    def __init__(self, settings_file):
-        super().__init__(settings_file)
-
-        # paths
-        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
-
-        # Date parameters
-        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
-        
-        # Load param ranges file
-        self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)
-
-        # template
-        self.lisflood_template = self.parser.get('Templates','LISFLOODSettings')
-
-        # Debug/test parameters
-        self.fast_debug = bool(int(self.parser.get('Main', 'fast_debug')))
-
-        # stations
-        self.stations_links = self.parser.get('Stations', 'stations_links')
-        self.timing = True
-                
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:

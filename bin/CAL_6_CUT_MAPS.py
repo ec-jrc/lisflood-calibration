@@ -8,7 +8,7 @@ from liscal import config, cutmaps
 class ConfigCutMaps(config.Config):
 
     def __init__(self, settings_file):
-        super().__init__(settings_file)
+        super().__init__(settings_file, print_settings=False)
 
         # paths
         self.subcatchment_path = self.parser.get('Path','subcatchment_path')
@@ -19,7 +19,6 @@ class ConfigCutMaps(config.Config):
 
 if __name__ == '__main__':
 
-    print("=================== START ===================")
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
     parser.add_argument('path_maps', help='Input global maps directory')
@@ -31,7 +30,6 @@ if __name__ == '__main__':
     cfg = ConfigCutMaps(settings_file)
 
     # Read full list of stations, index is obsid
-    print(">> Reading stations_data file...")
     stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
 
     # Calibrate lisflood fo specified station

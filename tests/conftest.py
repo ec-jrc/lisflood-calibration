@@ -17,7 +17,6 @@ OUT_DIR = path.join(TEST_DIR, 'outputs')
 class DummyDEAPParameters():
 
     def __init__(self):
-        self.num_cpus = 1
         self.min_gen = 1
         self.max_gen = 1
         self.pop = 2
@@ -32,6 +31,8 @@ class DummyConfig():
 
     def __init__(self):
 
+        self.num_cpus = 1
+        
         # paths
         self.path_out = path.join(OUT_DIR)
         self.subcatchment_path = path.join(DATA_DIR)

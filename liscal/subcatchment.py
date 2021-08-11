@@ -10,12 +10,13 @@ from liscal import pcr_utils, utils, stations
 
 class SubCatchment():
 
-    def __init__(self, cfg, obsid, station_data=None, initialise=True):
+    def __init__(self, cfg, obsid, station_data=None, initialise=True, create_links=True):
 
         self.obsid = obsid
         self.path = os.path.join(cfg.subcatchment_path, str(obsid))
         self.path_out = os.path.join(self.path, 'out')
         self.path_station = os.path.join(self.path, 'station')
+        self.create_links = create_links
 
         if station_data is None:
             # Read full list of stations, index is obsid
@@ -67,21 +68,22 @@ class SubCatchment():
 
     def prepare_inflows(self, cfg):
 
-        # Copy simulated streamflow from upstream catchments
-        # Change inlet map by replacing the numeric ID's with 1, 2, ...
-        print("Upstream station(s): ")
-        if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
-            raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
-        stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
-        inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
-        if os.path.isfile(inflow_tss):
-            os.remove(inflow_tss)
-
-        upstream_catchments = [int(i) for i in stations_links.loc[self.obsid].values if not np.isnan(i)]
-
         count = 1
         all_inflows = None
-        if not cfg.timing:
+
+        if self.create_links:
+            # Copy simulated streamflow from upstream catchments
+            # Change inlet map by replacing the numeric ID's with 1, 2, ...
+            print("Upstream station(s): ")
+            if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
+                raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
+            stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
+            inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
+            if os.path.isfile(inflow_tss):
+                os.remove(inflow_tss)
+
+            upstream_catchments = [int(i) for i in stations_links.loc[self.obsid].values if not np.isnan(i)]
+
             header = ""
             for subcatchment in upstream_catchments:
                 

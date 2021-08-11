@@ -27,7 +27,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
     if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
 
-        lock_mgr = calibration.LockManager(cfg.deap_param.num_cpus)
+        lock_mgr = calibration.LockManager(cfg.num_cpus)
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
@@ -49,11 +49,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
+    parser.add_argument('n_cpus', help='Number of cpus')
     args = parser.parse_args()
 
     settings_file = args.settings_file
 
-    cfg = config.ConfigCalibration(settings_file)
+    print('Running calibration using {} cpus'.format(args.n_cpus))
+
+    cfg = config.ConfigCalibration(settings_file, args.n_cpus)
 
     # Calibrate lisflood fo specified station
     obsid = int(args.station)

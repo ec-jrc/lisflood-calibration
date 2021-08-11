@@ -33,15 +33,12 @@ def clip_pcr(filein, fileout, mask):
         pcr.setclone(fileout)
         lddr = pcr.lddrepair(ldd)
         pcr.report(lddr, fileout)
-    # print(fileout)
-    # print(pcr.pcr2numpy(pcr.readmap(fileout), np.nan))
-    # print('PCRaster map {} done'.format(fileout))
+
     return fileout
 
 
 def copy_file(filein, fileout):
     os.system("cp " + filein + " " + fileout)
-    # print('File {} copied'.format(fileout))
     return
 
 
@@ -68,8 +65,6 @@ def clip_netcdf(filenc, fileout, clip_box):
     
     ds.close()
     ds_out.close()
-
-    # print('NetCDF file {} done'.format(filenc))
 
 
 def cut_map(maskpcr, filein, fileout, clip_box):
@@ -103,7 +98,6 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
         maskpcr = os.path.join(path_subcatch_maps, 'mask.map')
 
         if os.path.isfile(maskpcr):
-            print('maskmap',maskpcr)
             maskmap = pcr.readmap(maskpcr)
         else:
             print('wrong input mask file')
@@ -137,7 +131,5 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
                         if filenc.find("bak") > -1:
                             continue
                         cut_map(maskpcr, filenc, fileout, clip_box)
-
-    print('finito...')
 
     # visualize([prof, rprof, cprof], file_path='profile.html', show=False)

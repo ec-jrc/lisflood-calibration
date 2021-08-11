@@ -50,7 +50,6 @@ class ConfigPostProcessing(config.Config):
 
         # stations
         self.stations_data = self.parser.get('Stations', 'stations_data')
-        self.return_periods = self.parser.get('Stations', 'return_periods')
 
         # plot parameters
         self.plot_params = PlotParameters()

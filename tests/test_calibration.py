@@ -68,7 +68,7 @@ def test_deap_single_obj(dummy_cfg):
     print('Test calibration single objective')
 
     dummy_cfg.deap_param = DummyDEAPParameters()
-    lock_mgr = calibration.LockManager(dummy_cfg.deap_param.num_cpus)
+    lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
     
     n_param = len(dummy_cfg.param_ranges)
     target = np.arange(1, n_param+1)/n_param
@@ -86,7 +86,7 @@ def test_deap_mult_obj(dummy_cfg, value):
     print('Test calibration multi objectives')
 
     dummy_cfg.deap_param = DummyDEAPParameters()
-    lock_mgr = calibration.LockManager(dummy_cfg.deap_param.num_cpus)
+    lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
     
     target = value*np.ones(len(dummy_cfg.param_ranges))
     model = ModelMultObj(lock_mgr, target)

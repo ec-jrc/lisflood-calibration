@@ -11,10 +11,29 @@ from datetime import datetime, timedelta
 from liscal import hydro_model, templates, config, subcatchment, utils
 
 
-def deleteOutput(subcatch_dir):
-    ret, res = utils.run_cmd("rm -f {}/settings*.xml".format(subcatch_dir))
-    ret, res = utils.run_cmd("rm -rf {}/out".format(subcatch_dir))
-    ret, res = utils.run_cmd("rm -rf {}/*.csv".format(subcatch_dir))
+class ConfigTimings(config.Config):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
+
+        # paths
+        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
+
+        # Date parameters
+        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+        
+        # Load param ranges file
+        self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)
+
+        # template
+        self.lisflood_template = self.parser.get('Templates','LISFLOODSettings')
+        
+        # pcraster commands
+        self.pcraster_cmd = {}
+        for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
+            self.pcraster_cmd[execname] = execname
 
 
 if __name__ == '__main__':
@@ -28,7 +47,7 @@ if __name__ == '__main__':
     print('  - obsid: {}'.format(args.obsid))
     print('  - settings file: {}'.format(args.settings))
     obsid = int(args.obsid)
-    cfg = config.ConfigTiming(args.settings)
+    cfg = ConfigTimings(args.settings)
 
     print(">> Reading stations.csv file...")
     stations = pandas.read_csv(args.stations_data, sep=",", index_col=0)
@@ -43,7 +62,7 @@ if __name__ == '__main__':
     end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     print("=================== "+str(obsid)+" ====================")
-    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data)
+    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data, create_links=False)
     out_file = os.path.join(subcatch.path, 'out', 'timing_discharge.csv')
     if os.path.exists(out_file):
         deleteOutput(subcatch.path)

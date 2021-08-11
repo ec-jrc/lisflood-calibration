@@ -58,7 +58,7 @@ if __name__ == '__main__':
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     # create lock manager, which will handle process mapping and locks
-    lock_mgr = calibration.LockManager(cfg.deap_param.num_cpus)
+    lock_mgr = calibration.LockManager(cfg.num_cpus)
 
     # create objective and hydro model
     tol = float(args.tol)
