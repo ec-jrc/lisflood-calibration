@@ -1,8 +1,11 @@
 import os
 import numpy as np
 import pandas
-import multiprocessing as mp
 import time
+
+from dask import distributed
+import multiprocessing as mp
+from multiprocessing import pool
 
 # deap related packages
 import array
@@ -13,60 +16,44 @@ from deap import creator
 from deap import tools
 
 
-class LockManager():
+class MultiprocessingScheduler():
 
     def __init__(self, num_cpus):
 
         mgr = mp.Manager()
-        self.counters = {}
-        self.counters['run'] = mgr.Value('i', -1)
-        self.counters['gen'] = mgr.Value('i', -1)
-
         self.lock = mgr.Lock()
-
         self.num_cpus = num_cpus
-
-    def increment_gen(self):
-        self._increment('gen')
-        self._set('run', 0)
-
-    def increment_run(self):
-        return self._increment('run')
-
-    def set_gen(self, value):
-        self._set('gen', value)
-        self._set('run', 0)
-
-    def set_run(self, value):
-        return self._set('run', value)
-
-    def get_gen(self):
-        return self._value('gen')
-
-    def get_run(self):
-        return self._value('run')
-
-    def _increment(self, name):
-        with self.lock:
-            self.counters[name].value += 1
-            value = self.counters[name].value
-        return value
-
-    def _set(self, name, value):
-        with self.lock:
-            self.counters[name].value = value
-            value = self.counters[name].value
-        return value
-
-    def _value(self, name):
-        return self.counters[name].value
 
     def create_mapping(self):
         if self.num_cpus > 1:
-            pool = mp.Pool(processes=self.num_cpus, initargs=(self.lock,))
-            return pool.map, pool
+            # par_pool = pool.ThreadPool(processes=self.num_cpus, initargs=(self.lock,))
+            par_pool = mp.Pool(processes=self.num_cpus, initargs=(self.lock,))
+            self.pool = par_pool
+            return par_pool.map
         else:
-            return map, None
+            return map
+
+    def close(self):
+        self.pool.close()
+
+
+class DaskScheduler():
+
+    def __init__(self, num_cpus):
+
+        cluster = distributed.LocalCluster(n_workers=num_cpus, processes=True)
+        print(cluster)
+        self.client = distributed.Client(cluster)
+        print(self.client)
+        self.lock = distributed.Lock()
+        self.num_cpus = num_cpus
+        print(self.client.get_versions(check=True))
+        
+    def create_mapping(self):
+        return self.client.map
+
+    def close(self):
+        self.client.shutdown()
 
 
 class Criteria():
@@ -124,7 +111,7 @@ class Criteria():
 
 class CalibrationDeap():
 
-    def __init__(self, cfg, fun, objective_weights):
+    def __init__(self, cfg, fun, obj_weights, scheduler):
 
         deap_param = cfg.deap_param
 
@@ -132,7 +119,7 @@ class CalibrationDeap():
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
 
-        self.criteria = Criteria(deap_param, len(objective_weights))
+        self.criteria = Criteria(deap_param, len(obj_weights))
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -140,7 +127,7 @@ class CalibrationDeap():
         self.param_ranges = cfg.param_ranges
 
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=objective_weights)
+        creator.create("FitnessMin", base.Fitness, weights=obj_weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
@@ -175,12 +162,16 @@ class CalibrationDeap():
 
         self.toolbox = toolbox
 
+        mapping = scheduler.create_mapping()
+        self.toolbox.register("map", mapping)
+        self.scheduler = scheduler
+    
     def updatePopulationFromHistory(self, pHistory):
         param_ranges = self.param_ranges
         n = len(pHistory)
         paramvals = np.zeros(shape=(n, len(param_ranges)))
         paramvals[:] = np.NaN
-        invalid_ind = []
+        individuals = []
         fitnesses = []
         for ind in range(n):
             for ipar, par in enumerate(param_ranges.index):
@@ -193,14 +184,14 @@ class CalibrationDeap():
             # Create a fresh individual with the restored parameters
             # newInd = toolbox.Individual() # creates an individual with random numbers for the parameters
             newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
-            invalid_ind.append(newInd)
+            individuals.append(newInd)
             # WARNING: Change the following line when using multi-objective functions
             # also load the old KGE the individual had (works only for single objective function)
             fitnesses.append((pHistory.iloc[ind][len(param_ranges) + 1],))
         # update the score of each
-        for ind, fit in zip(invalid_ind, fitnesses):
+        for ind, fit in zip(individuals, fitnesses):
             ind.fitness.values = fit
-        return invalid_ind
+        return individuals
 
     def restore_calibration(self, halloffame, history_file):
 
@@ -218,25 +209,84 @@ class CalibrationDeap():
         for igen in range(int(paramsHistory["generation"].iloc[-1])+1):
             # retrieve the generation's data
             parsHistory = paramsHistory[paramsHistory["generation"] == igen]
-            # reconstruct the invalid individuals array
-            valid_ind = self.updatePopulationFromHistory(parsHistory)
-            # Update the hall of fame with the generation's parameters
-            halloffame.update(valid_ind)
-            # prepare for the next stage
-            if population is not None:
-                population[:] = self.toolbox.select(population + valid_ind, self.mu)
+
+            print('WARNING! Partial restoring... we only consider here complete generations! We need to implement restart for uncomplete generations...')
+            if (gen == 0 and len(parsHistory) == self.pop) or (gen > 0 and len(parsHistory) == self.lambda_):
+
+                # reconstruct the recovered individuals array
+                individuals = self.updatePopulationFromHistory(parsHistory)
+
+                # Run the model for the rest of the population - not implemented
+                # fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
+                # for ind, fit in zip(individuals, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
+                #     assert len(ind.fitness.weights) == len(fit)
+                #     ind.fitness.values = fit
+
+                # Update the hall of fame with the generation's parameters
+                halloffame.update(individuals)
+
+                # prepare for the next stage
+                if population is not None:
+                    population[:] = self.toolbox.select(population + individuals, self.mu)
+                else:
+                    population = individuals
+
+                self.criteria.update_statistics(gen, halloffame)
+
+                self.criteria.check_termination_conditions(gen)
+
+                print('Found generation {}'.format(gen))
+
+                gen = gen+1
             else:
-                population = valid_ind
-
-            self.criteria.update_statistics(gen, halloffame)
-
-            self.criteria.check_termination_conditions(gen)
-
-            gen = gen+1
+                break
 
         return population, gen
 
-    def generate_population(self, halloffame):
+    def backup_individuals(self, individuals):
+        return
+
+    def restore_individuals(self, individuals):
+        return
+
+    def create_individuals(self, offspring, gen):
+        individuals_deap = [ind for ind in offspring if not ind.fitness.valid]
+        individuals = []
+        for i, child in enumerate(offspring):
+            if not child.fitness.valid:
+                ind = {}
+                ind['value'] = np.array(child)
+                ind['gen'] = gen
+                ind['id'] = i
+                ind['lock'] = self.scheduler.lock
+                individuals.append(ind)
+        return individuals, individuals_deap
+
+    def compute_generation(self, halloffame, offspring, gen):
+        self.backup_individuals(offspring)
+
+        # Evaluate the individuals with an invalid fitness
+        individuals, individuals_deap = self.create_individuals(offspring, gen)
+
+        # Run the model (e.g. lisflood)
+        fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
+        if hasattr(self.scheduler, 'client'):
+            fitnesses = self.scheduler.client.gather(fitnesses)
+
+        # Update individuals with resulting fitnesses
+        for ind, fit in zip(individuals_deap, fitnesses):
+            ind_fit = ind.fitness
+            assert len(ind_fit.weights) == len(fit)
+            ind_fit.values = fit
+
+        # Update the hall of fame with the generated individuals
+        halloffame.update(offspring)
+
+        # Loop through the different objective functions and calculate some statistics
+        # from the Pareto optimal population
+        self.criteria.update_statistics(gen, halloffame)
+
+    def create_population(self, halloffame):
 
         print("Generating first population")
         gen = 0
@@ -244,56 +294,38 @@ class CalibrationDeap():
         # Start with a fresh population
         population = self.toolbox.population(n=self.pop)
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in population if not ind.fitness.valid] # DD this filters the population or children for uncalculated fitnesses. We retain only the uncalculated ones to avoid recalculating those that already had a fitness. Potentially this can save time, especially if the algorithm tends to produce a child we already ran.
+        # Compute current generation
+        self.compute_generation(halloffame, population, gen)
 
-        # Run the first generation, first random sampling of the parameter space
-        fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
-            assert len(ind.fitness.weights) == len(fit)
-            ind.fitness.values = fit
-
-        halloffame.update(population) # DD this selects the best one
-
-        self.criteria.update_statistics(gen, halloffame)
+        print("First population done")
 
         return population
 
     def generate_offspring(self, gen, halloffame, population):
 
+        print('Starting generation {}'.format(gen))
+
         # Vary the population
         offspring = algorithms.varOr(population, self.toolbox, self.lambda_, self.cxpb, self.mutpb)
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind) # DD this runs lisflood
-        for ind, fit in zip(invalid_ind, fitnesses):
-            assert len(ind.fitness.weights) == len(fit)
-            ind.fitness.values = fit
-
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)
+        # Compute current generation
+        self.compute_generation(halloffame, offspring, gen)
 
         # Select the next generation population
-        population[:] = self.toolbox.select(population + offspring, self.mu)
-
-        # Loop through the different objective functions and calculate some statistics
-        # from the Pareto optimal population
-        self.criteria.update_statistics(gen, halloffame)
+        population = self.toolbox.select(population + offspring, self.mu)
 
         self.criteria.check_termination_conditions(gen)
 
         print('Done generation {}'.format(gen))
 
-    def run(self, path_subcatch, lock_mgr):
+        return population
+
+    def run(self, path_subcatch):
 
         t = time.time()
 
         print('Starting calibration')
-        lock_mgr.set_gen(0)
-        mapping, pool = lock_mgr.create_mapping()
-        self.toolbox.register("map", mapping)
+        gen = 0
 
         # Start a new hall of fame
         halloffame = tools.ParetoFront()
@@ -302,24 +334,24 @@ class CalibrationDeap():
         history_file = os.path.join(path_subcatch, "paramsHistory.csv")
         if os.path.isfile(history_file) and os.path.getsize(history_file) > 0:
             population, gen = self.restore_calibration(halloffame, history_file)
-            lock_mgr.set_gen(gen)
-        else:
+
+        if gen==0:
             # No previous parameter history was found, so start from scratch
-            population = self.generate_population(halloffame)
-            lock_mgr.set_gen(1)
+            population = self.create_population(halloffame)
+            gen = 1
 
         # Resume the generational process from wherever we left off
         while not any(self.criteria.conditions.values()):
-            self.generate_offspring(lock_mgr.get_gen(), halloffame, population)
-            lock_mgr.increment_gen()
+            population = self.generate_offspring(gen, halloffame, population)
+            gen += 1
 
         # Finito
-        if pool:
-            pool.close()
         elapsed = time.time() - t
         print(">> Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
 
         # Save history of the change in objective function scores during calibration to csv file
-        self.criteria.write_front_history(path_subcatch, lock_mgr.get_gen())
+        self.criteria.write_front_history(path_subcatch, gen)
 
-        return self.criteria.effmax[lock_mgr.get_gen()-1]
+        self.scheduler.close()
+
+        return self.criteria.effmax[gen-1]

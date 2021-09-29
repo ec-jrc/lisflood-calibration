@@ -9,9 +9,9 @@ from liscal import hydro_stats, utils
 class ObjectiveKGE():
 
     def __init__(self, cfg, subcatch, read_observations=True):
-        self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
+        self.calibration_freq = cfg.calibration_freq
         self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
@@ -19,16 +19,15 @@ class ObjectiveKGE():
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
 
-    def get_parameters(self, Individual):
+    def get_parameters(self, individual):
         param_ranges = self.param_ranges
         parameters = [None] * len(param_ranges)
         for ii in range(len(param_ranges)):
-            parameters[ii] = Individual[ii]*(float(param_ranges.iloc[ii,1])-float(param_ranges.iloc[ii,0]))+float(param_ranges.iloc[ii,0])
+            parameters[ii] = individual[ii]*(float(param_ranges.iloc[ii,1])-float(param_ranges.iloc[ii,0]))+float(param_ranges.iloc[ii,0])
 
         return parameters
 
     def read_observed_streamflow(self, observations_file):
-        cfg = self.cfg
         
         observed_streamflow = pd.read_csv(observations_file, sep=",", index_col=0)
         # check that date format is correct
@@ -78,7 +77,7 @@ class ObjectiveKGE():
         return simulated_streamflow
 
     def resample_streamflows(self, start, end, simulated_streamflow, observed_streamflow):
-        cfg = self.cfg
+        calibration_freq = self.calibration_freq
         start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
         end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
 
@@ -86,7 +85,7 @@ class ObjectiveKGE():
         Qobs = observed_streamflow[start:end]
         Qsim = simulated_streamflow[start:end]
         date_range = pd.date_range(start_pd, end_pd, freq="360min")
-        if cfg.calibration_freq == r"6-hourly":
+        if calibration_freq == r"6-hourly":
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
@@ -100,14 +99,14 @@ class ObjectiveKGE():
                 # return date range 
                 date_range = Qobs.index
 
-        elif cfg.calibration_freq == r"daily":
+        elif calibration_freq == r"daily":
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
             date_range = Qobs.index
         
         else:
-            raise Exception('Calibration freq {} not supported'.format(cfg.calibration_freq))
+            raise Exception('Calibration freq {} not supported'.format(calibration_freq))
        
         Qsim = np.array(Qsim)
         Qobs = np.array(Qobs)
@@ -157,9 +156,13 @@ class ObjectiveKGE():
 
         return Q, stats
 
-    def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
+    def update_parameter_history(self, individual, fKGEComponents):
 
-        cfg = self.cfg
+        gen = individual['gen']
+        run = individual['id'] 
+        run_id = '{}_{}'.format(gen, run)
+
+        parameters = self.get_parameters(individual['value'])
 
         KGE = fKGEComponents[0]
 

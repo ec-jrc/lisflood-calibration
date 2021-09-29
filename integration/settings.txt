@@ -31,7 +31,7 @@ pop = 72
 # max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
 # mu = # of best children chosen to feed into the next generation (JRC decided to make it 2x calibration parameters)
 #      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
-# Lamda = # of children spawned at every generation (= # threads to run in parallel)
+# Lambda = # of children spawned at every generation (= # threads to run in parallel)
 #         This must always be twice mu
 
 

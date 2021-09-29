@@ -14,7 +14,6 @@ import traceback
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 
-
 def calibrate_subcatchment(cfg, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")
@@ -24,22 +23,22 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
 
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
     
-    if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==False:
+    if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
 
-        lock_mgr = calibration.LockManager(cfg.num_cpus)
+        scheduler = calibration.DaskScheduler(cfg.num_cpus)
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
-        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, obj)
 
         # load forcings and input maps in cache
         # required in front of processing pool
         # otherwise each child will reload the maps
         model.init_run()
 
-        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights)
-        calib_deap.run(subcatch.path, lock_mgr)
+        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
+        calib_deap.run(subcatch.path)
 
         obj.process_results()
 

@@ -23,30 +23,27 @@ class DummyDEAPParameters():
 
 class ModelDummy():
 
-    def __init__(self, lock_mgr, target):
+    def __init__(self, target):
 
         # target = 0.1 for all params
         self.target = target
-        self.lock_mgr = lock_mgr
 
     def objectives(self, parameters):
         NotImplemented
 
-    def run(self, Individual):
+    def run(self, individual):
 
-        self.lock_mgr.increment_run()
-        gen = self.lock_mgr.get_gen()
-        run = self.lock_mgr.get_run()
+        print(individual)
 
-        obj = self.objectives(Individual)
+        obj = self.objectives(individual['value'])
 
         return obj
 
 
 class ModelSingleObj(ModelDummy):
 
-    def __init__(self, lock_mgr, target):
-        super().__init__(lock_mgr, target)
+    def __init__(self, target):
+        super().__init__(target)
 
     def objectives(self, parameters):
         obj = [1-np.sqrt(np.mean((parameters - self.target)**2))]
@@ -55,8 +52,8 @@ class ModelSingleObj(ModelDummy):
 
 class ModelMultObj(ModelDummy):
 
-    def __init__(self, lock_mgr, target):
-        super().__init__(lock_mgr, target)
+    def __init__(self, target):
+        super().__init__(target)
 
     def objectives(self, parameters):
         obj = 1-np.sqrt(((parameters - self.target)**2))
@@ -66,16 +63,18 @@ class ModelMultObj(ModelDummy):
 def test_deap_single_obj(dummy_cfg):
 
     print('Test calibration single objective')
+    scheduler = calibration.MultiprocessingScheduler(dummy_cfg.num_cpus)
 
     dummy_cfg.deap_param = DummyDEAPParameters()
-    lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
+    n_param = len(dummy_cfg.param_ranges)
+    weights = [1]
     
     n_param = len(dummy_cfg.param_ranges)
     target = np.arange(1, n_param+1)/n_param
-    model = ModelSingleObj(lock_mgr, target)
+    model = ModelSingleObj(target)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1])
-    target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, weights, scheduler)
+    target = calib_deap.run(dummy_cfg.path_out)
 
     assert target[0] > 0.9
 
@@ -84,14 +83,16 @@ def test_deap_single_obj(dummy_cfg):
 def test_deap_mult_obj(dummy_cfg, value):
 
     print('Test calibration multi objectives')
+    scheduler = calibration.DaskScheduler(dummy_cfg.num_cpus)
 
     dummy_cfg.deap_param = DummyDEAPParameters()
-    lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
-    
-    target = value*np.ones(len(dummy_cfg.param_ranges))
-    model = ModelMultObj(lock_mgr, target)
+    n_param = len(dummy_cfg.param_ranges)
+    weights = [1 for i in range(n_param)]
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1 for i in range(len(dummy_cfg.param_ranges))])
-    target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
+    target = value*np.ones(n_param)
+    model = ModelMultObj(target)
+
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, weights, scheduler)
+    target = calib_deap.run(dummy_cfg.path_out)
 
     assert target[0] > 0.99

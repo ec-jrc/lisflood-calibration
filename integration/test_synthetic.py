@@ -27,7 +27,7 @@ class ObjectiveKGETest(objective.ObjectiveKGE):
         super().__init__(cfg, subcatch)
 
     def get_parameters(self, Individual):
-        param_ranges = self.cfg.param_ranges
+        param_ranges = self.param_ranges
         parameters = [None] * len(param_ranges)
         for ii in range(len(param_ranges)):
             ref = self.param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
@@ -57,21 +57,21 @@ if __name__ == '__main__':
     # create object to create lisflood settings file
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
-    # create lock manager, which will handle process mapping and locks
-    lock_mgr = calibration.LockManager(cfg.num_cpus)
+    # create scheduler, which will handle processes mapping and locks
+    scheduler = calibration.DaskScheduler(cfg.num_cpus)
 
     # create objective and hydro model
     tol = float(args.tol)
     param_target = 0.5*np.ones(len(cfg.param_ranges))
     obj = ObjectiveKGETest(cfg, subcatch, param_target, tol)
-    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, obj)
 
     # load forcings and input maps in cache
-    model.init_run()
+    # model.init_run()
 
     # create calib object and run
-    calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights)
-    calib_deap.run(subcatch.path, lock_mgr)
+    calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
+    calib_deap.run(subcatch.path)
 
     # process calibration results
     obj.process_results()

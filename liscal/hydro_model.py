@@ -17,14 +17,11 @@ from liscal import utils
 
 class HydrologicalModel():
 
-    def __init__(self, cfg, subcatch, lis_template, lock_mgr, objective):
+    def __init__(self, cfg, subcatch, lis_template, objective):
 
-        self.cfg = cfg
         self.subcatch = subcatch
 
         self.lis_template = lis_template
-
-        self.lock_mgr = lock_mgr
 
         self.objective = objective
 
@@ -43,16 +40,14 @@ class HydrologicalModel():
     def init_run(self):
 
         # dummy Individual, doesn't matter here
-        param_ranges = self.cfg.param_ranges
+        param_ranges = self.objective.param_ranges
         Individual = 0.5*np.ones(len(param_ranges))
-
-        cfg = self.cfg
 
         run_id = str(0)
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, param_ranges, parameters)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
 
@@ -66,20 +61,16 @@ class HydrologicalModel():
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = cache.cache_size()
 
+    def run(self, individual):
 
-    def run(self, Individual):
-
-        cfg = self.cfg
-
-        gen = self.lock_mgr.get_gen()
-        run = self.lock_mgr.increment_run()
+        gen = individual['gen']
+        run = individual['id'] 
+        run_id = '{}_{}'.format(gen, run)
         print('Generation {}, run {}'.format(gen, run))
 
-        run_id = '{}_{}'.format(gen, run)
+        parameters = self.objective.get_parameters(individual['value'])
 
-        parameters = self.objective.get_parameters(Individual)
-
-        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, self.objective.param_ranges, parameters)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
         run_file = self.lis_template.settings_path('-Run', run_id)
@@ -92,14 +83,14 @@ class HydrologicalModel():
             raise Exception("Lisflood failed!")
 
         # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = cache.cache_size()
-        assert cache_size == self.lisflood_cache_size
+        # cache_size = cache.cache_size()
+        # assert cache_size == self.lisflood_cache_size
 
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
 
-        with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
+        with individual['lock']:
+            self.objective.update_parameter_history(individual, objectives)
 
         return objectives  # If using just one objective function, put a comma at the end!!!
 
