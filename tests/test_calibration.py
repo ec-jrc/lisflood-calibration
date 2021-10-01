@@ -4,7 +4,7 @@ import numpy as np
 import random
 import pytest
 
-from liscal import calibration
+from liscal import calibration, schedulers
 
 
 class DummyDEAPParameters():
@@ -32,8 +32,6 @@ class ModelDummy():
         NotImplemented
 
     def run(self, individual):
-
-        print(individual)
 
         obj = self.objectives(individual['value'])
 
@@ -63,7 +61,8 @@ class ModelMultObj(ModelDummy):
 def test_deap_single_obj(dummy_cfg):
 
     print('Test calibration single objective')
-    scheduler = calibration.MultiprocessingScheduler(dummy_cfg.num_cpus)
+    scheduler = schedulers.get_scheduler()
+    print(scheduler)
 
     dummy_cfg.deap_param = DummyDEAPParameters()
     n_param = len(dummy_cfg.param_ranges)
@@ -83,7 +82,7 @@ def test_deap_single_obj(dummy_cfg):
 def test_deap_mult_obj(dummy_cfg, value):
 
     print('Test calibration multi objectives')
-    scheduler = calibration.DaskScheduler(dummy_cfg.num_cpus)
+    scheduler = schedulers.get_scheduler('Dask', dummy_cfg.num_cpus)
 
     dummy_cfg.deap_param = DummyDEAPParameters()
     n_param = len(dummy_cfg.param_ranges)

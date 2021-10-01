@@ -8,7 +8,7 @@ import pandas
 import numpy as np
 from datetime import datetime, timedelta
 
-from liscal import hydro_model, calibration, templates, config, subcatchment, objective, utils
+from liscal import hydro_model, calibration, templates, config, subcatchment, objective, utils, schedulers
 
 
 def deleteOutput(subcatch_dir):
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     # create scheduler, which will handle processes mapping and locks
-    scheduler = calibration.DaskScheduler(cfg.num_cpus)
+    scheduler = schedulers.get_scheduler('Dask', cfg.num_cpus)
 
     # create objective and hydro model
     tol = float(args.tol)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, obj)
 
     # load forcings and input maps in cache
-    # model.init_run()
+    model.init_run()
 
     # create calib object and run
     calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)

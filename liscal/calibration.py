@@ -3,10 +3,6 @@ import numpy as np
 import pandas
 import time
 
-from dask import distributed
-import multiprocessing as mp
-from multiprocessing import pool
-
 # deap related packages
 import array
 import random
@@ -14,46 +10,6 @@ from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
-
-
-class MultiprocessingScheduler():
-
-    def __init__(self, num_cpus):
-
-        mgr = mp.Manager()
-        self.lock = mgr.Lock()
-        self.num_cpus = num_cpus
-
-    def create_mapping(self):
-        if self.num_cpus > 1:
-            # par_pool = pool.ThreadPool(processes=self.num_cpus, initargs=(self.lock,))
-            par_pool = mp.Pool(processes=self.num_cpus, initargs=(self.lock,))
-            self.pool = par_pool
-            return par_pool.map
-        else:
-            return map
-
-    def close(self):
-        self.pool.close()
-
-
-class DaskScheduler():
-
-    def __init__(self, num_cpus):
-
-        cluster = distributed.LocalCluster(n_workers=num_cpus, processes=True)
-        print(cluster)
-        self.client = distributed.Client(cluster)
-        print(self.client)
-        self.lock = distributed.Lock()
-        self.num_cpus = num_cpus
-        print(self.client.get_versions(check=True))
-        
-    def create_mapping(self):
-        return self.client.map
-
-    def close(self):
-        self.client.shutdown()
 
 
 class Criteria():
@@ -162,9 +118,8 @@ class CalibrationDeap():
 
         self.toolbox = toolbox
 
-        mapping = scheduler.create_mapping()
-        self.toolbox.register("map", mapping)
         self.scheduler = scheduler
+        self.toolbox.register("map", scheduler.create_mapping())
     
     def updatePopulationFromHistory(self, pHistory):
         param_ranges = self.param_ranges
@@ -269,9 +224,10 @@ class CalibrationDeap():
         individuals, individuals_deap = self.create_individuals(offspring, gen)
 
         # Run the model (e.g. lisflood)
+        self.scheduler.distribute(individuals)
         fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
-        if hasattr(self.scheduler, 'client'):
-            fitnesses = self.scheduler.client.gather(fitnesses)
+        fitnesses = self.scheduler.gather(fitnesses)
+        print(self.scheduler.gather)
 
         # Update individuals with resulting fitnesses
         for ind, fit in zip(individuals_deap, fitnesses):

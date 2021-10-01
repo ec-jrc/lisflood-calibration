@@ -11,7 +11,7 @@ import glob
 import subprocess
 import traceback
 
-from liscal import templates, calibration, config, subcatchment, objective, hydro_model
+from liscal import templates, calibration, config, subcatchment, objective, hydro_model, schedulers
 
 
 def calibrate_subcatchment(cfg, obsid, subcatch):
@@ -26,7 +26,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
 
-        scheduler = calibration.DaskScheduler(cfg.num_cpus)
+        scheduler = scheduler.get_scheduler('Dask', cfg.num_cpus)
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
