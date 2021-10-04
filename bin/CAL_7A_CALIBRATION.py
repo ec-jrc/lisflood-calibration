@@ -26,7 +26,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
 
-        scheduler = scheduler.get_scheduler('Dask', cfg.num_cpus)
+        scheduler = schedulers.get_scheduler('Dask', cfg.num_cpus)
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
