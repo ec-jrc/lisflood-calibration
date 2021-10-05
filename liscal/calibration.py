@@ -221,16 +221,16 @@ class CalibrationDeap():
         self.backup_individuals(offspring)
 
         # Evaluate the individuals with an invalid fitness
-        individuals, individuals_deap = self.create_individuals(offspring, gen)
+        individuals, generation = self.create_individuals(offspring, gen)
 
         # Run the model (e.g. lisflood)
-        self.scheduler.distribute(individuals)
+        individuals = self.scheduler.distribute(individuals)
         fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
         fitnesses = self.scheduler.gather(fitnesses)
         print(self.scheduler.gather)
 
         # Update individuals with resulting fitnesses
-        for ind, fit in zip(individuals_deap, fitnesses):
+        for ind, fit in zip(generation, fitnesses):
             ind_fit = ind.fitness
             assert len(ind_fit.weights) == len(fit)
             ind_fit.values = fit

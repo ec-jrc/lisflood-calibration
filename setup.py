@@ -19,6 +19,8 @@ setup(
     install_requires=[
         "numpy",
         "pandas",
+        "dask",
+        "distributed",
         "xarray",
         "deap",
         #"pcraster",

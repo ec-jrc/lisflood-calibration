@@ -62,11 +62,13 @@ class DaskScheduler(Scheduler):
             cluster = distributed.LocalCluster(n_workers=num_cpus, processes=False)
             self.client = distributed.Client(cluster)
         print(self.client)
+        for core in self.client.ncores():
+            print(core)
         self.lock = distributed.Lock()
         self.num_cpus = num_cpus
         assert self.num_cpus == len(self.client.ncores())
         # check python env is the same on client and scheduler/workers
-        # self.client.get_versions(check=True)
+        self.client.get_versions(check=True)
         
     def create_mapping(self):
         return self.client.map

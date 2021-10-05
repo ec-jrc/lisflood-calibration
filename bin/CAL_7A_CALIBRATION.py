@@ -26,8 +26,6 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
 
-        scheduler = schedulers.get_scheduler('Dask', cfg.num_cpus)
-
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, obj)
@@ -36,6 +34,8 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # required in front of processing pool
         # otherwise each child will reload the maps
         model.init_run()
+
+        scheduler = schedulers.get_scheduler('Dask', cfg.num_cpus)
 
         calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
         calib_deap.run(subcatch.path)
