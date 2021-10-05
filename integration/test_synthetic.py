@@ -41,12 +41,13 @@ if __name__ == '__main__':
     parser.add_argument('obsid', help='Station obsid')
     parser.add_argument('settings', help='Settings file')
     parser.add_argument('tol', help='KGE history file')
+    parser.add_argument('n_cpus', help='Number of cpus')
     args = parser.parse_args()
 
     print('  - obsid: {}'.format(args.obsid))
     print('  - settings file: {}'.format(args.settings))
     obsid = int(args.obsid)
-    cfg = config.ConfigCalibration(args.settings)
+    cfg = config.ConfigCalibration(args.settings, args.n_cpus)
 
     print("=================== "+str(obsid)+" ====================")
     subcatch = subcatchment.SubCatchment(cfg, obsid)
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     # create scheduler, which will handle processes mapping and locks
-    scheduler = schedulers.get_scheduler('Dask', cfg.num_cpus)
+    scheduler = schedulers.get_scheduler('MPI', cfg.num_cpus)
 
     # create objective and hydro model
     tol = float(args.tol)
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, obj)
 
     # load forcings and input maps in cache
-    model.init_run()
+    model.init_run(str(scheduler.rank))
 
     # create calib object and run
     calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)

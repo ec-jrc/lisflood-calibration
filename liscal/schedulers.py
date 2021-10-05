@@ -22,10 +22,10 @@ class Scheduler():
     def close(self):
         return
 
-    def broadcast(self, values):
+    def chunk(self, values):
         return values
 
-    def distribute(self, values):
+    def broadcast(self, values):
         return values
     
     def gather(self, values):
@@ -116,7 +116,8 @@ class MPIScheduler(Scheduler):
 
     def gather(self, values):
         values = list(values)
-        values = self.comm.allgather(values, root=0)
+        values = self.comm.allgather(values)
+        values = [j for sub in values for j in sub]
         return values
 
     def broadcast(self, values):

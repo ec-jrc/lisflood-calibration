@@ -204,10 +204,6 @@ class CalibrationDeap():
     def restore_individuals(self, individuals):
         return
 
-    def initialise_generation(self, offspring):
-        generation = [ind for ind in offspring if not ind.fitness.valid]
-        return generation
-
     def create_individuals(self, generation, gen):
         individuals = []
         for i, child in enumerate(generation):
@@ -217,29 +213,29 @@ class CalibrationDeap():
                 ind['gen'] = gen
                 ind['id'] = i
                 individuals.append(ind)
-        return individuals
-
-    def compute_generation(self, halloffame, offspring, gen):
-        self.backup_individuals(offspring)
-
-        # Evaluate the individuals with an invalid fitness
-        if self.scheduler.root():
-            generation = self.initialise_generation(offspring)
-        else:
-            generation = None
-        generation = self.scheduler.broadcast(generation)
-        print('Global generation list has {} elements'.format(len(generation)))
-
-        individuals = self.create_individuals(generation, gen)
+        # get local chunk of individuals
         individuals = self.scheduler.chunk(individuals)
         for ind in individuals:
             ind['lock'] = self.scheduler.lock
-        print('Local individuals list has {} elements'.format(len(individuals)))
-
-        # Run the model (e.g. lisflood)
+        return individuals
+    
+    def evaluate_fitnesses(self, individuals):
         fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
         fitnesses = self.scheduler.gather(fitnesses)
-        print(self.scheduler.gather)
+        return fitnesses
+
+    def compute_generation(self, halloffame, offspring, gen):
+        
+        # make sure the offsptrings are the same everywhere
+        offspring = self.scheduler.broadcast(offspring)
+        self.backup_individuals(offspring)
+
+        # Current generation is the offsprings with an invalid fitness
+        generation = [ind for ind in offspring if not ind.fitness.valid]
+        individuals = self.create_individuals(generation, gen)
+
+        # Run the model (e.g. lisflood)
+        fitnesses = self.evaluate_fitnesses(individuals)
 
         # Update individuals with resulting fitnesses
         for ind, fit in zip(generation, fitnesses):

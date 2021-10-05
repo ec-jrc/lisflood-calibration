@@ -35,7 +35,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # load forcings and input maps in cache
         # required in front of processing pool
         # otherwise each child will reload the maps
-        model.init_run(scheduler)
+        model.init_run(str(scheduler.rank))
 
         calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
         calib_deap.run(subcatch.path)
