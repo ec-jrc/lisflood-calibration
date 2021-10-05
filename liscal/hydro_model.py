@@ -37,7 +37,7 @@ class HydrologicalModel():
             self.cal_start = (datetime.strptime(self.obs_start,"%d/%m/%Y %H:%M") - timedelta(days=spinup)).strftime('%d/%m/%Y %H:%M')
             self.cal_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
 
-    def init_run(self):
+    def init_run(self, scheduler):
 
         # dummy Individual, doesn't matter here
         param_ranges = self.objective.param_ranges
@@ -47,7 +47,8 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, param_ranges, parameters)
+        if scheduler.root():
+            self.lis_template.write_template(run_id, self.cal_start, self.cal_end, param_ranges, parameters)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
 

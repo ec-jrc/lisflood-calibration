@@ -204,27 +204,39 @@ class CalibrationDeap():
     def restore_individuals(self, individuals):
         return
 
-    def create_individuals(self, offspring, gen):
-        individuals_deap = [ind for ind in offspring if not ind.fitness.valid]
+    def initialise_generation(self, offspring):
+        generation = [ind for ind in offspring if not ind.fitness.valid]
+        return generation
+
+    def create_individuals(self, generation, gen):
         individuals = []
-        for i, child in enumerate(offspring):
+        for i, child in enumerate(generation):
             if not child.fitness.valid:
                 ind = {}
                 ind['value'] = np.array(child)
                 ind['gen'] = gen
                 ind['id'] = i
-                ind['lock'] = self.scheduler.lock
                 individuals.append(ind)
-        return individuals, individuals_deap
+        return individuals
 
     def compute_generation(self, halloffame, offspring, gen):
         self.backup_individuals(offspring)
 
         # Evaluate the individuals with an invalid fitness
-        individuals, generation = self.create_individuals(offspring, gen)
+        if self.scheduler.root():
+            generation = self.initialise_generation(offspring)
+        else:
+            generation = None
+        generation = self.scheduler.broadcast(generation)
+        print('Global generation list has {} elements'.format(len(generation)))
+
+        individuals = self.create_individuals(generation, gen)
+        individuals = self.scheduler.chunk(individuals)
+        for ind in individuals:
+            ind['lock'] = self.scheduler.lock
+        print('Local individuals list has {} elements'.format(len(individuals)))
 
         # Run the model (e.g. lisflood)
-        individuals = self.scheduler.distribute(individuals)
         fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
         fitnesses = self.scheduler.gather(fitnesses)
         print(self.scheduler.gather)
@@ -306,7 +318,8 @@ class CalibrationDeap():
         print(">> Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
 
         # Save history of the change in objective function scores during calibration to csv file
-        self.criteria.write_front_history(path_subcatch, gen)
+        if self.scheduler.root():
+            self.criteria.write_front_history(path_subcatch, gen)
 
         self.scheduler.close()
 
