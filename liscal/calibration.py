@@ -212,11 +212,10 @@ class CalibrationDeap():
                 ind['value'] = np.array(child)
                 ind['gen'] = gen
                 ind['id'] = i
+                ind['lock'] = self.scheduler.lock
                 individuals.append(ind)
         # get local chunk of individuals
         individuals = self.scheduler.chunk(individuals)
-        for ind in individuals:
-            ind['lock'] = self.scheduler.lock
         return individuals
     
     def evaluate_fitnesses(self, individuals):

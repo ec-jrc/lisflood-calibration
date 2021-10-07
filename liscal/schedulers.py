@@ -117,7 +117,7 @@ class MPIScheduler(Scheduler):
     def gather(self, values):
         values = list(values)
         values = self.comm.allgather(values)
-        values = [j for sub in values for j in sub]
+        values = [j for sub in values for j in sub] # flatten the array
         return values
 
     def broadcast(self, values):
