@@ -165,17 +165,21 @@ for index, row in stationdata_sorted.iterrows():
 
 	# Ensure that there is only one outlet pixel in outlet map
 	station_map = path_gauges
-	subcatchstation_map = os.path.join(path_subcatch,"maps","outlet.map")	
+	subcatchstation_map = os.path.join(path_subcatch, "maps", "outlet.map")	
 	pcrasterCommand(pcrcalc + " 'F0 = boolean(if(scalar(F1) eq "+str(index)+",scalar(1)))'", {"F0":subcatchstation_map,"F1":station_map})
 	subcatchstation_small_map = os.path.join(path_subcatch,"maps","outletsmall.map")
 	#shutil.copyfile(subcatchstation_map,subcatchstation_small_map)
 	pcrasterCommand(resample + " F0 F1 --clone F2" , {"F0": subcatchstation_map, "F1":subcatchstation_small_map, "F2":smallsubcatchmask_map})
 
 	# Make inlet map
-	subcatchinlets_map = os.path.join(path_subcatch,"inflow","inflow.map")
+	subcatchinlets_map = os.path.join(path_subcatch, "inflow", "inflow.map")
 	shutil.copyfile(inlets,subcatchinlets_map)
 	pcrasterCommand(pcrcalc + " 'F0 = F1*scalar(F2)'", {"F0":subcatchinlets_map,"F1":subcatchinlets_map,"F2":subcatchmask_map})
-		
+	
+	# cut inlet
+	subcatchinlets_cut_map = os.path.join(path_subcatch, "inflow", "inflow_cut.map")
+	pcrasterCommand(resample + " --clone F2 F0 F1" , {"F0": subcatchinlets_map, "F1":subcatchinlets_cut_map, "F2":smallsubcatchmask_map})
+
 	elapsed = time.time() - t
 	print("   Time elapsed: "+"{0:.2f}".format(elapsed)+" s")
 

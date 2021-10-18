@@ -33,6 +33,10 @@ class Scheduler():
     
     def root(self):
         return True
+    
+    def sequence(self, func, args):
+        output = func(*args)
+        return output
 
 
 class MultiprocessingScheduler(Scheduler):
@@ -126,3 +130,10 @@ class MPIScheduler(Scheduler):
 
     def root(self):
         return self.rank == 0
+
+    def sequence(self, func, *fargs):
+        for i in range(self.size):
+            if self.rank == i:
+                output = func(*fargs)
+            self.comm.Barrier()
+        return output

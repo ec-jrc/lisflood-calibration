@@ -7,19 +7,19 @@ from liscal import pcr_utils, calibration
 
 class Config():
 
-    def __init__(self, settings_file, print_settings=True):
+    def __init__(self, settings_file):
         self.parser = ConfigParser()
         if os.path.isfile(settings_file):
             self.parser.read(settings_file)
         else:
             raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
-        if print_settings:
-            print('Settings:')
-            for section in self.parser.sections():
-                print('- {}'.format(section))
-                for key, value in dict(self.parser[section]).items():
-                    print('  - {}: {}'.format(key, value)) 
+    def info(self):
+        print('Settings:')
+        for section in self.parser.sections():
+            print('- {}'.format(section))
+            for key, value in dict(self.parser[section]).items():
+                print('  - {}: {}'.format(key, value)) 
 
 
 class DEAPParameters():

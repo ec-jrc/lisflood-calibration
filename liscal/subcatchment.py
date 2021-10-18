@@ -21,15 +21,10 @@ class SubCatchment():
         if station_data is None:
             # Read full list of stations, index is obsid
             station_file = os.path.join(self.path_station, 'station_data.csv')
-            print(">> Reading stations_data file {}".format(station_file))
             self.data = pandas.read_csv(station_file, sep=",", index_col=0)
             self.data = self.data[str(self.obsid)]
         else:
             self.data = station_data
-        print('Station data:')
-        print('---------------------------------------')
-        print(self.data)
-        print('---------------------------------------')
 
         if initialise:
 
@@ -37,11 +32,21 @@ class SubCatchment():
 
             outlet_file = os.path.join(self.path, "maps", "outletsmall.map")
             self.gaugeloc = self.extract_gauge_loc(outlet_file)
-            print('Gauge location {}'.format(self.gaugeloc))
 
-            self.inflowflag, n_inflows = self.prepare_inflows(cfg)
-            print('Found {} inflows'.format(n_inflows))
-            self.resample_inflows(cfg)
+            self.inflowflag, self.n_inflows = self.prepare_inflows(cfg)
+        else:
+            self.inflowflag = str(0)
+            self.n_inflows = 0
+
+    def info(self):
+        station_file = os.path.join(self.path_station, 'station_data.csv')
+        print('Station data from file: {}'.format(station_file))
+        print('---------------------------------------')
+        print(self.data)
+        print('---------------------------------------')
+        print('Found {} inflows'.format(self.n_inflows))
+        print('Gauge location {}'.format(self.gaugeloc))
+
 
     def extract_gauge_loc(self, outlet_file):
         # # Bug found for station 625: Guadalope En Caspe ES Ebro where CAL_5_PREP_FORCING's resample -c 0 creates a spurious grid point in the masksmall.map and outletsmall.map
@@ -54,18 +59,6 @@ class SubCatchment():
         
         return gaugeloc
 
-    def resample_inflows(self, cfg):
-        subcatchinlets_map = os.path.join(self.path, "inflow", "inflow.map")
-        subcatchinlets_cut_map = os.path.join(self.path, "inflow", "inflow_cut.map")
-        smallsubcatchmask_map = os.path.join(self.path, "maps", "masksmall.map")
-
-        if not os.path.isfile(subcatchinlets_map):
-            raise FileNotFoundError('inflow map missing: {}'.format(subcatchinlets_map))
-        if not os.path.isfile(smallsubcatchmask_map):
-            raise FileNotFoundError('mask map missing: {}'.format(smallsubcatchmask_map))
-        pcr_utils.pcrasterCommand(cfg.pcraster_cmd['resample'] + " --clone F2 F0 F1" , {"F0": subcatchinlets_map, "F1":subcatchinlets_cut_map, "F2":smallsubcatchmask_map})
-
-
     def prepare_inflows(self, cfg):
 
         count = 1
@@ -74,7 +67,6 @@ class SubCatchment():
         if self.create_links:
             # Copy simulated streamflow from upstream catchments
             # Change inlet map by replacing the numeric ID's with 1, 2, ...
-            print("Upstream station(s): ")
             if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
                 raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
             stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
@@ -88,8 +80,6 @@ class SubCatchment():
             for subcatchment in upstream_catchments:
                 
                 subcatchment = str(subcatchment)
-
-                print('Retrieving inflow for subcatchment {}'.format(subcatchment))
                                 
                 Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
 
@@ -114,7 +104,6 @@ class SubCatchment():
                     all_inflows[str(count)] = simulated_streamflow.values
                 count += 1
                 header = header+subcatchment+"\n"
-                print('Found inflow for subcatchment {}'.format(subcatchment))
 
         n_inflows =  count - 1
 
@@ -129,7 +118,6 @@ class SubCatchment():
             f.close()
             inflowflag = str(1)
         else:
-            print("No upstream inflow needed\n")
             inflowflag = str(0)
 
         return inflowflag, n_inflows

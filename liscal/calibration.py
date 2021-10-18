@@ -67,15 +67,16 @@ class Criteria():
 
 class CalibrationDeap():
 
-    def __init__(self, cfg, fun, obj_weights, scheduler):
+    def __init__(self, cfg, fun, objective, scheduler):
 
         deap_param = cfg.deap_param
 
         self.pop = deap_param.pop
         self.mu = deap_param.mu
         self.lambda_ = deap_param.lambda_
+        self.objective = objective
 
-        self.criteria = Criteria(deap_param, len(obj_weights))
+        self.criteria = Criteria(deap_param, len(objective.weights))
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -83,7 +84,7 @@ class CalibrationDeap():
         self.param_ranges = cfg.param_ranges
 
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=obj_weights)
+        creator.create("FitnessMin", base.Fitness, weights=objective.weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
@@ -165,7 +166,6 @@ class CalibrationDeap():
             # retrieve the generation's data
             parsHistory = paramsHistory[paramsHistory["generation"] == igen]
 
-            print('WARNING! Partial restoring... we only consider here complete generations! We need to implement restart for uncomplete generations...')
             if (gen == 0 and len(parsHistory) == self.pop) or (gen > 0 and len(parsHistory) == self.lambda_):
 
                 # reconstruct the recovered individuals array
@@ -198,12 +198,6 @@ class CalibrationDeap():
 
         return population, gen
 
-    def backup_individuals(self, individuals):
-        return
-
-    def restore_individuals(self, individuals):
-        return
-
     def create_individuals(self, generation, gen):
         individuals = []
         for i, child in enumerate(generation):
@@ -212,10 +206,7 @@ class CalibrationDeap():
                 ind['value'] = np.array(child)
                 ind['gen'] = gen
                 ind['id'] = i
-                ind['lock'] = self.scheduler.lock
                 individuals.append(ind)
-        # get local chunk of individuals
-        individuals = self.scheduler.chunk(individuals)
         return individuals
     
     def evaluate_fitnesses(self, individuals):
@@ -227,20 +218,26 @@ class CalibrationDeap():
         
         # make sure the offsptrings are the same everywhere
         offspring = self.scheduler.broadcast(offspring)
-        self.backup_individuals(offspring)
 
         # Current generation is the offsprings with an invalid fitness
         generation = [ind for ind in offspring if not ind.fitness.valid]
         individuals = self.create_individuals(generation, gen)
+        # get local chunk of individuals
+        local_individuals = self.scheduler.chunk(individuals)
 
         # Run the model (e.g. lisflood)
-        fitnesses = self.evaluate_fitnesses(individuals)
+        fitnesses = self.evaluate_fitnesses(local_individuals)
 
         # Update individuals with resulting fitnesses
         for ind, fit in zip(generation, fitnesses):
             ind_fit = ind.fitness
             assert len(ind_fit.weights) == len(fit)
             ind_fit.values = fit
+
+        # write generation 
+        if self.scheduler.root():
+            for ind, fit in zip(individuals, fitnesses):
+                self.objective.update_parameter_history(ind, fit)
 
         # Update the hall of fame with the generated individuals
         halloffame.update(offspring)

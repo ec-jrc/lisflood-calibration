@@ -23,6 +23,7 @@ setup(
         "distributed",
         "xarray",
         "deap",
+        "mpi4py",
         #"pcraster",
         # "lisflood-model"
     ],

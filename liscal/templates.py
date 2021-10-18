@@ -3,7 +3,7 @@ import os
 
 class LisfloodSettingsTemplate():
 
-    def __init__(self, cfg, subcatch):
+    def __init__(self, cfg, subcatch, nthreads=1):
 
         self.obsid = subcatch.obsid
         settings_dir = os.path.join(subcatch.path, 'settings')
@@ -14,6 +14,7 @@ class LisfloodSettingsTemplate():
         with open(os.path.join('templates', cfg.lisflood_template), "r") as f:
             template_xml = f.read()
     
+        template_xml = template_xml.replace('%nthreads', nthreads)
         template_xml = template_xml.replace('%gaugeloc', subcatch.gaugeloc) # Gauge location
         template_xml = template_xml.replace('%inflowflag', subcatch.inflowflag)
         template_xml = template_xml.replace('%ForcingStart', cfg.forcing_start.strftime('%d/%m/%Y %H:%M')) # Date of forcing start

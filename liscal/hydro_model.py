@@ -87,9 +87,6 @@ class HydrologicalModel():
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
 
-        with individual['lock']:
-            self.objective.update_parameter_history(individual, objectives)
-
         return objectives  # If using just one objective function, put a comma at the end!!!
 
 

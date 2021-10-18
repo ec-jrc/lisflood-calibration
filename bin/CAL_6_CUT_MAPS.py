@@ -8,7 +8,7 @@ from liscal import config, cutmaps
 class ConfigCutMaps(config.Config):
 
     def __init__(self, settings_file):
-        super().__init__(settings_file, print_settings=False)
+        super().__init__(settings_file)
 
         # paths
         self.subcatchment_path = self.parser.get('Path','subcatchment_path')
