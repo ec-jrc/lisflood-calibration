@@ -21,8 +21,6 @@ setup(
         "pandas",
         "xarray",
         "deap",
-        #"pcraster",
-        # "lisflood-model"
     ],
     tests_require=[
         "pytest",
