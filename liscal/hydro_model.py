@@ -10,7 +10,7 @@ import random
 
 # lisflood
 import lisf1
-from lisflood.global_modules import Cache
+from lisflood.global_modules.decorators import Cache
 
 from liscal import utils
 
