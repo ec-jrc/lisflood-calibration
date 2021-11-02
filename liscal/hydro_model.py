@@ -236,7 +236,12 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
-    index = pd.to_datetime(pd.date_range(start, end, freq='6H'), format='%d/%m/%Y %H:%M', errors='raise')
+    if cfg.calibration_freq == r"6-hourly":
+        index = pd.to_datetime(pd.date_range(start, end, freq='6H'), format='%d/%m/%Y %H:%M', errors='raise')
+    elif cfg.calibration_freq == r'daily':
+        index = pd.to_datetime(pd.date_range(start, end, freq='24H'), format='%d/%m/%Y %H:%M', errors='raise')
+    else:
+        raise Exception('Calibration freq {} not supported'.format(cfg.calibration_freq))
     Qsim = pd.DataFrame(data=Qsim, index=index)
     Qsim.columns = [str(subcatch.obsid)]
     Qsim.index.name = 'Timestamp'
