@@ -60,7 +60,7 @@ class DummyConfig():
         # Date params
         self.forcing_start = datetime.strptime('31/12/2016 06:00', "%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime('31/12/2017 06:00', "%d/%m/%Y %H:%M")
-        self.calibration_freq = '6-hourly'
+        self.timestep = 360
 
 
 @pytest.fixture

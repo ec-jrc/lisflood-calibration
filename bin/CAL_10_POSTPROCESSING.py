@@ -43,7 +43,9 @@ class ConfigPostProcessing(config.Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        if self.timestep != 360 and self.timestep != 1440:
+            raise Exception('Calibration timestep {} not supported'.format(self.timestep))
 
         # we don't use it but required for objectives object
         self.param_ranges = None
