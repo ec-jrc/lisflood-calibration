@@ -14,19 +14,17 @@ import traceback
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model, schedulers
 
 
-def calibrate_subcatchment(cfg, obsid, subcatch):
+def calibrate_subcatchment(cfg, scheduler, n_threads, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")
     if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
-    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch, n_threads)
     
     if os.path.exists(os.path.join(subcatch.path, "pareto_front.csv"))==False:
         print(">> Starting calibration of catchment "+str(obsid))
-
-        scheduler = schedulers.get_scheduler('MPI', cfg.num_cpus)
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
@@ -35,7 +33,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # load forcings and input maps in cache
         # required in front of processing pool
         # otherwise each child will reload the maps
-        model.init_run(str(scheduler.rank))
+        scheduler.sequence(model.init_run, (str(scheduler.rank)))
 
         calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
         calib_deap.run(subcatch.path)
@@ -48,8 +46,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
-    parser.add_argument('n_cpus', help='Number of cpus')
+    parser.add_argument('n_cpus', help='Number of processes')
+    parser.add_argument('n_threads', help='Number of threads')
     args = parser.parse_args()
+
+    scheduler = schedulers.get_scheduler('MPI', int(args.n_cpus))
 
     settings_file = args.settings_file
 
@@ -60,8 +61,8 @@ if __name__ == '__main__':
     # Calibrate lisflood fo specified station
     obsid = int(args.station)
 
-    subcatch = subcatchment.SubCatchment(cfg, obsid)
+    subcatch = scheduler.sequence(subcatchment.SubCatchment, cfg, obsid)
 
-    calibrate_subcatchment(cfg, obsid, subcatch)
+    calibrate_subcatchment(cfg, scheduler, args.n_threads, obsid, subcatch)
 
     print("==================== END ====================")

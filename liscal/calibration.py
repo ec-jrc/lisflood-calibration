@@ -264,6 +264,7 @@ class CalibrationDeap():
         # Select the next generation population
         population = self.toolbox.select(population + offspring, self.mu)
 
+        # check if we reach termination criteria
         self.criteria.check_termination_conditions(gen)
 
         print('Done generation {}'.format(gen))
