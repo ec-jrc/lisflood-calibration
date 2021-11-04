@@ -218,21 +218,23 @@ class CalibrationDeap():
         for igen in range(int(paramsHistory["generation"].iloc[-1])+1):
             # retrieve the generation's data
             parsHistory = paramsHistory[paramsHistory["generation"] == igen]
-            # reconstruct the invalid individuals array
-            valid_ind = self.updatePopulationFromHistory(parsHistory)
-            # Update the hall of fame with the generation's parameters
-            halloffame.update(valid_ind)
-            # prepare for the next stage
-            if population is not None:
-                population[:] = self.toolbox.select(population + valid_ind, self.mu)
+
+            # we can only recover complete generations
+            if (gen == 0 and len(parsHistory) == self.pop) or (gen > 0 and len(parsHistory) == self.lambda_):
+                # reconstruct the invalid individuals array
+                valid_ind = self.updatePopulationFromHistory(parsHistory)
+                # Update the hall of fame with the generation's parameters
+                halloffame.update(valid_ind)
+                # prepare for the next stage
+                if population is not None:
+                    population[:] = self.toolbox.select(population + valid_ind, self.mu)
+                else:
+                    population = valid_ind
+                self.criteria.update_statistics(gen, halloffame)
+                self.criteria.check_termination_conditions(gen)
+                gen = gen+1
             else:
-                population = valid_ind
-
-            self.criteria.update_statistics(gen, halloffame)
-
-            self.criteria.check_termination_conditions(gen)
-
-            gen = gen+1
+                break
 
         return population, gen
 
