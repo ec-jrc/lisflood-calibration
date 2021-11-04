@@ -70,8 +70,13 @@ class ObjectiveKGE():
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
-        simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
-        
+        if self.cfg.calibration_freq == r"6-hourly":
+            simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
+        elif self.cfg.calibration_freq == r'daily':
+            simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=24*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
+        else:
+            raise Exception('Calibration freq {} not supported'.format(self.cfg.calibration_freq))
+
         if simulated_streamflow.index[-1] != end:
             raise ValueError('Simulated streamflow with run_id {} not consistent: end date is {} and should be {}'.format(run_id, simulated_streamflow.index[-1], end))
 
@@ -85,8 +90,8 @@ class ObjectiveKGE():
         # Finally, extract equal-length arrays from it
         Qobs = observed_streamflow[start:end]
         Qsim = simulated_streamflow[start:end]
-        date_range = pd.date_range(start_pd, end_pd, freq="360min")
         if cfg.calibration_freq == r"6-hourly":
+            date_range = pd.date_range(start_pd, end_pd, freq="360min")
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
@@ -101,6 +106,7 @@ class ObjectiveKGE():
                 date_range = Qobs.index
 
         elif cfg.calibration_freq == r"daily":
+            date_range = pd.date_range(start_pd, end_pd, freq="24H")
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
