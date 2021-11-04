@@ -1,7 +1,7 @@
 [Main]
 forcing_start = 02/01/1990 06:00
 forcing_end = 31/12/2017 06:00
-calibration_freq = 6-hourly
+timestep = 360
 fast_debug = 0
 min_obs_years = 3.5
 

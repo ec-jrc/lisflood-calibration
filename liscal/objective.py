@@ -61,6 +61,8 @@ class ObjectiveKGE():
 
     def read_simulated_streamflow(self, run_id, start, end):
 
+        timestep = self.cfg.timestep
+
         Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
             print('run_id: {}'.format(str(run_id)))
@@ -69,7 +71,10 @@ class ObjectiveKGE():
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
-        simulated_streamflow.index = [(datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(hours=6*i)).strftime('%d/%m/%Y %H:%M') for i in range(len(simulated_streamflow.index))]
+        sim_index = []
+        for i in range(len(simulated_streamflow.index)):
+            sim_index.append((datetime.strptime(start, "%d/%m/%Y %H:%M") + timedelta(minutes=timestep*i)).strftime('%d/%m/%Y %H:%M'))
+        simulated_streamflow.index = sim_index
         
         if simulated_streamflow.index[-1] != end:
             raise ValueError('Simulated streamflow with run_id {} not consistent: end date is {} and should be {}'.format(run_id, simulated_streamflow.index[-1], end))
@@ -80,12 +85,14 @@ class ObjectiveKGE():
         calibration_freq = self.calibration_freq
         start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
         end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
+        freq = '{}min'.format(cfg.timestep)
 
         # Finally, extract equal-length arrays from it
         Qobs = observed_streamflow[start:end]
         Qsim = simulated_streamflow[start:end]
-        date_range = pd.date_range(start_pd, end_pd, freq="360min")
-        if calibration_freq == r"6-hourly":
+        
+        date_range = pd.date_range(start_pd, end_pd, freq=freq)
+        if cfg.timestep == 360:
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
@@ -99,14 +106,14 @@ class ObjectiveKGE():
                 # return date range 
                 date_range = Qobs.index
 
-        elif calibration_freq == r"daily":
+        elif cfg.timestep == 1440:
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
             date_range = Qobs.index
         
         else:
-            raise Exception('Calibration freq {} not supported'.format(calibration_freq))
+            raise Exception('Calibration timesteup {} not supported'.format(cfg.timestep))
        
         Qsim = np.array(Qsim)
         Qobs = np.array(Qobs)

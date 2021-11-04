@@ -125,7 +125,9 @@ class CalibrationDeap():
     def updatePopulationFromHistory(self, pHistory):
         param_ranges = self.param_ranges
         n = len(pHistory)
-        paramvals = np.zeros(shape=(n, len(param_ranges)))
+        n_params = len(param_ranges)
+        n_obj = len(self.objective.weights)
+        paramvals = np.zeros(shape=(n, n_params))
         paramvals[:] = np.NaN
         individuals = []
         fitnesses = []
@@ -140,13 +142,13 @@ class CalibrationDeap():
             # Create a fresh individual with the restored parameters
             # newInd = toolbox.Individual() # creates an individual with random numbers for the parameters
             newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
+
+            # add objectives (from file) to current individual
+            objectives = pHistory.iloc[ind, n_params+1:n_params+1+n_obj].values
+            newInd.fitness.values = objectives
+
             individuals.append(newInd)
-            # WARNING: Change the following line when using multi-objective functions
-            # also load the old KGE the individual had (works only for single objective function)
-            fitnesses.append((pHistory.iloc[ind][len(param_ranges) + 1],))
-        # update the score of each
-        for ind, fit in zip(individuals, fitnesses):
-            ind.fitness.values = fit
+
         return individuals
 
     def restore_calibration(self, halloffame, history_file):
@@ -154,7 +156,7 @@ class CalibrationDeap():
         param_ranges = self.param_ranges
 
         # Open the paramsHistory file from previous runs
-        paramsHistory = pandas.read_csv(history_file, sep=",")[4:]
+        paramsHistory = pandas.read_csv(history_file, sep=",")[3:]
         print("Restoring previous calibration state")
 
         # Initiate the generations counter
@@ -166,33 +168,21 @@ class CalibrationDeap():
             # retrieve the generation's data
             parsHistory = paramsHistory[paramsHistory["generation"] == igen]
 
+            # we can only recover complete generations
             if (gen == 0 and len(parsHistory) == self.pop) or (gen > 0 and len(parsHistory) == self.lambda_):
-
-                # reconstruct the recovered individuals array
+                # reconstruct the invalid individuals array
                 individuals = self.updatePopulationFromHistory(parsHistory)
-
-                # Run the model for the rest of the population - not implemented
-                # fitnesses = self.toolbox.map(self.toolbox.evaluate, individuals)
-                # for ind, fit in zip(individuals, fitnesses): # DD this updates the fitness (=KGE) for the individuals in the global pool of individuals which we just calculated. ind are
-                #     assert len(ind.fitness.weights) == len(fit)
-                #     ind.fitness.values = fit
-
                 # Update the hall of fame with the generation's parameters
                 halloffame.update(individuals)
-
                 # prepare for the next stage
                 if population is not None:
                     population[:] = self.toolbox.select(population + individuals, self.mu)
                 else:
                     population = individuals
-
                 self.criteria.update_statistics(gen, halloffame)
-
                 self.criteria.check_termination_conditions(gen)
-
-                print('Found generation {}'.format(gen))
-
                 gen = gen+1
+                print('----> Generation {} recovered'.format(gen))
             else:
                 break
 

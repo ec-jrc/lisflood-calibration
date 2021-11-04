@@ -113,12 +113,7 @@ def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outna
     tss[1][tss[1]==1e31] = np.nan
     tss_values = tss[1].values
 
-    if cfg.calibration_freq == '6-hourly':
-        freq = '6H'
-    elif cfg.calibration_freq == 'daily':
-        freq = 'D'
-    else:
-        raise Exception('Calibration freq {} not supported'.format(cfg.calibration_freq))
+    freq = '{}min'.format(cfg.timestep)
 
     index = pd.date_range(forcing_start, periods=len(tss_values), freq=freq).strftime('%d/%m/%Y %H:%M')
     df = pd.DataFrame(data=tss_values, index=index)
