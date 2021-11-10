@@ -89,7 +89,7 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
     rprof.register()
     cprof.register()
 
-    with dask.config.set(scheduler='threads'):  # [distributed, multiprocessing, processes, single-threaded, sync, synchronous, threading, threads]
+    with dask.config.set(scheduler='threads', array.chunk-size='2048MiB'):  # [distributed, multiprocessing, processes, single-threaded, sync, synchronous, threading, threads]
 
         subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
         path_subcatch_maps = os.path.join(subcatchment_path,'maps')
