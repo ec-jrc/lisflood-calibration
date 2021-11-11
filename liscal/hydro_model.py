@@ -3,6 +3,7 @@ import shutil
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+import time
 
 import subprocess
 import traceback
@@ -209,9 +210,31 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     prerun_file = lis_template.settings_path('-PreRun', run_id)
     run_file = lis_template.settings_path('-Run', run_id)
 
+    # cache first
+    f = open("timings.csv", "w")
+    f.write('obsID, cache, prerun, run\n{},'.format(subcatch.obsid))
+    f.close()
+    t0 = time.time()
+    lisf1.main(prerun_file, '-i')
+    t1 = time.time()
+    print('\ncaching done in {}\n'.format(t1-t0)) 
+    f = open("timings.csv", "a")
+    f.write('{},'.format(t1-t0))
+    f.close()
+    t2 = time.time()
     lisf1.main(prerun_file, '-v')
+    t3 = time.time()
+    print('\nprerun done in {}\n'.format(t3-t2)) 
+    f = open("timings.csv", "a")
+    f.write('{},'.format(t3-t2))
+    f.close()
+    t4 = time.time()
     lisf1.main(run_file, '-q')
-    
+    t5 = time.time()
+    print('\nrun done in {}\n'.format(t5-t4)) 
+    f = open("timings.csv", "a")
+    f.write('{}\n'.format(t5-t4))
+    f.close()
 
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
