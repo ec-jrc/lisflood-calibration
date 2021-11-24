@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
     parser.add_argument('n_cpus', help='Number of processes')
-    parser.add_argument('n_threads', help='Number of threads')
+    parser.add_argument('n_threads', help='Number of threads', default=1)
     args = parser.parse_args()
 
     scheduler = schedulers.get_scheduler('MPI', int(args.n_cpus))

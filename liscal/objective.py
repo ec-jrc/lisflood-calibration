@@ -10,8 +10,8 @@ class ObjectiveKGE():
 
     def __init__(self, cfg, subcatch, read_observations=True):
         self.subcatch = subcatch
+        self.timestep = cfg.timestep
         self.param_ranges = cfg.param_ranges
-        self.calibration_freq = cfg.calibration_freq
         self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
@@ -61,7 +61,7 @@ class ObjectiveKGE():
 
     def read_simulated_streamflow(self, run_id, start, end):
 
-        timestep = self.cfg.timestep
+        timestep = self.timestep
 
         Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
         if os.path.isfile(Qsim_tss)==False:
@@ -82,17 +82,17 @@ class ObjectiveKGE():
         return simulated_streamflow
 
     def resample_streamflows(self, start, end, simulated_streamflow, observed_streamflow):
-        calibration_freq = self.calibration_freq
         start_pd = datetime.strptime(start, "%d/%m/%Y %H:%M")
         end_pd = datetime.strptime(end, "%d/%m/%Y %H:%M")
-        freq = '{}min'.format(cfg.timestep)
+        timestep = self.timestep
+        freq = '{}min'.format(timestep)
 
         # Finally, extract equal-length arrays from it
         Qobs = observed_streamflow[start:end]
         Qsim = simulated_streamflow[start:end]
         
         date_range = pd.date_range(start_pd, end_pd, freq=freq)
-        if cfg.timestep == 360:
+        if timestep == 360:
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
             if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
@@ -106,7 +106,7 @@ class ObjectiveKGE():
                 # return date range 
                 date_range = Qobs.index
 
-        elif cfg.timestep == 1440:
+        elif timestep == 1440:
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()

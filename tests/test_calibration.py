@@ -37,11 +37,15 @@ class ModelDummy():
 
         return obj
 
+    def update_parameter_history(self, ind, fit):
+        return
+
 
 class ModelSingleObj(ModelDummy):
 
     def __init__(self, target):
         super().__init__(target)
+        self.weights = [1]
 
     def objectives(self, parameters):
         obj = [1-np.sqrt(np.mean((parameters - self.target)**2))]
@@ -50,13 +54,13 @@ class ModelSingleObj(ModelDummy):
 
 class ModelMultObj(ModelDummy):
 
-    def __init__(self, target):
+    def __init__(self, target, n_param):
         super().__init__(target)
+        self.weights = [1 for i in range(n_param)]
 
     def objectives(self, parameters):
         obj = 1-np.sqrt(((parameters - self.target)**2))
         return obj
-
 
 def test_deap_single_obj(dummy_cfg):
 
@@ -65,14 +69,12 @@ def test_deap_single_obj(dummy_cfg):
     print(scheduler)
 
     dummy_cfg.deap_param = DummyDEAPParameters()
-    n_param = len(dummy_cfg.param_ranges)
-    weights = [1]
     
     n_param = len(dummy_cfg.param_ranges)
     target = np.arange(1, n_param+1)/n_param
     model = ModelSingleObj(target)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, weights, scheduler)
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, model, scheduler)
     target = calib_deap.run(dummy_cfg.path_out)
 
     assert target[0] > 0.9
@@ -86,12 +88,11 @@ def test_deap_mult_obj(dummy_cfg, value):
 
     dummy_cfg.deap_param = DummyDEAPParameters()
     n_param = len(dummy_cfg.param_ranges)
-    weights = [1 for i in range(n_param)]
 
     target = value*np.ones(n_param)
-    model = ModelMultObj(target)
+    model = ModelMultObj(target, n_param)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, weights, scheduler)
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, model, scheduler)
     target = calib_deap.run(dummy_cfg.path_out)
 
     assert target[0] > 0.99
