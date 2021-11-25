@@ -71,7 +71,7 @@ if __name__ == '__main__':
     model.init_run(str(scheduler.rank))
 
     # create calib object and run
-    calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
+    calib_deap = calibration.CalibrationDeap(cfg, model.run, obj, scheduler)
     calib_deap.run(subcatch.path)
 
     # process calibration results

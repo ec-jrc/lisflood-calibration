@@ -3,7 +3,7 @@ import os
 
 class LisfloodSettingsTemplate():
 
-    def __init__(self, cfg, subcatch, nthreads=1):
+    def __init__(self, cfg, subcatch, nthreads='1'):
 
         self.obsid = subcatch.obsid
         settings_dir = os.path.join(subcatch.path, 'settings')
