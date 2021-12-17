@@ -76,7 +76,7 @@ if __name__ == '__main__':
     subcatch = subcatchment.SubCatchment(
         cfg, obsid, initialise=False
         )
-    if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
+    if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")):
         raise Exception('Calibration not complete! Cannot generate products...')
 
     obj = objective.ObjectiveKGE(cfg, subcatch)

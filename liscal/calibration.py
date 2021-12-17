@@ -238,7 +238,18 @@ class CalibrationDeap():
                 gen = gen+1
                 print('----> Generation {} recovered'.format(gen))
             else:
-                break
+                # in case of incomplete generation, we should delete corresponding run lines from the paramHistory.csv file
+                incomplete_gen_id=gen
+                if incomplete_gen_id == 0:
+                    os.remove(history_file)
+                else:
+                    with open(history_file, "r") as f:
+                        lines = f.readlines()
+                    with open(history_file, "w") as f:
+                        for line in lines:
+                            if not line.startswith(str(incomplete_gen_id)+"_"):
+                                f.write(line)
+                # TODO: should we clean up also runs_log.csv?
 
         return population, gen
 
@@ -306,10 +317,12 @@ class CalibrationDeap():
 
         # Attempt to open a previous parameter history
         history_file = os.path.join(path_subcatch, "paramsHistory.csv")
+        population = None
         if os.path.isfile(history_file) and os.path.getsize(history_file) > 0:
             population, gen = self.restore_calibration(halloffame, history_file)
             lock_mgr.set_gen(gen)
-        else:
+            
+        if population is None:
             # No previous parameter history was found, so start from scratch
             population = self.generate_population(halloffame)
             lock_mgr.set_gen(1)

@@ -288,7 +288,7 @@ if __name__=="__main__":
           #  continue
 
           # Skip incomplete 2nd calibration step
-          if not os.path.exists(os.path.join(path_subcatch, "streamflow_simulated_best.csv")):
+          if not os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best.csv")):
             continue
 
           # DD Attempt to use the streamflows for the long-term stats
@@ -300,7 +300,7 @@ if __name__=="__main__":
           #     f.write(str(i) + "\n")
           #   f.close()
           QobsMask = np.isfinite(Q_obs_Cal)
-          Qsim = pd.read_csv(os.path.join(path_subcatch, "streamflow_simulated_best.csv"), sep=",", index_col=0, header=None)
+          Qsim = pd.read_csv(os.path.join(path_subcatch, "out", "streamflow_simulated_best.csv"), sep=",", index_col=0, header=None)
           Qsim.index = pd.date_range(start=ForcingStart, end=ForcingEnd, periods=len(Qsim))
           Q_sim_Cal = Qsim.loc[ForcingStart:ForcingEnd]
           # with open("QsimIndex.txt", "w") as f:

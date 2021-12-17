@@ -18,7 +18,7 @@ from liscal import templates, calibration, config, subcatchment, objective, hydr
 def calibrate_subcatchment(cfg, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")
-    if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
+    if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
