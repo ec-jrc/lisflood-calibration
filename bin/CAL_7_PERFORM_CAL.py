@@ -35,7 +35,7 @@ if ver.find('3.') > -1:
 else:
     parser = SafeConfigParser()  # python 2.7-15
 parser.read(iniFile)
-5
+
 src_root = parser.get('Main', 'src_root')
 nmax = int(parser.get('Main','No_of_calibration_nodes'))
 
@@ -92,7 +92,6 @@ for index, row in stationdata_sorted.iterrows():
                             
         print('got it')
     sys.stdout.write("\n")
-
     # Performing calibration with external call, to avoid multiprocessing problems
     try:
         sbc=str(catchment)
@@ -101,7 +100,8 @@ for index, row in stationdata_sorted.iterrows():
         f=open(script_name,'w')
         f.write("#!/bin/sh \n")
         f.write("source activate liscal \n")
-        f.write("export NUMBA_THREADIG_LAYER='tbb' \n")
+        f.write("export NUMBA_THREADING_LAYER='tbb' \n")
+        f.write("export NUMBA_NUM_THREADS=1 \n")
         cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7A_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + '\n'
         f.write(cmd)
         cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7B_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
@@ -113,7 +113,7 @@ for index, row in stationdata_sorted.iterrows():
         
         while int(subprocess.Popen('qstat | grep LF_cal_ | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) >= int(nmax) and timerqsub<=900000:
             #print 'submitted',int(subprocess.Popen('qstat | grep LF_calib | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
-            rand_time=int(random.random()*20)
+            rand_time = int(random.random()*10)
             time.sleep(rand_time)
             timerqsub+=rand_time
         
@@ -123,6 +123,10 @@ for index, row in stationdata_sorted.iterrows():
         
         print(">> Calling \""+cmd+"\"")
         os.system(cmd)
+        
+        #wait random time to let other queues to access nodes
+        rand_time = int(random.random()*5)
+        time.sleep(rand_time)
     except:
         print("Something went wrong with queue submission skipping...")
         continue
