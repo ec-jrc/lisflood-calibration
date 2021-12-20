@@ -102,7 +102,8 @@ class SubCatchment():
                     print("Could not find streamflow_simulated_best.tss for upstream catchment "+subcatchment+", hence cannot run this catchment...")
                     raise Exception("Stopping...")
 
-                simulated_streamflow.index = pandas.date_range(cfg.forcing_start, periods=len(simulated_streamflow), freq='6H')
+                freq = '{}min'.format(cfg.timestep)
+                simulated_streamflow.index = pandas.date_range(cfg.forcing_start, periods=len(simulated_streamflow), freq=freq)
                 if simulated_streamflow.index[-1] != cfg.forcing_end:
                     raise Exception('Forcing start and end dates not coherent with inflow data, expecting {}, got {}',
                         cfg.forcing_end, simulated_streamflow.index[-1])
