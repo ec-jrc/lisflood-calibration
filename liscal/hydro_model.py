@@ -234,7 +234,8 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
-    index = pd.to_datetime(pd.date_range(start, end, freq='6H'), format='%d/%m/%Y %H:%M', errors='raise')
+    freq = '{}min'.format(cfg.timestep)
+    index = pd.to_datetime(pd.date_range(start, end, freq=freq), format='%d/%m/%Y %H:%M', errors='raise')
     Qsim = pd.DataFrame(data=Qsim, index=index)
     Qsim.columns = [str(subcatch.obsid)]
     Qsim.index.name = 'Timestamp'
