@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import subprocess
 import traceback
 import random
+import time
+import sys
 
 # lisflood
 import lisf1
@@ -51,18 +53,58 @@ class HydrologicalModel():
         run_id = str(0)
 
         parameters = self.objective.get_parameters(Individual)
-        #print('beginning of the initialization')     
-        prerun_file, run_file = self.lis_template.write_init(run_id, self.cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), self.cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), self.cal_start, self.cal_end, param_ranges, parameters)   
         
-        #print(Cache.size())
+        print('Compute length of the prerun. Impose at least 15 years')      
+        a0=cfg.forcing_start
+        a=datetime.strptime(self.cal_start,"%d/%m/%Y %H:%M")
+        b0=cfg.forcing_end
+        b=datetime.strptime(self.cal_end,"%d/%m/%Y %H:%M")
+        c=b-a  # length of the calibration period
+        self.cal_start2 = self.cal_start
+        self.cal_end2 = self.cal_end        
+        if (c.days<(365*15)):
+           d1=(365*20)-c.days  # number of days to be added to the calibration period. NEXT: change the threshold to 15?? 
+           d11=round(d1/2) # add half the number of days before cal start and half the number of days after cal end 
+           ad11=a-a0  # do we have enough days before cal start? ad11 number of days from forcing start to cal start
+           d = a - timedelta(days=d11)
+           bd11=b0-b # do we have enough days after cal end? bd11 number of days from cal end to forcings end
+           if (ad11.days>d11) and (bd11.days>d11):
+              self.cal_start2 = d.strftime('%d/%m/%Y %H:%M')                            
+              e = b + timedelta(days=d11)
+              self.cal_end2 = e.strftime('%d/%m/%Y %H:%M')
+              print(self.cal_start2)
+              print(self.cal_end2)  
+           if (ad11.days<d11): 
+              d12 = 0.0           
+              d12 = d11- ad11.days  # number of days that we cannot use before cal start           
+              d22 = d12 + d11 
+              e = b + timedelta(days=d22)
+              self.cal_end2 = e.strftime('%d/%m/%Y %H:%M')
+              self.cal_start2 = cfg.forcing_start.strftime('%d/%m/%Y %H:%M') 
+              print(self.cal_start2)
+              print(self.cal_end2)              
+           if (bd11.days<d11): 
+              d12 = 0.0   
+              d12 = d11- bd11.days  # number of days that we cannot use after cal end          
+              d22 = d12 + d11 
+              e = a - timedelta(days=d22)
+              self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+              self.cal_start2 = e.strftime('%d/%m/%Y %H:%M')          
+              print(self.cal_start2)
+              print(self.cal_end2)              
+        print('End of the computations. IMPORTANT!!! Next edit: should we always use the same 15 years (also for the final long run)?')
+        
+        
+        print('Beginning of the initialization')     
+        prerun_file, run_file = self.lis_template.write_init(run_id, self.cal_start2, self.cal_end2, self.cal_start, self.cal_end, cfg.param_ranges, parameters)          
+        print(Cache.size())
         lisf1.main(prerun_file, '-i')
-        #print(Cache.size())       
+        print(Cache.size())       
         lisf1.main(run_file, '-i')
-        #print(Cache.size())
-        #print('end of the initialization')
+        print(Cache.size())
+        print('End of the initialization')
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()
-
 
     def run(self, Individual):
 
@@ -82,8 +124,8 @@ class HydrologicalModel():
         run_file = self.lis_template.settings_path('-Run', run_id)
 
         try:
-            print('PreRun using ALL the meteo forcings')
-            self.lis_template.write_template(run_id, cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), cfg.param_ranges, parameters)
+            print('PreRun using at least 15 years of meteo forcings')
+            self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters)
             prerun_file = self.lis_template.settings_path('-PreRun', run_id)
             lisf1.main(prerun_file)
             print('Run using only the calibration period')
@@ -93,11 +135,8 @@ class HydrologicalModel():
         except:
             traceback.print_exc()
             raise Exception("Lisflood failed!")
-
-        # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = Cache.size()
-        assert cache_size == self.lisflood_cache_size
-
+            
+            
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
 
