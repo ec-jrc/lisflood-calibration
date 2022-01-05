@@ -127,11 +127,11 @@ class HydrologicalModel():
             print('PreRun using at least 15 years of meteo forcings')
             self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters)
             prerun_file = self.lis_template.settings_path('-PreRun', run_id)
-            lisf1.main(prerun_file)
+            lisf1.main(prerun_file, '-v')
             print('Run using only the calibration period')
             self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
             run_file = self.lis_template.settings_path('-Run', run_id)
-            lisf1.main(run_file)
+            lisf1.main(run_file, '-v')
         except:
             traceback.print_exc()
             raise Exception("Lisflood failed!")

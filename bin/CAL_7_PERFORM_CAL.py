@@ -73,14 +73,14 @@ for index, row in stationdata_sorted.iterrows():
 
     # Copy simulated streamflow from upstream catchments
     # Change inlet map by replacing the numeric ID's with 1, 2, ...
-    sys.stdout.write("Upstream station(s): ")
+    print("Upstream station(s): ")
     stations_links = pandas.read_csv(stations_links_path,sep=",",index_col=0)
 
     subcatchment_list = [int(i) for i in stations_links.loc[catchment].values if not np.isnan(i)]
 
     for subcatchment in subcatchment_list: 
         subcatchment = str(subcatchment)
-        sys.stdout.write(subcatchment+" ")
+        print(subcatchment+" ")
                     
         Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","chanq_simulated_best.tss")
         
@@ -91,17 +91,37 @@ for index, row in stationdata_sorted.iterrows():
             timer+=1
                             
         print('got it')
-    sys.stdout.write("\n")
+    print("\n")
     # Performing calibration with external call, to avoid multiprocessing problems
     try:
         sbc=str(catchment)
         catch=file_CatchmentsToProcess[-6:-4]
-        script_name=os.path.join(src_root,'scripts','runLF_' +catch+'_'+sbc+'.sh')
+        # create sh scripts in scripts folder (scripts folder should already exists)
+        path_scripts = os.path.join(src_root,'scripts')
+        if not os.path.exists(path_scripts):
+            print('Error: folder ' + path_scripts + ' not found')
+            raise Exception('Error: folder ' + path_scripts + ' not found')
+
+        # use different cache paths for numba compiled binaries for each catchments, to reduce chances of overlapped lock files 
+        path_numba_cache_dirs = os.path.join(src_root,'numba_cache_dirs')
+        if not os.path.exists(path_numba_cache_dirs):
+            print('Error: folder ' + path_numba_cache_dirs + ' not found')
+            raise Exception('Error: folder ' + path_numba_cache_dirs + ' not found')
+        
+        # max numbers of subfolders to use
+        max_cache_subfolders = 60
+        path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,str(int(random.random()*max_cache_subfolders)))
+        if not os.path.exists(path_current_numba_cache_dir):
+            os.mkdir(path_current_numba_cache_dir)
+ 
+        script_name=os.path.join(path_scripts,'runLF_' +catch+'_'+sbc+'.sh')
+
         f=open(script_name,'w')
         f.write("#!/bin/sh \n")
         f.write("source activate liscal \n")
         f.write("export NUMBA_THREADING_LAYER='tbb' \n")
         f.write("export NUMBA_NUM_THREADS=1 \n")
+        f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
         cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7A_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + '\n'
         f.write(cmd)
         cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7B_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
