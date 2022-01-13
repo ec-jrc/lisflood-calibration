@@ -123,8 +123,8 @@ for index, row in stationdata_sorted.iterrows():
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
-            f.write("set -euo pipefail\n")
             f.write("source activate liscal \n")
+            f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
             f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
