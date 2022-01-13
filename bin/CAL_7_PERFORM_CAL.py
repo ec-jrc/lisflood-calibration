@@ -123,6 +123,7 @@ for index, row in stationdata_sorted.iterrows():
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
+            f.write("set -euo pipefail\n")
             f.write("source activate liscal \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
@@ -131,6 +132,12 @@ for index, row in stationdata_sorted.iterrows():
             f.write(cmd)
             cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7B_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
             f.write(cmd)
+            # delete all unnecessary files in out directory after calibration
+            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
+            f.write("ls | grep -P \"^.*[0-9]{1,}_[0-9]{1,}.*[.]\" | xargs -d\"\\n\" rm\n")
+            # delete all unnecessary files in settings directory after calibration
+            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
+            f.write("ls | grep -P -v \"^.*RunX.xml\" | xargs -d\"\\n\" rm\n")
             f.close()
             cmd="qsub -l nodes=1:ppn=32 -q long -N "+job_name+" "+script_name
             
