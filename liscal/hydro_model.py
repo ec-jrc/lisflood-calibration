@@ -115,21 +115,21 @@ class HydrologicalModel():
         print('Generation {}, run {}'.format(gen, run))
 
         run_id = '{}_{}'.format(gen, run)
-
+        write_states = 'no'
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters, write_states)
 
         prerun_file = self.lis_template.settings_path('-PreRun', run_id)
         run_file = self.lis_template.settings_path('-Run', run_id)
 
         try:
             print('PreRun using at least 15 years of meteo forcings')
-            self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters)
+            self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters, write_states)
             prerun_file = self.lis_template.settings_path('-PreRun', run_id)
             lisf1.main(prerun_file, '-v')
             print('Run using only the calibration period')
-            self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+            self.lis_template.write_template(run_id, self.cal_start, self.cal_end, cfg.param_ranges, parameters, write_states)
             run_file = self.lis_template.settings_path('-Run', run_id)
             lisf1.main(run_file, '-v')
         except:
@@ -205,10 +205,11 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     parameters = read_parameters(subcatch.path)
 
     run_id = 'X'
+    write_states = 'yes'
 
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    lis_template.write_template(run_id, run_start, run_end, cfg.param_ranges, parameters)
+    lis_template.write_template(run_id, run_start, run_end, cfg.param_ranges, parameters, write_states)
 
     # FIRST LISFLOOD RUN
     prerun_file = lis_template.settings_path('-PreRun', run_id)
@@ -222,7 +223,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
     # SECOND LISFLOOD RUN
     run_file = lis_template.settings_path('-Run', run_id)
-    lisf1.main(run_file, 'q')
+    lisf1.main(run_file, '-q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_id)
@@ -240,8 +241,8 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     parameters = [None] * len(param_ranges)
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
-        
-    lis_template.write_template(run_id, start, end, param_ranges, parameters)
+    write_states = 'yes'    
+    lis_template.write_template(run_id, start, end, param_ranges, parameters, write_states)
 
     prerun_file = lis_template.settings_path('-PreRun', run_id)
     run_file = lis_template.settings_path('-Run', run_id)
@@ -258,8 +259,8 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     parameters = [None] * len(param_ranges)
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
-        
-    lis_template.write_template(run_id, start, end, param_ranges, parameters)
+    write_states = 'yes'    
+    lis_template.write_template(run_id, start, end, param_ranges, parameters , write_states)
 
     prerun_file = lis_template.settings_path('-PreRun', run_id)
     run_file = lis_template.settings_path('-Run', run_id)
