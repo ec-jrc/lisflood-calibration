@@ -3913,7 +3913,21 @@ soil layer 3 [V/V]
                         Soil moisture upper layer [cu mm / cu mm]
                     </comment>                   
                 </textvar>
-                
+                <textvar name="Theta1TS" value="$(PathOut)/theta1max%run_rand_id.tss">
+                   <comment>
+                        Soil moisture lower layer 1 [cu mm / cu mm]
+                    </comment>
+                </textvar>
+                <textvar name="Theta2TS" value="$(PathOut)/theta2max%run_rand_id.tss">
+                    <comment>
+                        Soil moisture lower layer 2 [cu mm / cu mm]
+                    </comment>
+                </textvar>
+                <textvar name="Theta3TS" value="$(PathOut)/theta3max%run_rand_id.tss">
+                    <comment>
+                        Soil moisture lower layer 3 [cu mm / cu mm]
+                    </comment>
+                </textvar>                
                 
                 <textvar name="UZAvUpsTS" value="$(PathOut)/uzUps%run_rand_id.tss">
                     <comment>
