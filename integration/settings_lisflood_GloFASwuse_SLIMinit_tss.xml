@@ -3975,7 +3975,7 @@ soil layer 3 [V/V]
                     </comment>
                 </textvar>
 
-                <textvar name="SnowAvUpsTS" value="$(PathOut)/snowUps.tss">
+                <textvar name="SnowAvUpsTS" value="$(PathOut)/snowUpsX.tss">
                     <comment>
                         Snow (excluding rain)
                     </comment>
