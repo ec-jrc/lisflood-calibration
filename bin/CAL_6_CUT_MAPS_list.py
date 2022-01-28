@@ -45,6 +45,9 @@ if __name__ == '__main__':
     stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
     stationdata_sorted = stations_meta.sort_values(by=['DrainingArea.km2.LDD'],ascending=True)
 
+    full_path_to_prog = sys.argv[0]
+    prog_name = parser.prog
+    new_prog_name = full_path_to_prog.replace(prog_name,"CAL_6_CUT_MAPS.py")
 
     for index, row in stationdata_sorted.iterrows():
       catchment = index
@@ -60,4 +63,37 @@ if __name__ == '__main__':
       except KeyError as e:
          raise Exception('Station {} not found in stations file'.format(obsid))
       
-      cutmaps.cut_maps_station(cfg, args.path_maps, station_data, obsid)
+      path_maps = args.path_maps
+      subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
+      path_subcatch_maps = os.path.join(subcatchment_path,'maps')
+
+      cmd="python " + new_prog_name + " "+settings_file+" "+path_maps+" "+str(obsid)
+      atLeastOneFileToProcess=False
+      if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
+            afile = os.path.basename(path_maps)
+            fileout = os.path.join(path_subcatch_maps, afile)
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
+            else:
+                atLeastOneFileToProcess=True
+      else:
+            # Enter in maps dir and walk through subfolders
+            for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
+                if atLeastOneFileToProcess==True:
+                    break
+                for afile in files:
+                    fileout = os.path.join(path_subcatch_maps, afile)
+                    if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                        print("skipping already existing %s" % fileout)
+                        continue
+                    else:
+                        filenc = os.path.join(root, afile)
+                        if filenc.find("bak") > -1:
+                            continue
+                        atLeastOneFileToProcess=True
+                        break
+      if atLeastOneFileToProcess==True:          
+            print(">> Calling \""+cmd+"\"")
+            os.system(cmd)
+
+      # cutmaps.cut_maps_station(cfg, args.path_maps, station_data, obsid)
