@@ -54,6 +54,7 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
         
+        '''
         print('Compute length of the prerun. Impose at least 15 years')      
         a0=cfg.forcing_start
         a=datetime.strptime(self.cal_start,"%d/%m/%Y %H:%M")
@@ -93,6 +94,10 @@ class HydrologicalModel():
               print(self.cal_start2)
               print(self.cal_end2)              
         print('End of the computations. IMPORTANT!!! Next edit: should we always use the same 15 years (also for the final long run)?')
+        '''
+        print('Using all the forcings to compute the prerun!')
+        self.cal_start2 = cfg.forcing_start.strftime('%d/%m/%Y %H:%M') 
+        self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
         
         
         print('Beginning of the initialization')     
@@ -124,7 +129,7 @@ class HydrologicalModel():
         run_file = self.lis_template.settings_path('-Run', run_id)
 
         try:
-            print('PreRun using at least 15 years of meteo forcings')
+            print('PreRun using ALL the forcings')
             self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters, write_states)
             prerun_file = self.lis_template.settings_path('-PreRun', run_id)
             lisf1.main(prerun_file, '-v')
