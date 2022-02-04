@@ -96,10 +96,11 @@ class HydrologicalModel():
         print('End of the computations. IMPORTANT!!! Next edit: should we always use the same 15 years (also for the final long run)?')
         '''
         print('Using the last 20 years to compute the prerun!')
-        b0=datetime.strptime(cfg.forcing_end,"%d/%m/%Y %H:%M")
-        ty = 20*365
-        a0 = b0 - timedelta(days=ty)
-        self.cal_start2 = a0.strftime('%d/%m/%Y %H:%M') 
+        b0=[]
+        b=[]
+        b0=cfg.forcing_end
+        b=b0-(20*365)
+        self.cal_start2 = b.strftime('%d/%m/%Y %H:%M')
         self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
         
         
