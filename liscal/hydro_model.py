@@ -95,8 +95,11 @@ class HydrologicalModel():
               print(self.cal_end2)              
         print('End of the computations. IMPORTANT!!! Next edit: should we always use the same 15 years (also for the final long run)?')
         '''
-        print('Using all the forcings to compute the prerun!')
-        self.cal_start2 = cfg.forcing_start.strftime('%d/%m/%Y %H:%M') 
+        print('Using the last 20 years to compute the prerun!')
+        b0=datetime.strptime(cfg.forcing_end,"%d/%m/%Y %H:%M")
+        ty = 20*365
+        a0 = b0 - timedelta(days=ty)
+        self.cal_start2 = a0.strftime('%d/%m/%Y %H:%M') 
         self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
         
         
@@ -129,7 +132,7 @@ class HydrologicalModel():
         run_file = self.lis_template.settings_path('-Run', run_id)
 
         try:
-            print('PreRun using ALL the forcings')
+            print('PreRun using the last 20 years')
             self.lis_template.write_template(run_id, self.cal_start2, self.cal_end2, cfg.param_ranges, parameters, write_states)
             prerun_file = self.lis_template.settings_path('-PreRun', run_id)
             lisf1.main(prerun_file, '-v')
