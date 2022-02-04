@@ -99,9 +99,9 @@ class HydrologicalModel():
         b0=[]
         b=[]
         b0=cfg.forcing_end
-        b=b0-(20*365)
+        b=b0-timedelta(days=20*365)
         self.cal_start2 = b.strftime('%d/%m/%Y %H:%M')
-        self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+        self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M') 
         
         
         print('Beginning of the initialization')     
