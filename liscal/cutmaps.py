@@ -6,11 +6,12 @@ import numpy as np
 import pcraster as pcr
 
 import dask
-from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
+#from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
 from multiprocessing.pool import ThreadPool
 
 from liscal import pcr_utils
 
+from datetime import datetime
 
 def clip_pcr(filein, fileout, mask):
 
@@ -71,7 +72,10 @@ def cut_map(maskpcr, filein, fileout, clip_box):
 
   ext = filein[-4:][filein[-4:].find("."):]
 
-  print('creating...',fileout)
+  now = datetime.now()
+  current_time = now.strftime("%H:%M:%S")
+  print(current_time, ': creating...',fileout)
+
   if ext == ".map":
       clip_pcr(filein, fileout, maskpcr)
   elif ext == ".nc":
@@ -82,12 +86,12 @@ def cut_map(maskpcr, filein, fileout, clip_box):
 
 def cut_maps_station(cfg, path_maps, stations_data, obsid):
 
-    prof = Profiler()
-    rprof = ResourceProfiler(dt=0.25)
-    cprof = CacheProfiler() #metric=nbytes)
-    prof.register()
-    rprof.register()
-    cprof.register()
+    # prof = Profiler()
+    # rprof = ResourceProfiler(dt=0.25)
+    # cprof = CacheProfiler() #metric=nbytes)
+    # prof.register()
+    # rprof.register()
+    # cprof.register()
 
     with dask.config.set({'scheduler': 'threads', 'array.chunk-size': '2048MiB'}):  # [distributed, multiprocessing, processes, single-threaded, sync, synchronous, threading, threads]
 

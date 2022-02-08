@@ -17,7 +17,7 @@ from liscal import templates, config, subcatchment, hydro_model
 def longtermrun_subcatchment(cfg, obsid, station_data):
 
     print("=================== "+str(obsid)+" ====================")
-    if os.path.exists(os.path.join(subcatch.path, "streamflow_simulated_best.csv")):
+    if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
