@@ -25,6 +25,7 @@ class HydrologicalModel():
         self.lis_template = lis_template
 
         self.objective = objective
+        self.cfg = cfg
 
         if cfg.fast_debug:
             self.obs_start = datetime.strptime(subcatch.data['Split_date'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
@@ -46,16 +47,12 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.cal_start, self.cal_end, param_ranges, parameters)
-
-        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
+        prerun_file, run_file = self.lis_template.write_init(run_id, self.cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), self.cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), self.cal_start, self.cal_end, param_ranges, parameters)
 
         # -i option to exit after initialisation, we just load the inputs map in memory
-        try:
-            lisf1.main(prerun_file, '-i')
-        except:
-            traceback.print_exc()
-            raise Exception("Lisflood failed!")
+        lisf1.main(prerun_file, '-i')
+        
+        lisf1.main(run_file, '-i')
 
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()

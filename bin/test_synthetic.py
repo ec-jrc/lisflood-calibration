@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('settings', help='Settings file')
     parser.add_argument('tol', help='KGE history file')
     parser.add_argument('n_cpus', help='Number of cpus')
+    parser.add_argument('--scheduler', help='scheduler', default='Multiprocessing')
     args = parser.parse_args()
 
     print('  - obsid: {}'.format(args.obsid))
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
 
     # create scheduler, which will handle processes mapping and locks
-    scheduler = schedulers.get_scheduler('MPI', cfg.num_cpus)
+    scheduler = schedulers.get_scheduler(args.scheduler, cfg.num_cpus)
 
     # create objective and hydro model
     tol = float(args.tol)

@@ -46,6 +46,7 @@ class MultiprocessingScheduler(Scheduler):
         mgr = mp.Manager()
         self.lock = mgr.Lock()
         self.num_cpus = num_cpus
+        self.rank = 0
 
     def create_mapping(self):
         if self.num_cpus > 1:
@@ -82,6 +83,7 @@ class DaskScheduler(Scheduler):
         assert self.num_cpus == len(self.client.ncores())
         # check python env is the same on client and scheduler/workers
         self.client.get_versions(check=True)
+        self.rank = 0
         
     def create_mapping(self):
         return self.client.map

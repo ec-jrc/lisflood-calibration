@@ -35,7 +35,7 @@ def calibrate_subcatchment(cfg, scheduler, n_threads, obsid, subcatch):
         # otherwise each child will reload the maps
         scheduler.sequence(model.init_run, (str(scheduler.rank)))
 
-        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, scheduler)
+        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj, scheduler)
         calib_deap.run(subcatch.path)
 
         obj.process_results()
@@ -48,9 +48,10 @@ if __name__ == '__main__':
     parser.add_argument('station', help='Station OBSID to process')
     parser.add_argument('n_cpus', help='Number of processes')
     parser.add_argument('n_threads', help='Number of threads', default='1')
+    parser.add_argument('--scheduler', help='scheduler', default='Multiprocessing')
     args = parser.parse_args()
 
-    scheduler = schedulers.get_scheduler('MPI', int(args.n_cpus))
+    scheduler = schedulers.get_scheduler(args.scheduler, int(args.n_cpus))
 
     settings_file = args.settings_file
 
