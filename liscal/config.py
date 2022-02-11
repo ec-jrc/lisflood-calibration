@@ -51,6 +51,11 @@ class ConfigCalibration(Config):
         if self.timestep != 360 and self.timestep != 1440:
             raise Exception('Calibration timestep {} not supported'.format(self.timestep))
 
+        self.prerun_start = datetime.strptime(self.parser.get('Main','prerun_start'),"%d/%m/%Y %H:%M")  # Start of forcing
+        self.prerun_end = datetime.strptime(self.parser.get('Main','prerun_end'),"%d/%m/%Y %H:%M")  # end of forcing
+        self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))  # in minutes
+        if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
+            raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
 
         # deap
         self.deap_param = DEAPParameters(self.parser)
