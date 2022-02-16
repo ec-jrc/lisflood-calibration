@@ -125,7 +125,7 @@ def read_parameters(path_subcatch):
 
 def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outname):
 
-    tss_file = os.path.join(subcatch.path_out, dataname + run_id + '.tss')
+    tss_file = os.path.join(subcatch.path_out, run_id, dataname + '.tss')
 
     tss = utils.read_tss(tss_file)
 
@@ -172,24 +172,26 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     os.makedirs(out_dir, exist_ok=True)
     write_states = 'yes'
 
+    prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    prerun_file, run_file = lis_template.write_template(run_id, run_start, run_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
+    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/avgdis{1}.simulated_bestend.nc'.format(subcatch.path, run_id)
+    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/{1}/avgdis.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
-    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/lzavin{1}.simulated_bestend.nc'.format(subcatch.path, run_id)
+    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/{1}/lzavin.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
     # SECOND LISFLOOD RUN
     lisf1.main(run_file, '-q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/lzavin{1}end.nc'.format(subcatch.path, run_id)
+    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
     simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
@@ -253,7 +255,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
 
     # Outputing synthetic observed discharge
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
-    Qsim_tss = os.path.join(subcatch.path, "out", 'dis' + run_id + '.tss')
+    Qsim_tss = os.path.join(subcatch.path, "out", run_id, 'dis.tss')
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values

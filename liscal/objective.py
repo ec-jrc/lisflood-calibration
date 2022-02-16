@@ -64,7 +64,7 @@ class ObjectiveKGE():
 
         timestep = self.cfg.timestep
 
-        Qsim_tss = os.path.join(self.subcatch.path_out, 'dis'+run_id+'.tss')
+        Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
         if os.path.isfile(Qsim_tss)==False:
             print('run_id: {}'.format(str(run_id)))
             print('Discharge file path: {}'.format(Qsim_tss))

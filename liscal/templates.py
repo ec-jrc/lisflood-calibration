@@ -113,9 +113,9 @@ class LisfloodSettingsTemplate():
         out_xml = out_xml.replace('%repRateGauges', "0")
         out_xml = out_xml.replace('%repMeteoGauges', "0")
         for data in ['uz', 'uzf', 'uzi']:
-            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '0')
+            out_xml = out_xml.replace(f'%{data}_init', '0')
         for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
-            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '-9999')
+            out_xml = out_xml.replace(f'%{data}_init', '-9999')
 
         # Prerun file
         out_xml_prerun = out_xml

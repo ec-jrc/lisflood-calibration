@@ -2083,7 +2083,7 @@ Clone map
                 **************************************************************
             </comment>
 
-            <textvar name="LZAvInflowMap" value="$(PathInit)/lzavin.end">
+            <textvar name="LZAvInflowMap" value="$(PathInit)/lzavin">
                 <comment>
                     NOTE DD: The name of the lzavin files MUST contain a dot . because 
                     the add1.py/writenet function uses the dot to distinguish whether
@@ -2097,7 +2097,7 @@ Clone map
                 </comment>
             </textvar>
 
-            <textvar name="AvgDis" value="$(PathInit)/avgdis.end">
+            <textvar name="AvgDis" value="$(PathInit)/avgdis">
                 <comment>
                     $(PathRoot)/maps/avgdis.map
                     $(PathInit)/avgdis.map
