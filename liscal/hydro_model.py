@@ -56,20 +56,27 @@ class HydrologicalModel():
 
         run_id = str(0)
 
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
+
         parameters = self.objective.get_parameters(Individual)
         print('---------------------------------------------------------')
         print('Intialising prerun: caching static maps and forcings')
         print('---------------------------------------------------------')
+        print('Cache size before initialisation: {}'.format(Cache.size()))
         prerun_file, run_file = self.lis_template.write_init(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)          
-        print(Cache.size())
         lisf1.main(prerun_file, '-i')
-        print(Cache.size())
+        print('Cache size after initialising prerun: {}'.format(Cache.size()))
+
         print('---------------------------------------------------------')
         print('Intialising run: caching static maps and forcings')
         print('---------------------------------------------------------')
         lisf1.main(run_file, '-i')
-        print(Cache.size())
+        print('Cache size after initialising run: {}'.format(Cache.size()))
+
+        print('---------------------------------------------------------')
         print('End of the Initialisaton')
+        print('---------------------------------------------------------')
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()
 
@@ -82,6 +89,9 @@ class HydrologicalModel():
         print('Generation {}, run {}'.format(gen, run))
 
         run_id = '{}_{}'.format(gen, run)
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
+
         parameters = self.objective.get_parameters(Individual)
 
         prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
@@ -89,7 +99,6 @@ class HydrologicalModel():
         lisf1.main(prerun_file, '-v')
         
         lisf1.main(run_file, '-v')
-            
             
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
@@ -159,6 +168,8 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     parameters = read_parameters(subcatch.path)
 
     run_id = 'X'
+    out_dir = os.path.join(subcatch.path_out, run_id)
+    os.makedirs(out_dir, exist_ok=True)
     write_states = 'yes'
 
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
@@ -188,6 +199,8 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
 def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
     run_id = 'T'
+    out_dir = os.path.join(subcatch.path_out, run_id)
+    os.makedirs(out_dir, exist_ok=True)
 
     param_ranges = cfg.param_ranges
     parameters = [None] * len(param_ranges)
@@ -225,6 +238,8 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
     run_id = 'Z'
+    out_dir = os.path.join(subcatch.path_out, run_id)
+    os.makedirs(out_dir, exist_ok=True)
 
     param_ranges = cfg.param_ranges
     parameters = [None] * len(param_ranges)

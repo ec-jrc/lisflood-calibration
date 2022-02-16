@@ -50,13 +50,13 @@ class LisfloodSettingsTemplate():
         out_xml_prerun = out_xml_prerun.replace('%repStateGauges', "0")
         out_xml_prerun = out_xml_prerun.replace('%repRateGauges', "0")
         out_xml_prerun = out_xml_prerun.replace('%repMeteoGauges', "0")
-        for data in ['UZo', 'UZf', 'UZi']:
-            out_xml_prerun = out_xml_prerun.replace(f'%$(PathOut)/%{data}_prerun', "0")
-        for data in ['LZinit', 'th1o', 'th2o', 'th3o', 'th1f', 'th2f', 'th3f', 'th1i', 'th2i', 'th3i']:
-            out_xml_prerun = out_xml_prerun.replace(f'%$(PathOut)/%{data}_prerun',"-9999")
+        for data in ['uz', 'uzf', 'uzi']:
+            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '0')
+        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '-9999')
         out_xml_prerun = out_xml_prerun.replace('%run_rand_id', run_id)
         out_xml_prerun = out_xml_prerun.replace('%initialize', '_prerun')
-        if self.timestep == 360:
+        if self.timestep == 360:  # 6-hourly, this is EFAS
             dt_sec = self.prerun_timestep*60  # daily step for prerun
             out_xml_prerun = out_xml_prerun.replace('%dtsec', f'{dt_sec}')
             out_xml_prerun = out_xml_prerun.replace('%timestep', 'daily')
@@ -78,16 +78,13 @@ class LisfloodSettingsTemplate():
             out_xml_run = out_xml_run.replace('%repStateGauges', "0")
             out_xml_run = out_xml_run.replace('%repRateGauges', "0")
             out_xml_run = out_xml_run.replace('%repMeteoGauges', "0")
-        for data in ['UZo', 'UZf', 'UZi']:
-            target = data.lower()
-            out_xml_prerun = out_xml_prerun.replace(f'%$(PathOut)/%{data}_prerun', "$(PathOut)/{target}end_prerun{run_id}")
-        out_xml_run = out_xml_run.replace('%$(PathOut)/%LZinit_prerun', f"$(PathOut)/lzend_prerun{run_id}")
-        for data in ['th1o', 'th2o', 'th3o', 'th1f', 'th2f', 'th3f', 'th1i', 'th2i', 'th3i']:
-            out_xml_prerun = out_xml_prerun.replace(f'%$(PathOut)/%{data}_prerun', "$(PathOut)/{data}end_prerun{run_id}")
+        init_data = ['uz', 'uzf', 'uzi', 'lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']
+        for data in init_data:
+            out_xml_run = out_xml_run.replace(f'%{data}_init', f'$(PathOut)/{data}.end.nc')
         out_xml_run = out_xml_run.replace('%run_rand_id', run_id)
         out_xml_run = out_xml_run.replace('%initialize', '_run')
-        if self.timestep == 360:
-            dt_sec = self.timestep*60  # 6-hourly for run
+        if self.timestep == 360:  # 6-hourly, this is EFAS
+            dt_sec = self.timestep*60
             out_xml_run = out_xml_run.replace('%dtsec', f'{dt_sec}')
             out_xml_run = out_xml_run.replace('%timestep', 'hourly')
     
@@ -115,10 +112,10 @@ class LisfloodSettingsTemplate():
         out_xml = out_xml.replace('%repStateGauges', "0")
         out_xml = out_xml.replace('%repRateGauges', "0")
         out_xml = out_xml.replace('%repMeteoGauges', "0")
-        for data in ['UZo', 'UZf', 'UZi']:
-            out_xml = out_xml.replace(f'%$(PathOut)/%{data}_prerun', "0")
-        for data in ['LZinit', 'th1o', 'th2o', 'th3o', 'th1f', 'th2f', 'th3f', 'th1i', 'th2i', 'th3i']:
-            out_xml = out_xml.replace(f'%$(PathOut)/%{data}_prerun',"-9999")
+        for data in ['uz', 'uzf', 'uzi']:
+            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '0')
+        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+            out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '-9999')
 
         # Prerun file
         out_xml_prerun = out_xml
@@ -128,8 +125,8 @@ class LisfloodSettingsTemplate():
         out_xml_prerun = out_xml_prerun.replace('%EndMaps', "1")
         out_xml_prerun = out_xml_prerun.replace('%run_rand_id', run_id)
         out_xml_prerun = out_xml_prerun.replace('%initialize', '_prerun')      
-        if self.timestep == 360:
-            dt_sec = self.prerun_timestep*60  # daily step for prerun
+        if self.timestep == 360:  # 6-hourly, this is EFAS
+            dt_sec = self.prerun_timestep*60
             out_xml_prerun = out_xml_prerun.replace('%dtsec', f'{dt_sec}')
             out_xml_prerun = out_xml_prerun.replace('%timestep', 'daily')    
         
@@ -144,8 +141,8 @@ class LisfloodSettingsTemplate():
         out_xml_run = out_xml_run.replace('%EndMaps', "0")
         out_xml_run = out_xml_run.replace('%run_rand_id', run_id)
         out_xml_run = out_xml_run.replace('%initialize', '_run')
-        if self.timestep == 360:
-            dt_sec = self.timestep*60  # 6-hourly for run
+        if self.timestep == 360:  # 6-hourly, this is EFAS
+            dt_sec = self.timestep*60
             out_xml_run = out_xml_run.replace('%dtsec', f'{dt_sec}')
             out_xml_run = out_xml_run.replace('%timestep', 'hourly')
 
