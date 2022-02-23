@@ -81,7 +81,7 @@ def test_kge_synthetic(dummy_cfg):
     obs = obj.read_observed_streamflow(observations_file)
     print(obs)
 
-    gzip_file(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    gzip_file(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
     sim = obj.read_simulated_streamflow(run_id, cal_start, cal_end)
     print(sim)
 
@@ -92,7 +92,7 @@ def test_kge_synthetic(dummy_cfg):
     kge_comp = hydro_stats.fKGE(s=Qsim, o=Qobs)
     print(kge_comp)
 
-    os.remove(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    os.remove(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
 
     kge_truth = [0.9613349667410458, 0.9995939501541478, 0.9949282186830977, 0.9616711994094227, 973.687533]
     print(kge_truth)
@@ -200,7 +200,7 @@ def test_stats(dummy_cfg):
     obj = objective.ObjectiveKGE(dummy_cfg, subcatch, read_observations=False)
     obj.observed_streamflow = obj.read_observed_streamflow(dummy_cfg.observed_discharges)
 
-    gzip_file(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    gzip_file(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
     sim = obj.read_simulated_streamflow(run_id, cal_start, cal_end)
     Q, stats = obj.compute_statistics(obs_start, obs_end, sim)
 
@@ -212,4 +212,4 @@ def test_stats(dummy_cfg):
     assert np.isclose(stats['nse'], 0.195407737254919)
 
     os.remove(dummy_cfg.observed_discharges)
-    os.remove(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    os.remove(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
