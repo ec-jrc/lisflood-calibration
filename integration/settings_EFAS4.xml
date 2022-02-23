@@ -866,31 +866,31 @@
                 **************************************************************
             </comment>
 
-            <textvar name="PrefixPrecipitation" value="pr_hourly">
+            <textvar name="PrefixPrecipitation" value="pr_%timestep">
                 <comment>
                     prefix precipitation maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixTavg" value="ta_hourly">
+            <textvar name="PrefixTavg" value="ta_%timestep">
                 <comment>
                     prefix average temperature maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixE0" value="e0_hourly">
+            <textvar name="PrefixE0" value="e0_%timestep">
                 <comment>
                     prefix E0 maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixES0" value="es_hourly">
+            <textvar name="PrefixES0" value="es_%timestep">
                 <comment>
                     prefix ES0 maps
                 </comment>
             </textvar>
 
-            <textvar name="PrefixET0" value="et_hourly">
+            <textvar name="PrefixET0" value="et_%timestep">
                 <comment>
                     prefix ET0 maps
                 </comment>
