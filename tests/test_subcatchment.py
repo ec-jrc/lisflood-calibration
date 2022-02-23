@@ -83,8 +83,10 @@ def test_prepare_inflows(dummy_cfg, catch, has_inflow):
     if inflow_flag == '1':
         chanq_truth = utils.read_tss(os.path.join(subcatch.path, 'chanq_truth.tss'), skiprows=3+n_inflows)
         chanq_check = utils.read_tss(os.path.join(inflow_dir, 'chanq.tss'), skiprows=3+n_inflows)
-
-        assert chanq_truth.equals(chanq_check)
+        
+        chanq_truth = chanq_truth.to_numpy()
+        chanq_check = chanq_check.to_numpy()
+        assert np.allclose(chanq_truth, chanq_check)
         os.remove(os.path.join(inflow_dir, 'chanq.tss'))
 
 

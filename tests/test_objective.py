@@ -5,7 +5,6 @@ from datetime import datetime
 import numpy as np
 import xarray as xr
 from liscal import subcatchment, objective, utils, hydro_stats
-import matplotlib.pyplot as plt
 
 
 def test_phistory_ranked(dummy_cfg):
@@ -159,7 +158,7 @@ def test_kge_real(dummy_cfg, param):
     obs = obj.read_observed_streamflow(dummy_cfg.observed_discharges)
     print(obs)
 
-    gzip_file(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    gzip_file(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
     sim = obj.read_simulated_streamflow(run_id, cal_start, cal_end)
     print(sim)
 
@@ -171,7 +170,7 @@ def test_kge_real(dummy_cfg, param):
     print(kge_comp)
 
     os.remove(dummy_cfg.observed_discharges)
-    os.remove(os.path.join(subcatch.path_out, 'dis{}.tss'.format(run_id)))
+    os.remove(os.path.join(subcatch.path_out, run_id, 'dis.tss'))
 
     kge_truth = param[6]
     print(kge_truth)
