@@ -1,0 +1,15 @@
+[Main]
+forcing_start = 02/01/1979 00:00
+forcing_end = 01/01/2020 00:00
+timestep = 1440
+fast_debug = 0
+min_obs_years = 3.5
+
+
+[Path]
+CatchmentStationDataPath = /BGFS/DISASTER/grimast/calibration3arcmin_workflow/catch_testmapspar/PreRun41yPo/
+CalibratedCatchments = /BGFS/DISASTER/grimast/calibration3arcmin_workflow/catch_testmapspar/PreRun41yPo/
+ParamRanges = /BGFS/DISASTER/grimast/calibration3arcmin_workflow/templates_GloFAS/param_ranges.csv
+ResultMosaickedParametersMaps = /BGFS/DISASTER/grimast/calibration3arcmin_workflow/catch_testmapspar/PreRun41yPo/mosaicked_parametersmaps/
+
+
