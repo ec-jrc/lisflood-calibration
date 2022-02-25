@@ -54,52 +54,11 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
         
-        '''
-        print('Compute length of the prerun. Impose at least 15 years')      
-        a0=cfg.forcing_start
-        a=datetime.strptime(self.cal_start,"%d/%m/%Y %H:%M")
-        b0=cfg.forcing_end
-        b=datetime.strptime(self.cal_end,"%d/%m/%Y %H:%M")
-        c=b-a  # length of the calibration period
-        self.cal_start2 = self.cal_start
-        self.cal_end2 = self.cal_end        
-        if (c.days<(365*15)):
-           d1=(365*20)-c.days  # number of days to be added to the calibration period. NEXT: change the threshold to 15?? 
-           d11=round(d1/2) # add half the number of days before cal start and half the number of days after cal end 
-           ad11=a-a0  # do we have enough days before cal start? ad11 number of days from forcing start to cal start
-           d = a - timedelta(days=d11)
-           bd11=b0-b # do we have enough days after cal end? bd11 number of days from cal end to forcings end
-           if (ad11.days>d11) and (bd11.days>d11):
-              self.cal_start2 = d.strftime('%d/%m/%Y %H:%M')                            
-              e = b + timedelta(days=d11)
-              self.cal_end2 = e.strftime('%d/%m/%Y %H:%M')
-              print(self.cal_start2)
-              print(self.cal_end2)  
-           if (ad11.days<d11): 
-              d12 = 0.0           
-              d12 = d11- ad11.days  # number of days that we cannot use before cal start           
-              d22 = d12 + d11 
-              e = b + timedelta(days=d22)
-              self.cal_end2 = e.strftime('%d/%m/%Y %H:%M')
-              self.cal_start2 = cfg.forcing_start.strftime('%d/%m/%Y %H:%M') 
-              print(self.cal_start2)
-              print(self.cal_end2)              
-           if (bd11.days<d11): 
-              d12 = 0.0   
-              d12 = d11- bd11.days  # number of days that we cannot use after cal end          
-              d22 = d12 + d11 
-              e = a - timedelta(days=d22)
-              self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-              self.cal_start2 = e.strftime('%d/%m/%Y %H:%M')          
-              print(self.cal_start2)
-              print(self.cal_end2)              
-        print('End of the computations. IMPORTANT!!! Next edit: should we always use the same 15 years (also for the final long run)?')
-        '''
         print('Using the last 20 years to compute the prerun!')
         b0=[]
         b=[]
         b0=cfg.forcing_end
-        b=b0-timedelta(days=20*365)
+        b=b0-timedelta(days=(20*365+5))
         self.cal_start2 = b.strftime('%d/%m/%Y %H:%M')
         self.cal_end2 = cfg.forcing_end.strftime('%d/%m/%Y %H:%M') 
         
