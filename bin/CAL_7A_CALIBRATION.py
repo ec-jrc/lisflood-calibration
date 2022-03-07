@@ -4,6 +4,7 @@
 import os
 import sys
 import argparse
+import random
 import numpy as np
 import pandas
 from configparser import ConfigParser # Python 3.8
@@ -50,9 +51,16 @@ if __name__ == '__main__':
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
     parser.add_argument('n_cpus', help='Number of cpus')
+    parser.add_argument('--seed', help='Seed value for random numbers generation in deap')
     args = parser.parse_args()
 
     settings_file = args.settings_file
+
+    if args.seed:
+        print(f'Seeding {args.seed} into deap for random numbers')
+        random.seed(args.seed)
+    else:
+        print('Using default deap seed')
 
     print('Running calibration using {} cpus'.format(args.n_cpus))
 
