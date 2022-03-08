@@ -39,7 +39,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # otherwise each child will reload the maps
         model.init_run()
 
-        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights)
+        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
         calib_deap.run(subcatch.path, lock_mgr)
 
         obj.process_results()
@@ -56,15 +56,9 @@ if __name__ == '__main__':
 
     settings_file = args.settings_file
 
-    if args.seed:
-        print(f'Seeding {args.seed} into deap for random numbers')
-        random.seed(args.seed)
-    else:
-        print('Using default deap seed')
-
     print('Running calibration using {} cpus'.format(args.n_cpus))
 
-    cfg = config.ConfigCalibration(settings_file, args.n_cpus)
+    cfg = config.ConfigCalibration(settings_file, args.n_cpus, args.seed)
 
     # Calibrate lisflood fo specified station
     obsid = int(args.station)

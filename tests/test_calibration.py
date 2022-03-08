@@ -1,7 +1,5 @@
 from os import path
-import pandas
 import numpy as np
-import random
 import pytest
 
 from liscal import calibration
@@ -101,8 +99,6 @@ def test_deap_seed(dummy_cfg):
 
     print('Test calibration single objective')
 
-    random.seed(42)
-
     dummy_cfg.deap_param = DummyDEAPParameters()
     lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
     
@@ -110,7 +106,7 @@ def test_deap_seed(dummy_cfg):
     target = np.arange(1, n_param+1)/n_param
     model = ModelSingleObj(lock_mgr, target)
 
-    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1])
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1], seed=42)
     target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
 
     assert lock_mgr.get_gen() == 24

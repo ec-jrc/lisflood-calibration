@@ -124,7 +124,15 @@ class Criteria():
 
 class CalibrationDeap():
 
-    def __init__(self, cfg, fun, objective_weights):
+    def __init__(self, cfg, fun, objective_weights, seed=None):
+
+        print('Creating calibration object')
+
+        if seed:
+            print(f'Seeding {seed} into deap for random numbers')
+            random.seed(seed)
+        else:
+            print('Using default deap seed')
 
         deap_param = cfg.deap_param
 
