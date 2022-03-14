@@ -36,10 +36,11 @@ class DEAPParameters():
 
 class ConfigCalibration(Config):
 
-    def __init__(self, settings_file, n_cpus=1):
+    def __init__(self, settings_file, n_cpus=1, seed=None):
         super().__init__(settings_file)
 
         self.num_cpus = int(n_cpus)
+        self.seed = seed
 
         # paths
         self.subcatchment_path = self.parser.get('Path','subcatchment_path')

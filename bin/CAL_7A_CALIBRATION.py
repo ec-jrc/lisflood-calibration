@@ -4,6 +4,7 @@
 import os
 import sys
 import argparse
+import random
 import numpy as np
 import pandas
 from configparser import ConfigParser # Python 3.8
@@ -38,7 +39,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # otherwise each child will reload the maps
         model.init_run()
 
-        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights)
+        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
         calib_deap.run(subcatch.path, lock_mgr)
 
         obj.process_results()
@@ -50,13 +51,14 @@ if __name__ == '__main__':
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
     parser.add_argument('n_cpus', help='Number of cpus')
+    parser.add_argument('--seed', help='Seed value for random numbers generation in deap')
     args = parser.parse_args()
 
     settings_file = args.settings_file
 
     print('Running calibration using {} cpus'.format(args.n_cpus))
 
-    cfg = config.ConfigCalibration(settings_file, args.n_cpus)
+    cfg = config.ConfigCalibration(settings_file, args.n_cpus, args.seed)
 
     # Calibrate lisflood fo specified station
     obsid = int(args.station)

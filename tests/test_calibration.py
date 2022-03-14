@@ -1,7 +1,5 @@
 from os import path
-import pandas
 import numpy as np
-import random
 import pytest
 
 from liscal import calibration
@@ -95,3 +93,21 @@ def test_deap_mult_obj(dummy_cfg, value):
     target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
 
     assert target[0] > 0.99
+
+
+def test_deap_seed(dummy_cfg):
+
+    print('Test calibration single objective')
+
+    dummy_cfg.deap_param = DummyDEAPParameters()
+    lock_mgr = calibration.LockManager(dummy_cfg.num_cpus)
+    
+    n_param = len(dummy_cfg.param_ranges)
+    target = np.arange(1, n_param+1)/n_param
+    model = ModelSingleObj(lock_mgr, target)
+
+    calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1], seed=42)
+    target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
+
+    assert lock_mgr.get_gen() == 24
+    assert np.isclose(target[0], 0.95862664)
