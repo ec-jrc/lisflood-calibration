@@ -3911,7 +3911,7 @@ soil layer 3 [V/V]
 
                 <textvar name="PrecipitationAvUpsTS" value="$(PathOut)/precipUps.tss">
                     <comment>
-                        arecipitation [mm/time step]
+                        Precipitation [mm/time step]
                     </comment>
                 </textvar>
 
