@@ -36,6 +36,11 @@ def create_products(cfg, subcatch, obj):
     # thresholds = xr.open_dataset(cfg.return_periods).sel(x=subcatch.data['LisfloodX'], y=subcatch.data['LisfloodY'])
     print(return_periods)
 
+    # create asci output of stats
+    with open(os.path.join(subcatch.path_out, 'stats.txt') as f:
+        f.write(str(stats))
+        f.close()
+
     # create speedometer plots
     speedo = evaluation.SpeedometerPlot(cfg.plot_params)
     speedo.plot(os.path.join(subcatch.path_out, 'speedo'), stats)
