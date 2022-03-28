@@ -37,7 +37,7 @@ def create_products(cfg, subcatch, obj):
     print(return_periods)
 
     # create asci output of stats
-    with open(os.path.join(subcatch.path_out, 'stats.txt') as f:
+    with open(os.path.join(subcatch.path_out, 'stats.txt'), 'w') as f:
         f.write(str(stats))
         f.close()
 
