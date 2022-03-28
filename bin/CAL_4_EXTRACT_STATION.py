@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
     parser.add_argument('station', help='Station OBSID to process')
-    parser.add_argument('timings', help='Whether we run in timing mode or not. Defaults to False', defa|  -------------------------------------------------------------------------------------------------------
+    parser.add_argument('timings', help='Whether we run in timing mode or not. Defaults to False', default=False)
     args = parser.parse_args()
 
     settings_file = args.settings_file
