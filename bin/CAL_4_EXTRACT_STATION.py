@@ -30,6 +30,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
     parser.add_argument('station', help='Station OBSID to process')
+    parser.add_argument('timings', help='Whether we run in timing mode or not. Defaults to False', defa|  -------------------------------------------------------------------------------------------------------
     args = parser.parse_args()
 
     settings_file = args.settings_file
@@ -47,6 +48,6 @@ if __name__ == '__main__':
     except KeyError as e:
         raise Exception('Station {} not found in stations file'.format(obsid))
 
-    stations.extract_station_data(cfg, obsid, station_data)
+    stations.extract_station_data(cfg, obsid, station_data, timings=args.timings)
 
     print("==================== END ====================")
