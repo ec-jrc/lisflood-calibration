@@ -1,0 +1,15 @@
+[Main]
+src_root = /home/lisflood-calibration
+No_of_calibration_nodes = 4
+
+[Stations]
+stations_data = /home/lisflood-calibration/test_efas4/stations_GloFAS/stations_data.csv
+stations_links = /home/lisflood-calibration/test_efas4/stations_GloFAS/stations_links.csv
+
+[Path]
+subcatchment_path = /home/lisflood-calibration/test_efas4/catchments
+PYTHONCMD = python3
+
+[DEAP]
+numCPUs = 32
+

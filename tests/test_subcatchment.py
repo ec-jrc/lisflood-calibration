@@ -30,7 +30,12 @@ def test_subcatchment_full(dummy_cfg):
 
     gzip_inflow(os.path.join(dummy_cfg.subcatchment_path, str(380)))
 
-    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data={})
+    station_data = {
+        'LisfloodX': 4307500.0,
+        'LisfloodY': 2377500.0,
+    }
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data=station_data)
 
     assert subcatch.obsid == 380
     assert subcatch.path == os.path.join(dummy_cfg.subcatchment_path, str(380))
@@ -45,7 +50,12 @@ def test_subcatchment_full(dummy_cfg):
 @pytest.mark.parametrize('catch, gauge_loc', [(2823, '4187500.0 2417500.0'), (380, '4307500.0 2377500.0')])
 def test_gauge_loc(dummy_cfg, catch, gauge_loc):
 
-    subcatch = subcatchment.SubCatchment(dummy_cfg, catch, station_data={}, initialise=False)
+    station_data = {
+        'LisfloodX': gauge_loc.split(' ')[0],
+        'LisfloodY': gauge_loc.split(' ')[1],
+    }
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, catch, station_data=station_data, initialise=False)
     outlet_file = os.path.join(subcatch.path, "maps", "outletsmall.map")
     pcr.setclone(outlet_file)
     loc = subcatch.extract_gauge_loc(outlet_file)
@@ -56,7 +66,12 @@ def test_gauge_loc(dummy_cfg, catch, gauge_loc):
 @pytest.mark.parametrize('catch, has_inflow', [(2823, 1), (380, 0)])
 def test_prepare_inflows(dummy_cfg, catch, has_inflow):
 
-    subcatch = subcatchment.SubCatchment(dummy_cfg, catch, station_data={}, initialise=False)
+    station_data = {
+        'LisfloodX': 4187500.0,
+        'LisfloodY': 2417500.0,
+    }
+
+    subcatch = subcatchment.SubCatchment(dummy_cfg, catch, station_data=station_data, initialise=False)
 
     inflow_dir = os.path.join(subcatch.path, 'inflow')
 
@@ -68,8 +83,10 @@ def test_prepare_inflows(dummy_cfg, catch, has_inflow):
     if inflow_flag == '1':
         chanq_truth = utils.read_tss(os.path.join(subcatch.path, 'chanq_truth.tss'), skiprows=3+n_inflows)
         chanq_check = utils.read_tss(os.path.join(inflow_dir, 'chanq.tss'), skiprows=3+n_inflows)
-
-        assert chanq_truth.equals(chanq_check)
+        
+        chanq_truth = chanq_truth.to_numpy()
+        chanq_check = chanq_check.to_numpy()
+        assert np.allclose(chanq_truth, chanq_check)
         os.remove(os.path.join(inflow_dir, 'chanq.tss'))
 
 

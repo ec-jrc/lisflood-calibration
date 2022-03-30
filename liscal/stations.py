@@ -73,7 +73,7 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
     return split_date
 
 
-def extract_station_data(cfg, obsid, station_data):
+def extract_station_data(cfg, obsid, station_data, check_obs=True):
 
     # A calibration requires a spinup
     # first valid observation point will be at forcing start + spinup
@@ -87,8 +87,9 @@ def extract_station_data(cfg, obsid, station_data):
     obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
     obs_period_years = obs_period_days/365.25
 
-    if obs_period_days < float(station_data['Min_calib_days']):
-        raise Exception('Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
+    if check_obs:
+        if obs_period_days < float(station_data['Min_calib_days']):
+            raise Exception('Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
 
     # Extract valid calibration period
     observations_filtered = observed_streamflow[observed_streamflow.notna()]

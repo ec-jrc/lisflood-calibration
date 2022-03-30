@@ -22,7 +22,8 @@ class ConfigTimings(config.Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))
         
         # Load param ranges file
         self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)

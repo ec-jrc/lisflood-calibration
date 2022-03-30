@@ -1,7 +1,10 @@
 [Main]
 forcing_start = 31/12/2016 06:00
 forcing_end = 31/12/2017 06:00
-calibration_freq = 6-hourly
+timestep = 360
+prerun_start = 31/12/2016 06:00
+prerun_end = 31/12/2017 06:00
+prerun_timestep = 1440
 fast_debug = 0
 min_obs_years = 0.5
 

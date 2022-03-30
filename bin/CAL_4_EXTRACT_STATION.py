@@ -17,7 +17,7 @@ class ConfigStation(config.Config):
         # Date parameters
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.calibration_freq = self.parser.get('Main', 'calibration_freq')
+        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
         
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
@@ -30,9 +30,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
     parser.add_argument('station', help='Station OBSID to process')
+    parser.add_argument('--no_check', help='Turn off check whether enough obs data is available', action='store_true')
     args = parser.parse_args()
 
     settings_file = args.settings_file
+    check_obs = True
+    if args.no_check:
+        check_obs = False
 
     cfg = ConfigStation(settings_file)
 
@@ -47,6 +51,5 @@ if __name__ == '__main__':
     except KeyError as e:
         raise Exception('Station {} not found in stations file'.format(obsid))
 
-    stations.extract_station_data(cfg, obsid, station_data)
-
+    stations.extract_station_data(cfg, obsid, station_data, check_obs)
     print("==================== END ====================")
