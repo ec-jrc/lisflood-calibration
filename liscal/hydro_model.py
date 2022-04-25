@@ -167,10 +167,9 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     print(">> Running LISFLOOD using the \"best\" parameter set")
     parameters = read_parameters(subcatch.path)
 
-    run_id = 'X'
+    run_id = 'long_term_run'
     out_dir = os.path.join(subcatch.path_out, run_id)
     os.makedirs(out_dir, exist_ok=True)
-    write_states = 'yes'
 
     prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
     prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
