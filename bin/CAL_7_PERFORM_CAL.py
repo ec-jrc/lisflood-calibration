@@ -77,6 +77,7 @@ else:
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')
+numba_cache_root = parser.get('Main', 'numba_cache_root')
 nmax = int(parser.get('Main','No_of_calibration_nodes'))
 
 stations_data_path = parser.get("Stations", "stations_data")
@@ -148,24 +149,36 @@ for index, row in stationdata_sorted.iterrows():
             if not os.path.exists(path_scripts):
                 print('Error: folder ' + path_scripts + ' not found')
                 raise Exception('Error: folder ' + path_scripts + ' not found')
-  
-            # use different cache paths for numba compiled binaries for each catchments, to reduce chances of overlapped lock files 
-            path_numba_cache_dirs = os.path.join(src_root,'numba_cache_dirs')
-            if not os.path.exists(path_numba_cache_dirs):
-                print('Error: folder ' + path_numba_cache_dirs + ' not found')
-                raise Exception('Error: folder ' + path_numba_cache_dirs + ' not found')
-          
-            # max numbers of subfolders to use
-            max_cache_subfolders = 60
-            path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,str(int(random.random()*max_cache_subfolders)))
-            if not os.path.exists(path_current_numba_cache_dir):
-                os.mkdir(path_current_numba_cache_dir)
+
+            if (numba_cache_root[:8]=="/local0/"):
+                path_numba_cache_dirs = numba_cache_root
+                path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,'numba_cache_dir')
+            else:
+                # use different cache paths for numba compiled binaries for each catchments, to reduce chances of overlapped lock files 
+                path_numba_cache_dirs = os.path.join(numba_cache_root,'numba_cache_dirs')
+                if not os.path.exists(path_numba_cache_dirs):
+                    print('Error: folder ' + path_numba_cache_dirs + ' not found')
+                    raise Exception('Error: folder ' + path_numba_cache_dirs + ' not found')
+                # max numbers of subfolders to use
+                max_cache_subfolders = 60
+                path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,str(int(random.random()*max_cache_subfolders)))
+                if not os.path.exists(path_current_numba_cache_dir):
+                    os.mkdir(path_current_numba_cache_dir)
    
             script_name=os.path.join(path_scripts,'runLF_' +list_id+'_'+sbc+'.sh')
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
-            f.write("source activate liscal2 \n")
+            # some catchments needs to run with a different version of liscal
+            # using liscal for 41y and liscal2 for 20y pre-run
+            prerun41y_list = [696,654,692,691,725,573,563,5131,5607,850,846,794,815,872,873,1895,712,1061,5056,1574,1575,308,301,5042,5012,4926,4867,4962,4961,2006,4935,2003,2004,4874,2005,4964,4928,5519,5139,1180]
+            prerun41y_set = set(prerun41y_list)
+            if catchment in prerun41y_set:
+              print("using liscal (41y prerun) for catchment \""+sbc+"\"")
+              f.write("source activate liscal \n")
+            else:
+              print("using liscal2 (20y prerun) for catchment \""+sbc+"\"")
+              f.write("source activate liscal2 \n")
             f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
@@ -179,10 +192,12 @@ for index, row in stationdata_sorted.iterrows():
             f.write("ls | grep -P \"^.*[0-9]{1,}_[0-9]{1,}.*[.]\" | xargs -d\"\\n\" rm\n")
             # delete all unnecessary files in settings directory after calibration
             f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
-            f.write("ls | grep -P -v \"^.*RunX.xml\" | xargs -d\"\\n\" rm\n")
+            f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")
+            if (numba_cache_root[:8]=="/local0/"):
+                f.write("rm -Rf " + path_current_numba_cache_dir + " \n")
             f.close()
             cmd="qsub -l nodes=1:ppn=32 -q long -N "+job_name+" "+script_name
-            
+
             timerqsub = 0
             
             while int(subprocess.Popen('qstat | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) >= int(nmax) and timerqsub<=900000:
