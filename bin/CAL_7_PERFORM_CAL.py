@@ -169,16 +169,7 @@ for index, row in stationdata_sorted.iterrows():
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
-            # some catchments needs to run with a different version of liscal
-            # using liscal for 41y and liscal2 for 20y pre-run
-            prerun41y_list = [696,654,692,691,725,573,563,5131,5607,850,846,794,815,872,873,1895,712,1061,5056,1574,1575,308,301,5042,5012,4926,4867,4962,4961,2006,4935,2003,2004,4874,2005,4964,4928,5519,5139,1180]
-            prerun41y_set = set(prerun41y_list)
-            if catchment in prerun41y_set:
-              print("using liscal (41y prerun) for catchment \""+sbc+"\"")
-              f.write("source activate liscal \n")
-            else:
-              print("using liscal2 (20y prerun) for catchment \""+sbc+"\"")
-              f.write("source activate liscal2 \n")
+            f.write("source activate liscal \n")
             f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
