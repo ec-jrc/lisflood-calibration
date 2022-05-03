@@ -180,7 +180,7 @@ for index, row in stationdata_sorted.iterrows():
             f.write(cmd)
             # delete all unnecessary files in out directory after calibration
             f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
-            f.write("ls | grep -P \"^.*[0-9]{1,}_[0-9]{1,}.*[.]\" | xargs -d\"\\n\" rm\n")
+            f.write("find . -type d | grep -P \"^./[0-9]{1,}_[0-9]{1,}$\" | xargs -d\"\\n\" rm -r\n")
             # delete all unnecessary files in settings directory after calibration
             f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
             f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")

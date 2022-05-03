@@ -24,7 +24,7 @@ plots_storage_folder = '/BGFS/DISASTER/grimast/calibration3arcmin_workflow/plot_
 suffix_fig_filename = 'testing_' # optional deatils of the file name
 
 
-outputfilenames = ['rainUpsX', 'snowUpsX', 'snowMeltUpsX', 'frostUpsX', 'actEvapoX', 'theta1totalX', 'theta2totalX', 'theta3totalX', 'dTopToSubUpsX', 'qUzUpsX', 'qLzUpsX', 'percUZLZUpsX', 'dSubToUzUpsX', 'prefFlowUpsX', 'infUpsX', 'surfaceRunoffUpsX' , 'gwLossUpsX', 'lzUpsX']
+outputfilenames = ['rainUps', 'snowUps', 'snowMeltUps', 'frostUps', 'actEvapo', 'theta1total', 'theta2total', 'theta3total', 'dTopToSubUps', 'qUzUps', 'qLzUps', 'percUZLZUps', 'dSubToUzUps', 'prefFlowUps', 'infUps', 'surfaceRunoffUps' , 'lossUps', 'lzUps']
 # plots: 1'rainUpsX', 2'snowUpsX', 3'snowMeltUpsX', 4'frostUps', 5'actEvapo', 6'theta1totalX', 7'theta2totalX', 8'theta3totalX', 9'dTopToSubUpsX', 10'qUzUpsX', 11'qLzUpsX', 12'percUZLZUpsX', 13'dSubToUzUpsX', 14'prefFlowUpsX', 15'infUpsX', 16'surfaceRunoffUpsX' , 17'gwLossUpsX', 18'lzUpsX']
 num_var = len(outputfilenames)
 UpsXtss=np.zeros((total_num_steps,num_var))
@@ -37,7 +37,7 @@ for index in np.arange(len(catchments)):
     nv = - 1
     for outfn in outputfilenames:    
      nv = nv + 1        
-     tssfile=SubCatchmentPath+obsID+'/out/'+ outfn + '.tss'
+     tssfile=SubCatchmentPath+obsID+'/out/X/'+ outfn + '.tss'
      tssfile_data = pandas.read_csv(tssfile, index_col=0, sep=",", skiprows=3, header=None, skipinitialspace=True, engine='python')
      aa=-1           
      index_gauge=[]
