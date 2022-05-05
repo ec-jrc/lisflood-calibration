@@ -29,6 +29,6 @@ if __name__ == '__main__':
     print(f'KGE file: {args.kge_file}')
     print(f'Tolerance is {tol}')
     print(f'Target 1 is {target1}')
-    print(f'Target 1 is {target2}')
+    print(f'Target 2 is {target2}')
     # check KGE
-    check_kge(args.kge_file, target1=target1, target2=target1, tol=2*tol)
+    check_kge(args.kge_file, target1=target1, target2=target2, tol=2*tol)

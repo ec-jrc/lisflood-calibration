@@ -171,8 +171,9 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     out_dir = os.path.join(subcatch.path_out, run_id)
     os.makedirs(out_dir, exist_ok=True)
 
-    prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
-    prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
+    # use forcings start and end for prerun and run
+    prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
@@ -181,16 +182,16 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     lisf1.main(prerun_file, '-v')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 to avoid overwriting the bestrun avgdis.end.nc
-    cmd = 'cp {0}/out/avgdis{1}end.nc {0}/out/{1}/avgdis.simulated_bestend.nc'.format(subcatch.path, run_id)
+    cmd = 'cp {0}/out/{1}/avgdis.nc {0}/out/{1}/avgdis.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
-    cmd = 'cp {0}/out/lzavin{1}end.nc {0}/out/{1}/lzavin.simulated_bestend.nc'.format(subcatch.path, run_id)
+    cmd = 'cp {0}/out/{1}/lzavin.nc {0}/out/{1}/lzavin.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
     # SECOND LISFLOOD RUN
     lisf1.main(run_file, '-q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
-    cmd = 'rm {0}/out/avgdis{1}end.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
+    cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
     simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
