@@ -41,9 +41,7 @@ class ScalingModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.start, self.end, cfg.param_ranges, parameters)
-
-        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
         # -i option to exit after initialisation, we just load the inputs map in memory
         try:
@@ -68,10 +66,7 @@ class ScalingModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.start, self.end, cfg.param_ranges, parameters)
-
-        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
-        run_file = self.lis_template.settings_path('-Run', run_id)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
         try:
             lisf1.main(prerun_file, '-v')
