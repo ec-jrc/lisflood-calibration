@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # lisflood
 import lisf1
-from lisflood import Cache
+from lisflood.global_modules.decorators import Cache
 
 from liscal import hydro_model, templates, config, subcatchment, calibration, objective
 
