@@ -39,6 +39,9 @@ class ScalingModel():
         gen = self.lock_mgr.get_gen()
         run_id = str(gen)
 
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
+
         parameters = self.objective.get_parameters(Individual)
 
         prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
@@ -63,6 +66,9 @@ class ScalingModel():
         print('Generation {}, run {}'.format(gen, run))
 
         run_id = '{}_{}'.format(gen, run)
+
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
 
         parameters = self.objective.get_parameters(Individual)
 
