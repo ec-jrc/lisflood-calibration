@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # lisflood
 import lisf1
-from lisflood import cache
+from lisflood import Cache
 
 from liscal import hydro_model, templates, config, subcatchment, calibration, objective
 
@@ -53,7 +53,7 @@ class ScalingModel():
             raise Exception("Lisflood failed!")
 
         # store lisflood cache size to make sure we don't load anything else after that
-        self.lisflood_cache_size = cache.cache_size()
+        self.lisflood_cache_size = Cache.size()
 
 
     def run(self, Individual):
@@ -81,7 +81,7 @@ class ScalingModel():
             raise Exception("Lisflood failed!")
 
         # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = cache.cache_size()
+        cache_size = Cache.size()
         assert cache_size == self.lisflood_cache_size
 
 
