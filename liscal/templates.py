@@ -1,5 +1,5 @@
 import os
-import copy
+
 
 class LisfloodSettingsTemplate():
 
@@ -123,7 +123,6 @@ class LisfloodSettingsTemplate():
         for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml = out_xml.replace(f'%{data}_init', '-9999')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '-9999')
-
 
         # Prerun file
         out_xml_prerun = out_xml

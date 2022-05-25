@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # lisflood
 import lisf1
-from lisflood import cache
+from lisflood.global_modules.decorators import Cache
 
 from liscal import hydro_model, templates, config, subcatchment, calibration, objective
 
@@ -39,11 +39,12 @@ class ScalingModel():
         gen = self.lock_mgr.get_gen()
         run_id = str(gen)
 
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
+
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.start, self.end, cfg.param_ranges, parameters)
-
-        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
         # -i option to exit after initialisation, we just load the inputs map in memory
         try:
@@ -53,7 +54,7 @@ class ScalingModel():
             raise Exception("Lisflood failed!")
 
         # store lisflood cache size to make sure we don't load anything else after that
-        self.lisflood_cache_size = cache.cache_size()
+        self.lisflood_cache_size = Cache.size()
 
 
     def run(self, Individual):
@@ -66,12 +67,12 @@ class ScalingModel():
 
         run_id = '{}_{}'.format(gen, run)
 
+        out_dir = os.path.join(self.subcatch.path_out, run_id)
+        os.makedirs(out_dir, exist_ok=True)
+
         parameters = self.objective.get_parameters(Individual)
 
-        self.lis_template.write_template(run_id, self.start, self.end, cfg.param_ranges, parameters)
-
-        prerun_file = self.lis_template.settings_path('-PreRun', run_id)
-        run_file = self.lis_template.settings_path('-Run', run_id)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
         try:
             lisf1.main(prerun_file, '-v')
@@ -81,7 +82,7 @@ class ScalingModel():
             raise Exception("Lisflood failed!")
 
         # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = cache.cache_size()
+        cache_size = Cache.size()
         assert cache_size == self.lisflood_cache_size
 
 
@@ -126,6 +127,9 @@ class ConfigScaling(config.Config):
         self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")  # Start of forcing
         self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        self.prerun_timestep = 360  # in minutes
+        if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
+            raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
         
         # Load param ranges file
         self.param_ranges = pandas.read_csv(self.parser.get('Path','param_ranges'), sep=",", index_col=0)

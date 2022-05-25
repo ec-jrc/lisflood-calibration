@@ -91,11 +91,10 @@ class HydrologicalModel():
         run_id = '{}_{}'.format(gen, run)
         out_dir = os.path.join(self.subcatch.path_out, run_id)
         os.makedirs(out_dir, exist_ok=True)
-        write_states = False
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters, write_states=write_states)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
             
         lisf1.main(prerun_file, '-v')
         
@@ -168,20 +167,16 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     print(">> Running LISFLOOD using the \"best\" parameter set")
     parameters = read_parameters(subcatch.path)
 
-    run_id = 'X'
+    run_id = 'long_term_run'
     out_dir = os.path.join(subcatch.path_out, run_id)
     os.makedirs(out_dir, exist_ok=True)
-    write_states = True
 
-    if cfg.timestep == 360: # 6-hourly, this is EFAS
-        prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
-        prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
-    else:
-        prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-        prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+    # use forcings start and end for prerun and run
+    prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=write_states)
+    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
@@ -213,11 +208,8 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     parameters = [None] * len(param_ranges)
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
-    write_states = True
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters, write_states=write_states)
 
-    prerun_file = lis_template.settings_path('-PreRun', run_id)
-    run_file = lis_template.settings_path('-Run', run_id)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
 
     # cache first
     f = open("timings.csv", "w")
@@ -256,11 +248,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    write_states = True    
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters, write_states=write_states)
-
-    prerun_file = lis_template.settings_path('-PreRun', run_id)
-    run_file = lis_template.settings_path('-Run', run_id)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
 
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')
