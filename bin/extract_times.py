@@ -5,9 +5,9 @@ if __name__ == "__main__":
     # folder where the .o and .e jobs output files are stored
     # files should be named as LF_cal_XX_<CathcmentID>.e<jobNumber_6digits> and LF_cal_XX_<CathcmentID>.o<jobNumber_6digits>
     # example for catchment 568: LF_cal_01_568.e123456 and LF_cal_01_568.o123456 
-    dirname = "/home/russcar/CatchmentsDone"
+    dirname = "/home/username/CatchmentsDone"
     # catchments folder (where "maps" "out" "inflow" and "settings" folders are stored) 
-    catchment_folder = "/home/russcar/catchments/"
+    catchment_folder = "/home/username/catchments/"
     #outputfile = os.path.join(dirname, "results.txt")
     outputfile = "results.csv"
     with open(outputfile, "w") as fout:

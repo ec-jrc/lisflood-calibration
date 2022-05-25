@@ -1,0 +1,42 @@
+[Main]
+forcing_start = 02/01/1979 00:00
+forcing_end = 01/01/2020 00:00
+timestep = 1440
+# NOTES: PRERUN_STARTDATE is taken from the stations csv file in the additional column "prerun_start"
+# and then written in the settings.txt in catchment folder using CAL_2_SET_PRERUN_IN_SETTINGS.py
+prerun_start = PRERUN_STARTDATE
+prerun_end = 01/01/2020 00:00
+prerun_timestep = 1440
+fast_debug = 0
+min_obs_years = 3.5
+
+[Stations]
+stations_data = STATIONS/stations_data.csv
+stations_links = STATIONS/stations_links.csv
+observed_discharges = OBS
+return_periods = STATIONS/return_levels.nc
+
+[Path]
+param_ranges = TEMPLATES/param_ranges.csv
+subcatchment_path = CATCHMENTS_DIR
+summary_path = SUMMARY_DIR
+
+[Templates]
+LISFLOODSettings = TEMPLATES/settings_lisflood.xml
+
+[DEAP]
+numCPUs = NCPUS
+min_gen = 8
+max_gen = 24
+mu = 16
+lambda_ = 32
+pop = 64
+# NOTES:
+# min_gen = Run at least this number of generations.
+# max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
+# mu = # of best children chosen to feed into the next generation (JRC decided to make it 2x calibration parameters)
+#      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
+# Lamda = # of children spawned at every generation (= # threads to run in parallel)
+#         This must always be twice mu
+
+
