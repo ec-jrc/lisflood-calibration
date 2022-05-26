@@ -98,10 +98,6 @@ class HydrologicalModel():
             
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
-
-        # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = Cache.size()
-        assert cache_size == self.lisflood_cache_size
             
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
