@@ -44,15 +44,12 @@ class ScalingModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
+        prerun_file, run_file = self.lis_template.write_init(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
         # -i option to exit after initialisation, we just load the inputs map in memory
-        try:
-            lisf1.main(prerun_file, '-i')
-        except:
-            traceback.print_exc()
-            raise Exception("Lisflood failed!")
-
+        lisf1.main(prerun_file, '-i')
+        lisf1.main(run_file, '-i')
+        
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()
 
@@ -74,12 +71,8 @@ class ScalingModel():
 
         prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
 
-        try:
-            lisf1.main(prerun_file, '-v')
-            lisf1.main(run_file, '-v')
-        except:
-            traceback.print_exc()
-            raise Exception("Lisflood failed!")
+        lisf1.main(prerun_file, '-v')
+        lisf1.main(run_file, '-v')
 
         # check lisflood cache size to make sure we don't load the same map multiple times
         cache_size = Cache.size()
