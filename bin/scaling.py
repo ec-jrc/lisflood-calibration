@@ -74,10 +74,6 @@ class ScalingModel():
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
 
-        # check lisflood cache size to make sure we don't load the same map multiple times
-        cache_size = Cache.size()
-        assert cache_size == self.lisflood_cache_size
-
 
 def scaling_subcatchment(cfg, obsid, subcatch, n_runs):
 
