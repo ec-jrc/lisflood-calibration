@@ -77,9 +77,9 @@ class Criteria():
 
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
-        self.gen_offset = 3
+        self.gen_offset = deap_param.gen_offset #3
 
-        self.effmax_tol = 0.003
+        self.effmax_tol = deap_param.effmax_tol #0.003
 
         # Initialise statistics arrays
         self.effmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN

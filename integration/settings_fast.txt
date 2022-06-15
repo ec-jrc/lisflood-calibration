@@ -30,3 +30,5 @@ max_gen = 1
 mu = 2
 lambda_ = 2
 pop = 2
+gen_offset = 3
+effmax_tol = 0.003

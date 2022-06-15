@@ -29,6 +29,8 @@ max_gen = 16
 mu = 18
 lambda_ = 36
 pop = 72
+gen_offset = 3
+effmax_tol = 0.003
 # NOTES:
 # min_gen = Run at least this number of generations.
 # max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)

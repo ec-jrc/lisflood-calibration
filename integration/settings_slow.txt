@@ -29,3 +29,5 @@ max_gen = 16
 mu = 18
 lambda_ = 36
 pop = 72
+gen_offset = 3
+effmax_tol = 0.003
