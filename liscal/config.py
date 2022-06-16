@@ -33,7 +33,7 @@ class DEAPParameters():
         self.cxpb = 0.6
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
-        self.effmax_tol = int(parser.get('DEAP','effmax_tol'))
+        self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
 
 
 class ConfigCalibration(Config):
