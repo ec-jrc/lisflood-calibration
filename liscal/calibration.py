@@ -243,8 +243,8 @@ class CalibrationDeap():
                     population = valid_ind
                 self.criteria.update_statistics(gen, halloffame)
                 self.criteria.check_termination_conditions(gen)
-                gen = gen+1
                 print('----> Generation {} recovered'.format(gen))
+                gen = gen+1
             else:
                 # in case of incomplete generation, we should delete corresponding run lines from the paramHistory.csv file
                 incomplete_gen_id=gen
