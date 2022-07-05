@@ -1,0 +1,3 @@
+,randId,UpperZoneTimeConstant,LowerZoneTimeConstant,GwPercValue,LZThreshold,b_Xinanjiang,PowerPrefFlow,SnowMeltCoef,CalChanMan1,CalChanMan2,LakeMultiplier,adjust_Normal_Flood,ReservoirRnormqMult,QSplitMult,GwLoss,Kling Gupta Efficiency,Correlation,Signal ratio (s/o) (Bias),Noise ratio (s/o) (Spread),sae,generation,runNumber,Unnamed: 22,corrRank,saeRank,KGERank,paretoRank
+3,006292064019,20.007,5020.5,1.0051,15.0015,2.50525,4.25042,4.50045,1.25012,2.75027,1.25012,0.50005,1.12511,10.001,0.250025,0.999938,1,1.00002,1.00006,0.91681,0,1,,0.55,0.55,0.55,0.166375
+4,002858939496,20.007,5020.5,1.0051,15.0015,2.50525,4.25042,4.50045,1.25012,2.75027,1.25012,0.50005,1.12511,10.001,0.250025,0.999938,1,1.00002,1.00006,0.91681,0,2,,1,1,1,1
