@@ -1,0 +1,34 @@
+[Main]
+forcing_start = 31/12/2016 06:00
+forcing_end = 31/12/2017 06:00
+timestep = 360
+prerun_start = 31/12/2016 06:00
+prerun_end = 31/12/2017 06:00
+prerun_timestep = 1440
+
+fast_debug = 0
+min_obs_years = 0.5
+
+[Stations]
+stations_data = STATIONS/stations_data_synthetic.csv
+stations_links = STATIONS/stations_links.csv
+observed_discharges = OBS
+return_periods = STATIONS/return_levels.nc
+
+[Path]
+param_ranges = TEMPLATES/param_ranges.csv
+subcatchment_path = CATCHMENTS_DIR
+summary_path = SUMMARY_DIR
+
+[Templates]
+LISFLOODSettings = TEMPLATES/settings_lisflood.xml
+
+[DEAP]
+numCPUs = NCPUS
+min_gen = 1
+max_gen = 1
+mu = 2
+lambda_ = 2
+pop = 2
+gen_offset = 3
+effmax_tol = 0.003
