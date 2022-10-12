@@ -1,6 +1,8 @@
-# Created by .ignore support plugin (hsz.mobi)
 .idea/
-__pycache__/
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
 *.py[cod]
 *$py.class
 *.so
