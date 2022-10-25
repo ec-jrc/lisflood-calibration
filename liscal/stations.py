@@ -73,6 +73,17 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
     return split_date
 
 
+def enough_data(observations, threshold=100):
+    '''
+    Check if we have enough observations to do the validation
+    '''
+    n_data = np.sum(observations.notna())
+    enough = False
+    if n_data > threshold:
+        enough = True
+    return enough
+
+
 def extract_station_data(cfg, obsid, station_data, check_obs=True):
 
     # A calibration requires a spinup
@@ -118,6 +129,78 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
     # Export station data at station
     station_data.loc['Obs_start'] = valid_start
     station_data.loc['Obs_end'] = valid_end
+    station_data.loc['Split_date'] = split_date
+    station_data.loc['N_data'] = len(observations_filtered)
+    station_df = pd.DataFrame(data=station_data)
+    print('Station data:')
+    print(station_df)
+    station_df.to_csv(os.path.join(out_dir, 'station_data.csv'))
+
+    print('Summary for catchment {}:'.format(obsid))
+    print('First observation date: {}'.format(station_data['Obs_start']))
+    print('Last observation date: {}'.format(station_data['Obs_end']))
+    print('Split date: {}'.format(station_data['Split_date']))
+    print('Number of non-missing data: {}'.format(station_data['N_data']))
+
+
+
+def extract_calibration_validation_data(cfg, obsid, station_data, validation_year):
+
+    # A calibration requires a spinup
+    # first valid observation point will be at forcing start + spinup
+    start_date = (cfg.forcing_start + datetime.timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
+    end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+
+    # Retrieve observed streamflow and extract observation period
+    observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+    observed_streamflow = observations[str(obsid)]
+    observed_streamflow = observed_streamflow[start_date:end_date]
+    obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+    obs_period_years = obs_period_days/365.25
+
+    if obs_period_days < float(station_data['Min_calib_days']):
+        raise Exception('Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
+
+    # Extract valid observation period
+    observations_filtered = observed_streamflow[observed_streamflow.notna()]
+    obs_start = observations_filtered.index[0]
+    obs_end = observations_filtered.index[-1]
+    observations_real = observed_streamflow[obs_start:obs_end]
+
+    # Create output directory
+    subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
+    out_dir = os.path.join(subcatchment_path, 'station')
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Extract validation period
+    validation_start = f"01/01/{validation_year} 00:00"
+    validation_end = f"01/01/{validation_year+1} 00:00"
+    observations_validation = observations_real[validation_start:validation_end]
+    if enough_data(observations_validation):
+        val_df = pd.DataFrame(data=observations_validation, index=observations_validation.index)
+        val_df.columns = [str(obsid)]
+        val_df.index.name = 'Timestamp'
+        print('Station observations:')
+        print(val_df)
+        val_df.to_csv(os.path.join(out_dir, 'observations_validation.csv'))
+
+    # Extract calibration period
+    observations_calibration = observations_real
+    observations_calibration.loc[validation_start:validation_end] = np.NaN
+    obs_df = pd.DataFrame(data=observations_calibration, index=observations_calibration.index)
+    obs_df.columns = [str(obsid)]
+    obs_df.index.name = 'Timestamp'
+    print('Station observations:')
+    print(obs_df)
+    obs_df.to_csv(os.path.join(out_dir, 'observations.csv'))
+
+    # Compute split date
+    dt = time_step_from_type(station_data['CAL_TYPE'])
+    split_date = compute_split_date(obs_period_years, dt, obs_start, observations_filtered)
+
+    # Export station data at station
+    station_data.loc['Obs_start'] = obs_start
+    station_data.loc['Obs_end'] = obs_end
     station_data.loc['Split_date'] = split_date
     station_data.loc['N_data'] = len(observations_filtered)
     station_df = pd.DataFrame(data=station_data)
