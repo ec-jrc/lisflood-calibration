@@ -30,6 +30,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration pre-processing settings file')
     parser.add_argument('station', help='Station OBSID to process')
+    parser.add_argument('validation_year', help='Year used for validation')
     parser.add_argument('--no_check', help='Turn off check whether enough obs data is available', action='store_true')
     args = parser.parse_args()
 
@@ -51,5 +52,9 @@ if __name__ == '__main__':
     except KeyError as e:
         raise Exception('Station {} not found in stations file'.format(obsid))
 
-    stations.extract_station_data(cfg, obsid, station_data, check_obs)
+    if args.validation_year == 0:
+        stations.extract_station_data(cfg, obsid, station_data, check_obs)
+    else:
+        stations.extract_calibration_validation_data(cfg, obsid, station_data, args.validation_year)
+
     print("==================== END ====================")

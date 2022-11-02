@@ -62,6 +62,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration settings file')
     parser.add_argument('station', help='Station OBSID to process')
+    parser.add_argument('validation_year', help='Year used for validation')
     args = parser.parse_args()
 
     settings_file = args.settings_file
@@ -79,9 +80,16 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")):
         print('Cannot find file {}'.format(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")))
         raise Exception('Calibration not complete! Cannot generate products...')
+    
+    if args.validation_year == 0:
+        observations_file = 'observations.csv'
+    else:
+        observations_file = f'observations_{validation_year}.csv'
 
-    obj = objective.ObjectiveKGE(cfg, subcatch)
-
-    products.create_products(cfg, subcatch, obj)
+    if os.path.isfile(os.path.join(subcatch.path_station, observations_file)):
+        obj = objective.ObjectiveKGE(cfg, subcatch, observations_file=observations_file)
+        products.create_products(cfg, subcatch, obj)
+    else:
+        raise Exception('ERROR! Observations not available! Could not compute products')
 
     print("==================== END ====================")

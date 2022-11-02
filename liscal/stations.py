@@ -182,7 +182,7 @@ def extract_calibration_validation_data(cfg, obsid, station_data, validation_yea
         val_df.index.name = 'Timestamp'
         print('Station observations:')
         print(val_df)
-        val_df.to_csv(os.path.join(out_dir, 'observations_validation.csv'))
+        val_df.to_csv(os.path.join(out_dir, f'observations_{validation_year}.csv'))
 
     # Extract calibration period
     observations_calibration = observations_real

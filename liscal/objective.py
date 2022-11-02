@@ -8,14 +8,14 @@ from liscal import hydro_stats, utils
 
 class ObjectiveKGE():
 
-    def __init__(self, cfg, subcatch, read_observations=True):
+    def __init__(self, cfg, subcatch, read_observations=True, observations_file='observations.csv'):
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
         self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
-            observations_file = os.path.join(subcatch.path_station, 'observations.csv')
+            observations = os.path.join(subcatch.path_station, observations_file)
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
 
