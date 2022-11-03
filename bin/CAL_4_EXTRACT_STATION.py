@@ -55,6 +55,6 @@ if __name__ == '__main__':
     if args.validation_year == 0:
         stations.extract_station_data(cfg, obsid, station_data, check_obs)
     else:
-        stations.extract_calibration_validation_data(cfg, obsid, station_data, args.validation_year)
+        stations.extract_calibration_validation_data(cfg, obsid, station_data, int(args.validation_year))
 
     print("==================== END ====================")

@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
@@ -77,7 +77,7 @@ def enough_data(observations, threshold=100):
     '''
     Check if we have enough observations to do the validation
     '''
-    n_data = np.sum(observations.notna())
+    n_data = int(np.sum(observations.notna()))
     enough = False
     if n_data > threshold:
         enough = True
@@ -88,7 +88,7 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
 
     # A calibration requires a spinup
     # first valid observation point will be at forcing start + spinup
-    start_date = (cfg.forcing_start + datetime.timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
+    start_date = (cfg.forcing_start + timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
     end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     # Retrieve observed streamflow and extract observation period
@@ -143,29 +143,50 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
     print('Number of non-missing data: {}'.format(station_data['N_data']))
 
 
+def get_yearly_validation_period(year, obs_start, obs_end):
+    validation_start = datetime.strptime(f"01/01/{year} 00:00", '%d/%m/%Y %H:%M')
+    validation_end = datetime.strptime(f"01/01/{year+1} 00:00", '%d/%m/%Y %H:%M')
+
+    start = datetime.strptime(obs_start, '%d/%m/%Y %H:%M')
+    end = datetime.strptime(obs_end, '%d/%m/%Y %H:%M')
+
+    # if outside of observations range, return None
+    if validation_start >= end or validation_end <= start:
+        validation_start = None
+        validation_end = None
+    else:
+        if validation_start < start:
+            validation_start = start
+        if validation_end > end:
+            validation_end = end
+        validation_start = validation_start.strftime('%d/%m/%Y %H:%M')
+        validation_end = validation_end.strftime('%d/%m/%Y %H:%M')
+    
+    return validation_start, validation_end
+
 
 def extract_calibration_validation_data(cfg, obsid, station_data, validation_year):
 
     # A calibration requires a spinup
     # first valid observation point will be at forcing start + spinup
-    start_date = (cfg.forcing_start + datetime.timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
+    start_date = (cfg.forcing_start + timedelta(days=int(float(station_data['Spinup_days'])))).strftime('%d/%m/%Y %H:%M')
     end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
     # Retrieve observed streamflow and extract observation period
     observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
-    observed_streamflow = observations[str(obsid)]
-    observed_streamflow = observed_streamflow[start_date:end_date]
-    obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+    observations = observations[str(obsid)]
+    observations = observations[start_date:end_date]
+    obs_period_days = observation_period_days(station_data['CAL_TYPE'], observations)
     obs_period_years = obs_period_days/365.25
 
     if obs_period_days < float(station_data['Min_calib_days']):
         raise Exception('Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
 
     # Extract valid observation period
-    observations_filtered = observed_streamflow[observed_streamflow.notna()]
+    observations_filtered = observations[observations.notna()]
     obs_start = observations_filtered.index[0]
     obs_end = observations_filtered.index[-1]
-    observations_real = observed_streamflow[obs_start:obs_end]
+    observations = observations[obs_start:obs_end]
 
     # Create output directory
     subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
@@ -173,20 +194,25 @@ def extract_calibration_validation_data(cfg, obsid, station_data, validation_yea
     os.makedirs(out_dir, exist_ok=True)
 
     # Extract validation period
-    validation_start = f"01/01/{validation_year} 00:00"
-    validation_end = f"01/01/{validation_year+1} 00:00"
-    observations_validation = observations_real[validation_start:validation_end]
-    if enough_data(observations_validation):
-        val_df = pd.DataFrame(data=observations_validation, index=observations_validation.index)
-        val_df.columns = [str(obsid)]
-        val_df.index.name = 'Timestamp'
-        print('Station observations:')
-        print(val_df)
-        val_df.to_csv(os.path.join(out_dir, f'observations_{validation_year}.csv'))
+    validation_start, validation_end = get_yearly_validation_period(validation_year, obs_start, obs_end)
+    if validation_start and validation_end:
+        observations_validation = observations[validation_start:validation_end]
+        if enough_data(observations_validation):
+            val_df = pd.DataFrame(data=observations_validation, index=observations_validation.index)
+            val_df.columns = [str(obsid)]
+            val_df.index.name = 'Timestamp'
+            print('Station observations for the validation period:')
+            print(val_df)
+            val_df.to_csv(os.path.join(out_dir, 'observations_validation.csv'))
+        else:
+            print('Warning! Not enough validation data')
+    else:
+        print('Warning! Observations outside of validation period')
 
     # Extract calibration period
-    observations_calibration = observations_real
-    observations_calibration.loc[validation_start:validation_end] = np.NaN
+    observations_calibration = observations
+    if validation_start and validation_end:
+        observations_calibration.loc[validation_start:validation_end] = np.NaN
     obs_df = pd.DataFrame(data=observations_calibration, index=observations_calibration.index)
     obs_df.columns = [str(obsid)]
     obs_df.index.name = 'Timestamp'
