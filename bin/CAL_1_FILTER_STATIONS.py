@@ -58,7 +58,10 @@ if __name__ == '__main__':
         end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
 
         # Retrieve observed streamflow and extract observation period
-        observed_streamflow = observed_data[str(index)]
+        try:
+            observed_streamflow = observed_data[str(index)]
+        except:
+            raise ValueError(f'Station {index} does not have observations!')
         observed_streamflow = observed_streamflow[start_date:end_date]
         obs_period_days = stations.observation_period_days(row['CAL_TYPE'], observed_streamflow)
 
