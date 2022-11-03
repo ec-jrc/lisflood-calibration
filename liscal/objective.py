@@ -16,7 +16,7 @@ class ObjectiveKGE():
 
         if read_observations:
             observations = os.path.join(subcatch.path_station, observations_file)
-            self.observed_streamflow = self.read_observed_streamflow(observations_file)
+            self.observed_streamflow = self.read_observed_streamflow(observations)
 
 
     def get_parameters(self, Individual):
