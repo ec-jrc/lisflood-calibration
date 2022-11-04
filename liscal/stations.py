@@ -203,7 +203,7 @@ def extract_calibration_validation_data(cfg, obsid, station_data, validation_yea
             val_df.index.name = 'Timestamp'
             print('Station observations for the validation period:')
             print(val_df)
-            val_df.to_csv(os.path.join(out_dir, 'observations_validation.csv'))
+            val_df.to_csv(os.path.join(out_dir, f'observations_{validation_year}.csv'))
         else:
             print('Warning! Not enough validation data')
     else:

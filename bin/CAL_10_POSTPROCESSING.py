@@ -84,7 +84,7 @@ if __name__ == '__main__':
     if args.validation_year == 0:
         observations_file = 'observations.csv'
     else:
-        observations_file = f'observations_{validation_year}.csv'
+        observations_file = f'observations_{args.validation_year}.csv'
 
     if os.path.isfile(os.path.join(subcatch.path_station, observations_file)):
         obj = objective.ObjectiveKGE(cfg, subcatch, observations_file=observations_file)
