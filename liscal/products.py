@@ -14,19 +14,24 @@ from plotflood import evaluation
 from liscal import hydro_stats, thresholds
 
 
-def create_products(cfg, subcatch, obj):
-
-    obs_start = datetime.strptime(subcatch.data['Obs_start'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
-    obs_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+def create_products(cfg, subcatch, obj, observations_file):
 
     # create output directory
     os.makedirs(cfg.summary_path, exist_ok=True)
 
-    # Long term run has run_id X
+    # set validation period
+    validation_start = datetime.strptime(subcatch.data['Validation_start'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+    validation_end = datetime.strptime(subcatch.data['Validation_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+
+    # read observation
+    observed_streamflow = obj.read_observed_streamflow(observations_file, validation_start, validation_end)
+
+    # read long term run
     simulated_streamflow = obj.read_simulated_streamflow_best()
 
     # compute statistics (KGE, NSE, etc.)
-    Q, stats = obj.compute_statistics(obs_start, obs_end, simulated_streamflow)
+    Q, stats = obj.compute_statistics(validation_start, validation_end, observed_streamflow, simulated_streamflow)
+    print(stats)
 
     # compute monthly discharge data
     sim_monthly, obs_monthly = hydro_stats.split_monthly(Q.index, Q['Sim'].values, Q['Obs'].values)

@@ -15,8 +15,10 @@ class ObjectiveKGE():
         self.weights = [1, 0, 0, 0, 0]
 
         if read_observations:
-            observations = os.path.join(subcatch.path_station, observations_file)
-            self.observed_streamflow = self.read_observed_streamflow(observations)
+            observations = os.path.join(subcatch.path_station, 'observations.csv')
+            obs_start = subcatch.data.loc['Obs_start']
+            obs_end = subcatch.data.loc['Obs_end']
+            self.observed_streamflow = self.read_observed_streamflow(observations, obs_start, obs_end)
 
 
     def get_parameters(self, Individual):
@@ -27,8 +29,7 @@ class ObjectiveKGE():
 
         return parameters
 
-    def read_observed_streamflow(self, observations_file):
-        cfg = self.cfg
+    def read_observed_streamflow(self, observations_file, obs_start, obs_end):
         
         observed_streamflow = pd.read_csv(observations_file, sep=",", index_col=0)
         # check that date format is correct
@@ -39,13 +40,13 @@ class ObjectiveKGE():
         print(observed_streamflow)
         print('---------------------------------------')
 
-        print(self.subcatch.data.loc['Obs_start'], self.subcatch.data.loc['Obs_end'])
+        print(obs_start, obs_end)
 
-        if (observed_streamflow.index[0] != self.subcatch.data.loc['Obs_start'] or 
-            observed_streamflow.index[-1] != self.subcatch.data.loc['Obs_end']):
+        if observed_streamflow.index[0] != obs_start or observed_streamflow.index[-1] != obs_end:
             raise ValueError('Dates in observations ({} - {}) not coherent with station data({} - {})',
                 observed_streamflow.index[0], observed_streamflow.index[-1],
-                self.subcatch.data.loc['Obs_start'], self.subcatch.data.loc['Obs_end'])
+                self.subcatch.data.loc['Obs_start'], self.subcatch.data.loc['Obs_end'],
+                self.subcatch.data.loc['Validation_start'], self.subcatch.data.loc['Validation_end'])
 
         return observed_streamflow
 
@@ -143,9 +144,9 @@ class ObjectiveKGE():
 
         return kge_components
 
-    def compute_statistics(self, start, end, simulated_streamflow):
+    def compute_statistics(self, start, end, observed_streamflow, simulated_streamflow):
 
-        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
+        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
         if len(Qobs) != len(Qsim):
             raise Exception("Observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
 

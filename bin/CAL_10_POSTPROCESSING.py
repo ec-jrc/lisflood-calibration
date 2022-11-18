@@ -82,14 +82,14 @@ if __name__ == '__main__':
         raise Exception('Calibration not complete! Cannot generate products...')
     
     if args.validation_year == 0:
-        observations_file = 'observations.csv'
+        observations_file = os.path.join(subcatch.path_station, 'observations.csv')
     else:
-        observations_file = f'observations_{args.validation_year}.csv'
+        observations_file = os.path.join(subcatch.path_station, f'observations_{args.validation_year}.csv')
 
-    if os.path.isfile(os.path.join(subcatch.path_station, observations_file)):
-        obj = objective.ObjectiveKGE(cfg, subcatch, observations_file=observations_file)
-        products.create_products(cfg, subcatch, obj)
+    if os.path.isfile(observations_file):
+        obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+        products.create_products(cfg, subcatch, obj, observations_file)
     else:
-        raise Exception('ERROR! Observations not available! Could not compute products')
+        print('ERROR! Observations not available! Could not compute products')
 
     print("==================== END ====================")

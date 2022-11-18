@@ -130,6 +130,8 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
     station_data.loc['Obs_start'] = valid_start
     station_data.loc['Obs_end'] = valid_end
     station_data.loc['Split_date'] = split_date
+    station_data.loc['Validation_start'] = valid_start
+    station_data.loc['Validation_end'] = valid_end
     station_data.loc['N_data'] = len(observations_filtered)
     station_df = pd.DataFrame(data=station_data)
     print('Station data:')
@@ -228,6 +230,8 @@ def extract_calibration_validation_data(cfg, obsid, station_data, validation_yea
     station_data.loc['Obs_start'] = obs_start
     station_data.loc['Obs_end'] = obs_end
     station_data.loc['Split_date'] = split_date
+    station_data.loc['Validation_start'] = validation_start
+    station_data.loc['Validation_end'] = validation_end
     station_data.loc['N_data'] = len(observations_filtered)
     station_df = pd.DataFrame(data=station_data)
     print('Station data:')
