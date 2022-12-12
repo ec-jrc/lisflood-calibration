@@ -1,7 +1,7 @@
-"""Please refer to quick_guide.pdf for usage instructions"""
-
+#!/usr/bin/env python3
 import os
 import sys
+import argparse
 import pdb
 import pandas
 import string
@@ -15,28 +15,25 @@ import logging
 import random
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 
+
+
 if __name__=="__main__":
 
-	########################################################################
-	#   Read settings file
-	########################################################################
-
-	iniFile = os.path.normpath(sys.argv[1])
-	print ("=================== START ===================")
-	print( ">> Reading settings file ("+sys.argv[1]+")...")
- 
-  # Stef: very basic settings file to run this script settings_mosaickedparametersmaps.txt 
-
-	parser = SafeConfigParser()
-	parser.read(iniFile)
+	print("=================== START ===================")
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--stations', '-s', help='Path to stations folder')
+	parser.add_argument('--catchments', '-c', help='Path to catchments folder')
+	parser.add_argument('--output', '-o', help='Output folder')
+	parser.add_argument('--params', '-p', help='Calibration parameters ranges')
+	args = parser.parse_args()
 
 	#path_temp = parser.get('Path', 'Temp') # Stef: not needed for basic usage ...
-	path_stations = parser.get ('Path', 'CatchmentStationDataPath')
-	path_result = parser.get('Path', 'ResultMosaickedParametersMaps') # Stef: this is the folder where you will find the mosaic of the .map parameters values
+	path_stations = args.stations
+	path_result = args.output # Stef: this is the folder where you will find the mosaic of the .map parameters values
 
-	ParamRangesPath = parser.get('Path','ParamRanges') # Stef: this is the .csv file that you used to define the ranges of the calibration parameters
-	SubCatchmentPath = parser.get('Path','CalibratedCatchments') # Stef: this is the folder where you collected all the calibrated catchments
-	
+	ParamRangesPath = args.params # Stef: this is the .csv file that you used to define the ranges of the calibration parameters
+	SubCatchmentPath = args.catchments # Stef: this is the folder where you collected all the calibrated catchments
+
 	#ForcingStart = datetime.datetime.strptime(parser.get('DEFAULT','ForcingStart'),"%d/%m/%Y %H:%M")  # Start of forcing ## Stef: removed because it is not used to produce the parameters maps.
 	#ForcingEnd = datetime.datetime.strptime(parser.get('DEFAULT','ForcingEnd'),"%d/%m/%Y %H:%M")  # Start of forcing ## Stef: removed because it is not used to produce the parameters maps.
 
@@ -44,7 +41,7 @@ if __name__=="__main__":
 	#Qgis_csv = parser.get('CSV', 'Qgis') ## Stef: removed because it is not used to produce the parameters maps.
 
 	config = {}
- 
+
 	pcrcalc = "pcrcalc"
 	col2map = "col2map"
 	map2col = "map2col"
@@ -55,10 +52,10 @@ if __name__=="__main__":
 	#   Make stationdata array from the qgis csv
 	########################################################################
 
-	print (">> Reading Qgis2.csv file...")
-	stationdata = pandas.read_csv(os.path.join(path_stations,"Qgis2.csv"),sep=",",index_col=0)
+	print (">> Reading stations data file...")
+	stationdata = pandas.read_csv(os.path.join(path_stations, 'stations_data.csv'), sep=",", index_col=0)
 
-	
+
 	########################################################################
 	#   Assign calibrated parameter values to maps
 	########################################################################
@@ -76,16 +73,19 @@ if __name__=="__main__":
 	count_front = 0
 	count_nofront = 0
 	for index, row in stationdata.iterrows():
+
+		print(index, row)
 		
-		if np.isnan(row["DrainingArea.km2.LDD"]):
-			continue
-		print(row['ID'])
-		print (">> Assigning values for catchment "+str(row['ID'])+", size "+str(row['DrainingArea.km2.LDD'])+" TOTAL drainage area from LDD in km2")
+		# if np.isnan(row["DrainingArea.km2.LDD"]):
+		# 	print('No draining area')
+		# 	continue
+		# print(row['ID'])
+		# print (">> Assigning values for catchment "+str(row['ID'])+", size "+str(row['DrainingArea.km2.LDD'])+" TOTAL drainage area from LDD in km2")
 		
 		# Load calibrated parameter values for this catchment        
 		# We want values on first line, since pareto_front is sorted by overall efficiency 
 		# in descending order
-		path_subcatch = os.path.join(SubCatchmentPath,str(row['ID']))
+		path_subcatch = os.path.join(SubCatchmentPath,str(index))
 		if os.path.isfile(os.path.join(path_subcatch,"pareto_front.csv")):
 			count_front = count_front+1;
 			pareto_front = pandas.read_csv(os.path.join(path_subcatch,"pareto_front.csv"))
@@ -98,7 +98,7 @@ if __name__=="__main__":
 			count_nofront = count_nofront+1;
 			for ii in range(0,len(ParamRanges)):
 				exec("pcrasterCommand(pcrcalc + \" 'F0 = F0 + scalar(F1==scalar("+str(index)+"))*scalar(-9999)'\", {\"F0\": params_"+ParamRanges.index[ii]+"_map, \"F1\":interstation_regions_map})")        
-	
+
 	# Assign default values to uncalibrated areas
 	# Ungauged areas have -1 in the interstation regions map
 	# and -9999 in the parameter maps
