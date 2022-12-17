@@ -96,6 +96,6 @@ if __name__=="__main__":
 		param = param_ranges.index[ii]
 		paramvalue = param_ranges.iloc[ii,2]
 		params[param] = pcr.ifthenelse(interstation==-1, pcr.scalar(paramvalue), params[param])
-		pcr.report(params[param], f"params_{param_ranges.index[ii]}_map")
+		pcr.report(params[param], f"params_{param_ranges.index[ii]}.map")
 
 	print ("==================== END ====================")
