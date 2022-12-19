@@ -3,6 +3,7 @@ import os
 import argparse
 import pandas
 import numpy as np
+import xarray as xr
 import pcraster as pcr
 
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
@@ -44,7 +45,7 @@ if __name__=="__main__":
 	parser.add_argument('--catchments', '-c', required=True, help='Path to catchments folder')
 	parser.add_argument('--output', '-o', required=True, help='Output folder')
 	parser.add_argument('--params', '-p', required=True, help='Path to calibration parameters ranges csv file')
-	parser.add_argument('--template', '-t', required=True, help='Path to NetCDF template')
+	parser.add_argument('--template', '-t', help='Path to NetCDF template')
 	parser.add_argument('--regionalisation', '-r', help='Path to regionalisation csv file')
 	args = parser.parse_args()
 
@@ -78,7 +79,7 @@ if __name__=="__main__":
 	params = {}
 	for ii in range(0,len(param_ranges)):
 		param = param_ranges.index[ii]
-		params[param] = interstation*0.0
+		params[param] = pcr.scalar(interstation)*0.0
 		
 	# Assign calibrated parameter values to maps
 	count_front = 0
@@ -111,6 +112,7 @@ if __name__=="__main__":
 		paramvalue = param_ranges.iloc[ii,2]
 		params[param] = pcr.ifthenelse(interstation==-1, pcr.scalar(paramvalue), params[param])
 		pcr.report(params[param], f"params_{param_ranges.index[ii]}.map")
-		export_netcdf(path_result, template, params[param], param_ranges.index[ii])
+		if template:
+			export_netcdf(path_result, template, params[param], param_ranges.index[ii])
 
 	print ("==================== END ====================")
