@@ -27,6 +27,15 @@ def set_calibrated_parameters(param_ranges, index, path_subcatch, params, inters
 	return count_front
 
 
+def export_netcdf(path_result, template, param_map, name):
+	ds = xr.open_dataarray(template)
+	ds.name = name
+	ds.attrs['standard_name'] = name
+	ds.attrs['long_name'] = name
+	ds.values = pcr.pcr2numpy(param_map, np.NaN)
+	ds.to_netcdf(os.path.join(path_result, f'{name}.nc'))
+
+
 if __name__=="__main__":
 
 	print("=================== START ===================")
@@ -35,11 +44,13 @@ if __name__=="__main__":
 	parser.add_argument('--catchments', '-c', required=True, help='Path to catchments folder')
 	parser.add_argument('--output', '-o', required=True, help='Output folder')
 	parser.add_argument('--params', '-p', required=True, help='Path to calibration parameters ranges csv file')
+	parser.add_argument('--template', '-t', required=True, help='Path to NetCDF template')
 	parser.add_argument('--regionalisation', '-r', help='Path to regionalisation csv file')
 	args = parser.parse_args()
 
 	path_stations = args.stations
 	path_result = args.output
+	template = args.template
 
 	ParamRangesPath = args.params
 	SubCatchmentPath = args.catchments
@@ -97,5 +108,6 @@ if __name__=="__main__":
 		paramvalue = param_ranges.iloc[ii,2]
 		params[param] = pcr.ifthenelse(interstation==-1, pcr.scalar(paramvalue), params[param])
 		pcr.report(params[param], f"params_{param_ranges.index[ii]}.map")
+		export_netcdf(path_result, template, params[param], param_ranges.index[ii])
 
 	print ("==================== END ====================")
