@@ -51,6 +51,9 @@ if __name__=="__main__":
 	path_stations = args.stations
 	path_result = args.output
 	template = args.template
+	
+	if not os.path.exists(path_result):
+		os.makedirs(path_result)
 
 	ParamRangesPath = args.params
 	SubCatchmentPath = args.catchments
