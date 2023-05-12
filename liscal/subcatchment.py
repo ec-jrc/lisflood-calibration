@@ -41,7 +41,8 @@ class SubCatchment():
 
             self.inflowflag, n_inflows = self.prepare_inflows(cfg)
             print('Found {} inflows'.format(n_inflows))
-            self.resample_inflows(cfg)
+            if n_inflows>0:
+                self.resample_inflows(cfg)
 
     def extract_gauge_loc(self, outlet_file):
         x = self.data['LisfloodX']
