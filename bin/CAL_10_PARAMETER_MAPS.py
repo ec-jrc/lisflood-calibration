@@ -4,9 +4,11 @@ import argparse
 import pandas
 import numpy as np
 import xarray as xr
-import pcraster as pcr
+# import pcraster as pcr
 
-from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
+pcr= 1
+
+# from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 
 
 def set_calibrated_parameters(param_ranges, index, path_subcatch, params, interstation, lakes_reservoirs_default=False):

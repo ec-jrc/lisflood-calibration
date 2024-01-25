@@ -1,4 +1,4 @@
-## Prepare static data
+# Prepare static data
 
 To calibrate the model for your catchments/subcatchments, you need input data:
 
@@ -13,54 +13,53 @@ You can check this by opening the files using Panoply (http://www.giss.nasa.gov/
 In addition, the forcing data should be stored on the local disk instead of over the network.
 
 
-## Edit a settings file
+# Create a settings file
 
-In settings file you can set all configuration parameters for calibration. Like path to scripts to run the lisflood model (or any other hydrological model). 
+In the calibration settings file you can set all configuration parameters for calibration. Like path to scripts to run the lisflood model (or any other hydrological model). 
 So you need to have access and execution rights to the model you want to calibrate.
  
-The easy way is to make a copy of settings_calibration.txt (e.g. my_settings.txt) and edit it according your requirements.
+The easy way is to make a copy of the template integration/settings.txt (e.g. my_settings.txt) and edit it according your requirements.
 
 Below you find an example of settings file:
 
 ```ini 
-Root=/absolute/path/to/lisflood-calibration/  
-ForcingStart=1/1/1986 00:00  # Starting of Meteo Forcings Precipitation Evapotranspiration TAvg  
-ForcingEnd=31/12/2017 00:00  # Ending of Meteo Forcings Precipitation Evapotranspiration TAvg  
-SubsetMeteoData=0 
-WarmupDays=366  # Number of days for the Warmup period of the Model  
-MinQlength=4  # Catchments with streamflow records shorter than the number of years specifed by MinQlength in settings.txt will not be processed 
-No_of_calibration_lists=21 # Number of lists of catchments to process in parallel. i.e. If one agrees 10 nodes for running the calibration, a maximum of 10 (or less depending on direct links between subcatchments) lists will be generated with the name CatchmentsToProcess_XX.txt and 10 will be the maximum number of jobs submitted at the same time.  
-MaxPercArea=0.1  
+[Main]
+forcing_start = 02/01/1990 06:00  # Starting of Meteo Forcings Precipitation Evapotranspiration TAvg 
+forcing_end = 31/12/2017 06:00  # Ending of Meteo Forcings Precipitation Evapotranspiration TAvg
+timestep = 360  # Timestep of the calibration run (typicall 6-hourly or daily)
+prerun_start = 02/01/1990 06:00  # When to start the prerun
+prerun_end = 31/12/2017 06:00 # When to end the prerun
+prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
+fast_debug = 0  # Flag to set to 1 for quicker debugging
+min_obs_years = 3.5  # Minimum number of years of observation required to calibrate the station
 
-[CSV]
-Qgis=/absolute/path/to/Qgis.csv # File containing metadata of Stations available with observation  
-Qtss=/absolute/path/to/Qts.csv # Observed data   
+[Stations]
+stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
+stations_links = STATIONS/stations_links.csv  # Path to the stations hydrological dependencies file
+observed_discharges = OBS  # Path to the observations
 
 [Path]
-Temp=%(Root)s/temp  
-Result=%(Root)s/result  
-Templates=%(Root)s/templates       
-SubCatchmentPath=%(Root)s/catchments  
-ParamRanges=%(Root)s/ParamRanges_LISFLOOD.csv   # Values range for parameters to calibrate   
-CatchmentDataPath=/FLOODS/lisflood/CalibrationTest/static_data  # static maps for lisflood model (landuse wateruse area ldd etc)  
-MeteoData=/FLOODS/glofas/meteo/ERA5/ # path to netcdf forcing data  
-PCRHOME=/ADAPTATION/usr/anaconda2/bin/ # path to pcraster binaries  
-PYTHONCMD=/ADAPTATION/usr/anaconda2/bin/python # path to python executable  (in case of several versions)  
+param_ranges = TEMPLATES/param_ranges.csv  # Path to the parameters ranges file
+subcatchment_path = CATCHMENTS_DIR  # Root of the catchments
+summary_path = SUMMARY_DIR  # Where to put the summary files of the calibration (Global statistics)
 
-[Templates]  
-LISFLOODSettings=%(Root)s/templates/settings_LF.xml # Settings for Lisflood Model  
-RunLISFLOOD=%(Root)s/templates/runLF_linux.sh  # Script for launching PreRun and Run of the model, for every parameters combination during genetic algorithm runs   
+[Templates]
+LISFLOODSettings = TEMPLATES/settings_lisflood.xml  # Path to the LISFLOOD settings template
 
-[DEAP]  
-use_multiprocessing=1  # Flag for using multiprocessing, meaning running several lisflood runs on several cores (each using 1 core)  
-ngen=16  # number of MAX generation to run  
-mu=16  # initial population  
-lambda_=32  # size of generation of offsprings 
+[DEAP]
+numCPUs = NCPUS  # Number of processes to use per catchment
+min_gen = 6  # Minimum number of generation to run
+max_gen = 16  # Maximum number of generation to run
+mu = 18  # Initial population  
+lambda_ = 36  # Size of generation of offsprings 
+pop = 72  # Population
+gen_offset = 3  # Stopping criteria: check efficiency vs that from 3 generations before
+effmax_tol = 0.003  # Stopping criteria: if efficiency difference lower than tolerance, stop calibration
 ```
 
-## Format of Qgis and Qtss files
+## Format of station and observations files
 
-### Qgis.csv (metadata)
+### stations.csv (metadata)
 
 ```csv
 ID,Provider_1,ProvID_1,Provider_2,ProvID_2,Stationnam,RiverName,RiverBasin,Country,CountryNam,Continent,HydroRegio,DrainArPro,DrainArLDD,YProvided,XProvided,YCorrected,XCorrected,Suitable,ValidGLOFAS,Legend_for,Comments,StartDate,EndDate,AddedDate,Lake,Reservoir,Lastupdate
@@ -69,7 +68,7 @@ G0002,GRDC,2999910,NA,NA,7.5Km D/S Of Mouth Of River Pur,Olenek,Olenek,RU,Russia
 G0003,GRDC,2999150,NA,NA,Saskylakh,Anabar,Anabar,RU,Russian Federation,Asia,512,78800,86783,71.98,114.057,71.95,114.05,1,1, , ,6/1/1954,11/22/2011, ,0,0, 
 G0004,GRDC,2999850,NA,NA,Khatanga,Khatanga,Khatanga,RU,Russian Federation,Asia,512,275000,285113,71.98,102.45,71.95,102.15,1,1, , ,6/7/1971,9/30/1991, ,0,0, 
 ```
-### Qtss.csv (observed data per reported station in QGis.csv, column oriented)
+### observations.csv (observed data per reported station in QGis.csv, column oriented)
 
 ```csv
 DATE,G0001,G0002,G0003,G0004
@@ -80,13 +79,11 @@ DATE,G0001,G0002,G0003,G0004
 ...
 ```
 
-## Summary
+# Summary
 
-1. Clone the repository lisflood-calibration or download the code
-2. Make a copy of templates/runLF_linux.sh and edit it (you only need to change paths)
-3. Make a copy of templates/settings_LF.xml and edit it if needed
-4. Prepare static maps (dem, landuse etc.) and netcdf forcing data (meteo input as ERA5 datasets)
-5. Prepare the Qgis csv file. This is a file containing stations' metadata
-6. Prepare the Qtss csv file. This file contains observed discharge data for each station
-7. Make a copy of settings_calibration.txt and edit according your system. You have to change LISFLOODSettings and RunLISFLOOD parameters in order to use your customized files and configure paths to static data.
+1. Create a settings template for LISFLOOD (you can start from there: https://github.com/ec-jrc/lisflood-code/blob/master/src/lisfloodSettings_reference.xml).
+2. Prepare static maps (dem, landuse etc.) and NetCDF forcing data (such as ERA5 dataset).
+3. Prepare the stations csv file. This is a file containing the stations metadata.
+4. Prepare the observations csv file. This file contains observed discharge data for each station.
+5. Make a copy of integration/settings.txt and edit according your system.
 
