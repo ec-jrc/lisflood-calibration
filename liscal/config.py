@@ -6,6 +6,21 @@ from liscal import pcr_utils, calibration
 
 
 class Config():
+    """
+    A class to handle the configuration settings from a settings file.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to the settings file.
+    print_settings : bool, optional
+        Flag to print the settings after reading the file (default is True).
+
+    Raises
+    ------
+    FileNotFoundError
+        If the specified settings file does not exist.
+    """
 
     def __init__(self, settings_file, print_settings=True):
         self.parser = ConfigParser()
@@ -23,6 +38,35 @@ class Config():
 
 
 class DEAPParameters():
+    """
+    A class to store DEAP algorithm parameters.
+
+    Parameters
+    ----------
+    parser : ConfigParser
+        ConfigParser object to extract DEAP parameters.
+
+    Attributes
+    ----------
+    min_gen : int
+        Minimum number of generations.
+    max_gen : int
+        Maximum number of generations.
+    pop : int
+        Population size.
+    mu : int
+        The number of individuals to select for the next generation.
+    lambda_ : int
+        The number of children to produce at each generation.
+    cxpb : float
+        Crossover probability.
+    mutpb : float
+        Mutation probability.
+    gen_offset : int
+        Generation offset.
+    effmax_tol : float
+        Tolerance for maximum efficiency.
+    """
 
     def __init__(self, parser):
         self.min_gen = int(parser.get('DEAP','min_gen'))
@@ -37,6 +81,58 @@ class DEAPParameters():
 
 
 class ConfigCalibration(Config):
+    """
+    A class for configuration and calibration settings specific to hydrological modeling.
+
+    Extends the Config class with additional parameters and validation specific to hydrological model calibration.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to the settings file.
+    n_cpus : int, optional
+        Number of CPUs to use (default is 1).
+    seed : int or None, optional
+        Seed for random number generation (default is None).
+
+    Attributes
+    ----------
+    num_cpus : int
+        Number of CPUs to use.
+    seed : int or None
+        Seed for random number generation.
+    subcatchment_path : str
+        File path to the subcatchment data.
+    forcing_start : datetime
+        Start time of forcing data.
+    forcing_end : datetime
+        End time of forcing data.
+    timestep : int
+        Time step in minutes.
+    prerun_start : datetime
+        Start time of pre-run period.
+    prerun_end : datetime
+        End time of pre-run period.
+    prerun_timestep : int
+        Pre-run time step in minutes.
+    deap_param : DEAPParameters
+        DEAP algorithm parameters.
+    param_ranges : DataFrame
+        Parameter ranges for calibration.
+    lisflood_template : str
+        Path to the LISFLOOD settings template.
+    fast_debug : bool
+        Flag to enable fast debugging mode.
+    stations_links : str
+        File path to the stations links data.
+    pcraster_cmd : dict
+        Commands for PCRaster processing.
+
+    Raises
+    ------
+    Exception
+        If the provided timestep or prerun timestep is not supported.
+    """
 
     def __init__(self, settings_file, n_cpus=1, seed=None):
         super().__init__(settings_file)
