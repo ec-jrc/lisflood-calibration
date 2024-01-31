@@ -2,6 +2,35 @@ import os
 
 
 class LisfloodSettingsTemplate():
+    """
+    A class to generate LISFLOOD model settings file from a template.
+
+    Attributes
+    ----------
+    timestep : int
+        The timestep of the model run in minutes.
+    prerun_timestep : int
+        The prerun timestep of the model in minutes.
+    obsid : str
+        Observation station ID.
+    outfix : str
+        Path prefix for the output XML files.
+    lisflood_template : str
+        Path to the LISFLOOD settings template file.
+    template_xml : str
+        Template XML content with replaced placeholders.
+
+    Methods
+    -------
+    __init__(cfg, subcatch)
+        Initializes the LisfloodSettingsTemplate object with configuration and subcatchment data.
+    settings_path(suffix, run_id)
+        Returns the path for a settings file given a suffix and run ID.
+    write_template(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters, write_states=False)
+        Writes the LISFLOOD settings file for both prerun and main run.
+    write_init(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters)
+        Writes the LISFLOOD initialization settings file.
+    """
 
     def __init__(self, cfg, subcatch):
 
