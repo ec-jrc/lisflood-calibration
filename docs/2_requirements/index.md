@@ -2,7 +2,7 @@
 
 ## Software required
 
-- Python >= 3.8
+- Python >= 3.7
 
 ## Python packages
 
