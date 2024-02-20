@@ -26,6 +26,9 @@ class DummyDEAPParameters():
         self.cxpb = 0.6
         self.mutpb = 0.4
 
+        self.gen_offset = 3
+        self.effmax_tol = 0.003
+
 
 class DummyConfig():
 
