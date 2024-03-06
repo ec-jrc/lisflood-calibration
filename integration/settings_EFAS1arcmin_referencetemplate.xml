@@ -664,10 +664,11 @@
                 **************************************************************
             </comment>
 
-            <textvar name="LZInitValue" value="%lz_init">
+            <textvar name="LZInitValue" value="-9999">
                 <comment>
                     water in lower store [mm]
-                    -9999: use steady-state storage
+                    -9999: use steady-state storage (recommended)
+                    % lz_init: takes end values from prerun lz.end.nc 
                 </comment>
             </textvar>
 
