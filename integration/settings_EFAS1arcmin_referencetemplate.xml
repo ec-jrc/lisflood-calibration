@@ -20,13 +20,13 @@
         # modelling and reporting options
         #-----------------------------------------------------------
         # options to turn hydrological modules on/off
-        <setoption choice="1" name="groundwaterSmooth"/>
+        <setoption choice="0" name="groundwaterSmooth"/>
 
         <setoption choice="0" name="cropsEPIC"/>
-        <setoption choice="0" name="wateruse"/>
+        <setoption choice="1" name="wateruse"/>
         <setoption choice="1" name="TransientWaterDemandChange"/>
         <setoption choice="0" name="useWaterDemandAveYear"/>
-        <setoption choice="0" name="wateruseRegion"/>
+        <setoption choice="1" name="wateruseRegion"/>
 
         <setoption choice="1" name="drainedIrrigation"/>
         <setoption choice="1" name="riceIrrigation"/>
