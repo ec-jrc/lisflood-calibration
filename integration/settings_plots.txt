@@ -1,0 +1,5 @@
+[Main]
+SubCatchmentPath = /home/lisflood-calibration/test_efas4/catchments
+total_num_steps = 14975
+plots_storage_folder = /home/lisflood-calibration/test_efas4/plot_checks_wateruse/
+suffix_fig_filename = testing_
