@@ -12,5 +12,5 @@ cd lisflood-calibration
 pip install .
 ```
 
-After you cloned the repo and installed python dependencies you need to [setup](3_data) static data and configure the tool.
+After you cloned the repo and installed python dependencies you need to [setup](../3_data/index.md) static data and configure the tool.
 
