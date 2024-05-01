@@ -1,17 +1,13 @@
 # Requirements
 
-
 ## Software required
 
-- pcraster > 0.41 http://pcraster.geo.uu.nl/
-- Python 2.7
-- postscript (need by some postprocessing scripts in order to generate figures, optional) 
+- Python >= 3.7
 
 ## Python packages
 
-- netCDF4  https://pypi.org/project/netCDF4/
-- pcraster http://pcraster.geo.uu.nl/
+- lisflood (https://github.com/ec-jrc/lisflood-code) and dependencies (PCRASTER, GDAL, etc.)
 - pandas
 - numpy
-- matplotlib
+- xarray
 - deap (https://deap.readthedocs.io/en/master/installation.html)

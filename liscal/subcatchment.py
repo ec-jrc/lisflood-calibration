@@ -9,6 +9,41 @@ from liscal import pcr_utils, utils, stations
 
 
 class SubCatchment():
+    """
+    A class representing a hydrological subcatchment area linked to a station.
+    The class handles the preparation of the subcatchment for the
+    calibration of the LISFLOOD model.
+
+    Attributes
+    ----------
+    obsid : str
+        Observation station ID.
+    path : str
+        Path to the subcatchment directory.
+    path_out : str
+        Path to the output directory for the subcatchment.
+    path_station : str
+        Path to the station data directory for the subcatchment.
+    create_links : bool
+        Flag indicating whether to create links for upstream inflows.
+    data : pandas.DataFrame
+        DataFrame containing station data.
+    gaugeloc : str
+        Location of the gauge.
+    inflowflag : str
+        Flag indicating the presence of inflows.
+    
+    Methods
+    -------
+    __init__(cfg, obsid, station_data=None, initialise=True, create_links=True)
+        Initializes the SubCatchment object.
+    extract_gauge_loc(outlet_file)
+        Extracts the gauge location from the outlet file.
+    resample_inflows(cfg)
+        Resamples inflows for the subcatchment.
+    prepare_inflows(cfg)
+        Prepares inflow data for the subcatchment.
+    """
 
     def __init__(self, cfg, obsid, station_data=None, initialise=True, create_links=True):
 

@@ -234,7 +234,9 @@ defaults:
       - section_title: "Introduction"
         items:
         - title: "- About"
-          url: 1_introduction
+          url: 1_about
+        - title: "- LISFLOOD calibration"
+          url: 1_calibration
 
       - section_title: "Setup"
         items:
@@ -247,9 +249,12 @@ defaults:
         items:
         - title: "- Configuration files and static input data"
           url: 3_data
-        - title: "- First steps"
-          url: 3_first
         - title: "- Execute main calibration script"
           url: 3_execute
+
+      - section_title: "API"
+        items:
+        - title: "- liscal"
+          url: 4_api
 
 theme: jekyll-theme-minimal
