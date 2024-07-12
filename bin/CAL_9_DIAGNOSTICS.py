@@ -27,7 +27,7 @@ else:
     parser = SafeConfigParser()  # python 2.7-15
 parser.read(iniFile)
 
-# USAGE python CAL_7C_optional_diagnostic_plots.py settings_plots.txt CatchmentsToProcess_XX.txt
+# USAGE python CAL_9_optional_diagnostic_plots.py settings_plots.txt CatchmentsToProcess_XX.txt
 
 SubCatchmentPath=parser.get('Main', 'SubCatchmentPath')
 #catchments=np.arange(1,6300) # ALL the GloFAS IDs
