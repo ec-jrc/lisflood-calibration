@@ -10,8 +10,7 @@ from matplotlib import patches
 from matplotlib import transforms
 from matplotlib import ticker
 
-from plotflood import evaluation
-from liscal import hydro_stats, thresholds
+from liscal import hydro_stats, thresholds, evaluation
 
 
 def create_products(cfg, subcatch, obj):
