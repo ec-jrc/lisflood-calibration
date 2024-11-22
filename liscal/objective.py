@@ -186,6 +186,22 @@ class ObjectiveKGE():
 
         return kge_components
 
+    def compute_evap_index(self, run_id,precip_budyko,PET_budyko):
+        """
+        computing evaporative index and budyko compliance
+        """
+        # print(self.subcatch)
+        etactBudyko_tss = os.path.join(self.subcatch.path_out, run_id, 'actETPBUDYKOUpsTS.tss')
+        if os.path.isfile(etactBudyko_tss)==False:
+            # print('run_id: {}'.format(str(run_id)))
+            # print('etactBUDYKO file path: {}'.format(etactBudyko_tss))
+            raise Exception("No simulated etactBudyko found. Probably LISFLOOD failed to start? or you are not creating the correct output? check settings.xml file")
+
+        etactBudyko = utils.read_tss(etactBudyko_tss)[1]  # need to take [1] or we get 2d array
+        etactBudyko[etactBudyko==1e31] = np.nan
+        evap_index=hydro_stats.evap_index_BUDYKO(precip_budyko,etactBudyko.sum(),PET_budyko)
+        return evap_index
+
     def compute_statistics(self, start, end, simulated_streamflow):
 
         date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
@@ -206,7 +222,7 @@ class ObjectiveKGE():
 
         return Q, stats
 
-    def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
+    def update_parameter_history(self, run_id, parameters, fKGEComponents,EVAP_index, gen, run):
 
         cfg = self.cfg
 
@@ -225,7 +241,7 @@ class ObjectiveKGE():
             paramsHistory = "randId,"
             for i in [str(ip) + "," for ip in self.param_ranges.index.values]:
                 paramsHistory += i
-            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae", "generation", "runNumber"]]:
+            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae","Evaporative Index","Fractional Budyko Distance", "generation", "runNumber"]]:
                 paramsHistory += i
             paramsHistory += "\n"
             # Minimal values
@@ -250,6 +266,8 @@ class ObjectiveKGE():
         for i in [str(ip) + "," for ip in parameters]:
             paramsHistory += i
         for i in [str(ip) + "," for ip in fKGEComponents]:
+            paramsHistory += i
+        for i in [str(ip) + "," for ip in EVAP_index]:
             paramsHistory += i
         paramsHistory += str(gen) + ","
         paramsHistory += str(run)

@@ -363,3 +363,20 @@ def split_monthly(i, s, o):
         sim_monthly.append(sim_month)
 
     return sim_monthly, obs_monthly
+
+def budyko(x):
+    return (x*np.tanh(1/x)*(1-np.exp(-x)))**(0.5)
+
+def evap_index_BUDYKO(tot_precip,tot_etactBudyko,tot_PETBudyko):
+    '''
+    tot_precip: total precipitation of simulated period
+    tot_etactBudyko: total actual Budyko evapotraspiration (forest & others) of simulated period
+    tot_ETBudyko: total PET of simulated period
+    '''
+    evap_index=float(tot_etactBudyko)/float(tot_precip)
+    dryness_index=float(tot_PETBudyko)/float(tot_precip)
+    #dryness index according to Budyko
+    optimal_evap_index=budyko(dryness_index)
+    budyko_distance=(optimal_evap_index-evap_index)/optimal_evap_index
+
+    return evap_index,budyko_distance
