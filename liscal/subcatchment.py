@@ -85,6 +85,11 @@ class SubCatchment():
         gaugeloc = str(float(x))+" "+str(float(y))
         
         return gaugeloc
+    
+    def extract_budyko_data(self):
+        precip_budyko=self.data['precip_budyko']
+        PET_budyko=self.data['PET_budyko']
+        return precip_budyko, PET_budyko
 
     def resample_inflows(self, cfg):
         subcatchinlets_map = os.path.join(self.path, "inflow", "inflow.map")

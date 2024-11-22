@@ -155,9 +155,12 @@ class HydrologicalModel():
             
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
+        precip_budyko=self.subcatch.data['PET_budyko']
+        PET_budyko=self.subcatch.data['precip_budyko']
 
+        evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko)
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, objectives,evap_objective, gen, run)
 
         return objectives  # If using just one objective function, put a comma at the end!!!
 

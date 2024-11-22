@@ -20,13 +20,13 @@
         # modelling and reporting options
         #-----------------------------------------------------------
         # options to turn hydrological modules on/off
-        <setoption choice="1" name="groundwaterSmooth"/>
+        <setoption choice="0" name="groundwaterSmooth"/>
 
         <setoption choice="0" name="cropsEPIC"/>
-        <setoption choice="0" name="wateruse"/>
+        <setoption choice="1" name="wateruse"/>
         <setoption choice="1" name="TransientWaterDemandChange"/>
         <setoption choice="0" name="useWaterDemandAveYear"/>
-        <setoption choice="0" name="wateruseRegion"/>
+        <setoption choice="1" name="wateruseRegion"/>
 
         <setoption choice="1" name="drainedIrrigation"/>
         <setoption choice="1" name="riceIrrigation"/>
@@ -90,7 +90,7 @@
         <setoption choice="0" name="repSnowCoverMaps"/>
         <setoption choice="0" name="repRainMaps"/>
         <setoption choice="0" name="repSnowMeltMaps"/>
-
+        <setoption choice="0" name="repETActMaps"/>
         <setoption choice="0" name="repThetaMaps"/>
         <setoption choice="0" name="repThetaForestMaps"/>
         <setoption choice="0" name="repThetaIrrigationMaps"/>
@@ -114,6 +114,7 @@
         <setoption choice="0"  name="repETRefMaps"/>
         <setoption choice="0"  name="repESRefMaps"/>
         <setoption choice="0"  name="repEWRefMaps"/>
+        <setoption choice="0"  name="repPrecipitationMaps"/>
         <setoption choice="0"  name="repTavgMaps"/>
 
     </lfoptions>
@@ -3432,6 +3433,11 @@ soil layer 3 [V/V]
                         Reported actual evapotranspiration [mm]
                     </comment>
                 </textvar>
+                <textvar name="ETActBudykoMaps" value="$(PathOut)/etactBUDYKO">
+                    <comment>
+                        Reported actual evapotranspiration onfly from forest and others [mm]
+                    </comment>
+                </textvar>
 
                 <textvar name="LeafDrainageMaps" value="$(PathOut)/ldra">
                     <comment>
@@ -3936,6 +3942,17 @@ soil layer 3 [V/V]
                 <textvar name="EWRefAvUpsTS" value="$(PathOut)/ewUps.tss">
                     <comment>
                         Potential open water evaporation [mm/time step]
+                    </comment>
+                                </textvar>
+                
+                <textvar name="actETPUpsTS" value="$(PathOut)/actETPUps.tss">
+                    <comment>
+                        ESActPixel+self.var.TaPixel+self.var.TaInterceptionAll+self.var.EvaAddM3*self.var.M3toMM
+                    </comment>
+                </textvar>
+                <textvar name="actETPBUDYKOUpsTS" value="$(PathOut)/actETPBUDYKOUpsTS.tss">                
+                    <comment>
+                        ESActPixel+self.var.TaPixel+self.var.TaInterceptionAll+self.var.EvaAddM3*self.var.M3toMM
                     </comment>
                 </textvar>
 
