@@ -63,7 +63,7 @@ for index, row in stationdata_sorted.iterrows():
 	if len(Series[Series==catchment]) == 0: # Only process catchments whose ObsID is in the CatchmentsToProcess.txt file
 		continue
 	print("\n\n\n=================== "+str(catchment)+" ====================")
-	print(">> Starting map subsetting for catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" pixels...")
+	print(">> Starting map subsetting for catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")
 
 	t = time.time()
 
