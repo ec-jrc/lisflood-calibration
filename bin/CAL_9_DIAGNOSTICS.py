@@ -12,16 +12,33 @@ import datetime as dt
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
+ver = sys.version
+ver = ver[:ver.find('(')-1]
+if ver.find('3.') > -1:
+  from configparser import ConfigParser # Python 3.8
+else:
+  from ConfigParser import SafeConfigParser # Python 2.7-15
 
+iniFile = os.path.normpath(sys.argv[1])
+file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
+if ver.find('3.') > -1:
+    parser = ConfigParser()  # python 3.8
+else:
+    parser = SafeConfigParser()  # python 2.7-15
+parser.read(iniFile)
 
-# The following five entries can be summarized in a settings_plots.txt file ...
+# USAGE python CAL_9_optional_diagnostic_plots.py settings_plots.txt CatchmentsToProcess_XX.txt
 
-SubCatchmentPath='/BGFS/DISASTER/russcar/GloFASNext_calibration/catchments/'
+SubCatchmentPath=parser.get('Main', 'SubCatchmentPath')
 #catchments=np.arange(1,6300) # ALL the GloFAS IDs
-catchments=[461] # selection of subcatchments IDs
-total_num_steps = 14975 # this is the number of computational steps between forcings start and forcings end, be mindfull of the daily and 6hours options
-plots_storage_folder = '/BGFS/DISASTER/grimast/calibration3arcmin_workflow/plot_checks_wateruse/' # folder in which the plots are saved
-suffix_fig_filename = 'testing_' # optional deatils of the file name
+#catchments=[461] # selection of subcatchments IDs
+total_num_steps = int(parser.get('Main', 'total_num_steps')) # this is the number of computational steps between forcings start and forcings end, be mindfull of the daily and 6hours options
+plots_storage_folder = parser.get('Main', 'plots_storage_folder') # folder in which the plots are saved
+suffix_fig_filename = parser.get('Main', 'suffix_fig_filename') # optional deatils of the file name
+
+#catchments list is loaded from the txt file 'CatchmentsToProcess_XX.txt' added as an argument of the script
+CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)
+catchments=CatchmentsToProcess[0]
 
 
 outputfilenames = ['rainUps', 'snowUps', 'snowMeltUps', 'frostUps', 'actEvapo', 'theta1total', 'theta2total', 'theta3total', 'dTopToSubUps', 'qUzUps', 'qLzUps', 'percUZLZUps', 'dSubToUzUps', 'prefFlowUps', 'infUps', 'surfaceRunoffUps' , 'lossUps', 'lzUps']

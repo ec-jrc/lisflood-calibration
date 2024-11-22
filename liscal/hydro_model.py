@@ -19,6 +19,43 @@ from liscal import utils
 
 
 class HydrologicalModel():
+    """
+    A class representing a hydrological model for calibration and simulation.
+
+    Attributes
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    lis_template : LisfloodTemplate
+        Template for LISFLOOD input files.
+    lock_mgr : LockManager
+        Manager for synchronization locks and parallelisation.
+    objective : Objective
+        Objective function class for calibration.
+    obs_start : str
+        Start date for the observation period.
+    obs_end : str
+        End date for the observation period.
+    cal_start : str
+        Start date for the calibration period.
+    cal_end : str
+        End date for the calibration period.
+    prerun_start : str
+        Start date for the prerun period.
+    prerun_end : str
+        End date for the prerun period.
+    lisflood_cache_size : int
+        Size of the cache after initial LISFLOOD run.
+
+    Methods
+    -------
+    init_run()
+        Initialize the model run, caching static maps and forcings.
+    run(Individual)
+        Run the model for a given set of parameters.
+    """
 
     def __init__(self, cfg, subcatch, lis_template, lock_mgr, objective):
 
@@ -47,6 +84,10 @@ class HydrologicalModel():
         self.prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
 
     def init_run(self):
+        """
+        Initialize the model run. This method prepares the model by caching static maps and forcings.
+        It runs LISFLOOD in initialization mode.
+        """
 
         # dummy Individual, doesn't matter here
         param_ranges = self.cfg.param_ranges
@@ -81,6 +122,19 @@ class HydrologicalModel():
         self.lisflood_cache_size = Cache.size()
 
     def run(self, Individual):
+        """
+        Run the model for a given set of parameters.
+
+        Parameters
+        ----------
+        Individual : array-like
+            Array of parameter values for the model run.
+
+        Returns
+        -------
+        array-like
+            The computed objectives for the given set of parameters.
+        """
 
         cfg = self.cfg
 
@@ -109,6 +163,19 @@ class HydrologicalModel():
 
 
 def read_parameters(path_subcatch):
+    """
+    Read optimised parameter values from a CSV file.
+
+    Parameters
+    ----------
+    path_subcatch : str
+        Path to the subcatchment directory.
+
+    Returns
+    -------
+    list
+        List of parameter values.
+    """
 
     paramvals = pd.read_csv(os.path.join(path_subcatch, "pareto_front.csv"),sep=",")
 
@@ -123,6 +190,24 @@ def read_parameters(path_subcatch):
 
 
 def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outname):
+    """
+    Convert a .tss file to a CSV file and copy the .tss file to a specified location.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    run_id : str
+        ID of the model run.
+    forcing_start : datetime
+        Start date of forcing data.
+    dataname : str
+        Name of the data in the .tss file.
+    outname : str
+        Prefix for the output CSV file.
+    """
 
     tss_file = os.path.join(subcatch.path_out, run_id, dataname + '.tss')
 
@@ -147,6 +232,14 @@ def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outna
 
 
 def stage_inflows(path_subcatch):
+    """
+    Move around inflow .tss files for a subcatchment to make sure they are not overwritten.
+
+    Parameters
+    ----------
+    path_subcatch : str
+        Path to the subcatchment directory.
+    """
 
     inflow_tss = os.path.join(path_subcatch, "inflow", "chanq.tss")
     inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanq_last_run.tss")
@@ -160,6 +253,18 @@ def stage_inflows(path_subcatch):
 
 
 def generate_outlet_streamflow(cfg, subcatch, lis_template):
+    """
+    Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    lis_template : LisfloodTemplate
+        Template object for LISFLOOD input settings file.
+    """
 
     # stage_inflows(subcatch.path)
 
@@ -198,6 +303,26 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
 
 def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
+    """
+    Generate timing benchmarks for the model run.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    lis_template : LisfloodTemplate
+        Template object for LISFLOOD input settings file.
+    param_target : array-like
+        Target parameter values for the benchmark.
+    outfile : str
+        Path for the output file.
+    start : str
+        Start date for the benchmark period.
+    end : str
+        End date for the benchmark period.
+    """
 
     run_id = 'T'
     out_dir = os.path.join(subcatch.path_out, run_id)
@@ -236,7 +361,28 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     f.write('{}\n'.format(t5-t4))
     f.close()
 
+
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
+    """
+    Generate a benchmark run for the model with specified parameters.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    lis_template : LisfloodTemplate
+        Template object for LISFLOOD input settings file.
+    param_target : array-like
+        Target parameter values for the benchmark.
+    outfile : str
+        Path for the output file.
+    start : str
+        Start date for the benchmark period.
+    end : str
+        End date for the benchmark period.
+    """
 
     run_id = 'Z'
     out_dir = os.path.join(subcatch.path_out, run_id)

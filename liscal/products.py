@@ -14,6 +14,30 @@ from liscal import hydro_stats, thresholds, evaluation
 
 
 def create_products(cfg, subcatch, obj):
+    """
+    Creates various hydrological evaluation products including statistical summaries, plots, and tables.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    obj : ObjectiveKGE
+        ObjectiveKGE instance containing methods for reading and computing streamflow statistics.
+
+    Notes
+    -----
+    This function performs several operations including:
+    - Reading and computing statistics for simulated streamflow.
+    - Generating monthly discharge data.
+    - Computing return periods.
+    - Creating ASCII output of statistics.
+    - Producing various plots (speedometer, box, and time series plots).
+    - Converting plots from SVG to PDF format.
+    - (Commented out) Computing contingency tables.
+    """
+
     obs_start = datetime.strptime(subcatch.data['Obs_start'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
     obs_end = datetime.strptime(subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
 

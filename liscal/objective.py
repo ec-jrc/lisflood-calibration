@@ -7,6 +7,49 @@ from liscal import hydro_stats, utils
 
 
 class ObjectiveKGE():
+    """
+    A class representing the objective function based on the Kling-Gupta Efficiency (KGE) metric.
+
+    Attributes
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    subcatch : Subcatchment
+        Subcatchment information and data.
+    param_ranges : DataFrame
+        Parameter ranges for the model.
+    weights : list
+        Weights for different components of the KGE.
+    observed_streamflow : DataFrame
+        Observed streamflow data.
+
+    Methods
+    -------
+    get_parameters(Individual)
+        Converts an individual's genes to actual parameter values.
+    read_observed_streamflow(observations_file)
+        Reads observed streamflow data from a CSV file.
+    read_simulated_streamflow_best()
+        Reads the best simulated streamflow data.
+    read_simulated_streamflow(run_id, start, end)
+        Reads simulated streamflow data for a given run.
+    resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
+        Resamples streamflow data to align simulated and observed streamflows.
+    compute_objectives(run_id, start, end, simulated_streamflow)
+        Computes the KGE and its components for a given simulation.
+    compute_statistics(start, end, simulated_streamflow)
+        Computes various statistics for a given simulation.
+    update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
+        Updates the parameter history log.
+    read_param_history()
+        Reads the parameter history from a log file.
+    write_ranked_solution(pHistory, path_out=None)
+        Ranks solutions based on different metrics and writes the ranked solutions to a file.
+    write_pareto_front(pHistory, path_out=None)
+        Writes the pareto front to a file.
+    process_results()
+        Processes and writes results after model execution.
+    """
 
     def __init__(self, cfg, subcatch, read_observations=True):
         self.cfg = cfg

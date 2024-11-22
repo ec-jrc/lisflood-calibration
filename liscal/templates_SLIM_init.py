@@ -155,7 +155,7 @@ class LisfloodSettingsTemplate():
             f.write(out_xml_prerun)
  
         out_xml_run = out_xml
-        out_xml_run = out_xml_run.replace('%InitLisflood', "1")
+        out_xml_run = out_xml_run.replace('%InitLisflood', "0")
         out_xml_run = out_xml_run.replace('%CalStart', run_start)
         out_xml_run = out_xml_run.replace('%CalEnd', run_end)
         out_xml_run = out_xml_run.replace('%EndMaps', "0")
