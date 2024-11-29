@@ -10,8 +10,7 @@ from matplotlib import patches
 from matplotlib import transforms
 from matplotlib import ticker
 
-from plotflood import evaluation
-from liscal import hydro_stats, thresholds
+from liscal import hydro_stats, thresholds, evaluation
 
 
 def create_products(cfg, subcatch, obj):
@@ -79,6 +78,21 @@ def create_products(cfg, subcatch, obj):
     ts.plot(os.path.join(subcatch.path_out, 'timmy'), Q.index, Q['Sim'].values, Q['Obs'].values, return_periods)
     os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'timmy')))
 
+    # create Q-Q plot
+    qq = evaluation.QQPlot(cfg.plot_params)
+    qq.plot(os.path.join(subcatch.path_out, 'qqy'), Q.index, Q['Sim'].values, Q['Obs'].values)
+    os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'qqy')))
+    
+    # create best parameters table plot
+    bestparmtrs = evaluation.BestParamPlot(cfg.plot_params)
+    bestparmtrs.plot(os.path.join(subcatch.path_out, 'bestparmtrs'), os.path.join(subcatch.path, 'pareto_front.csv'))
+    os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'bestparmtrs')))
+
+    # create (inter)catchment plot
+    spatialplot = evaluation.SpatialPlot(cfg.plot_params)
+    spatialplot.plot(os.path.join(subcatch.path_out, 'spatial'), os.path.join(subcatch.path, 'maps'))
+    os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'spatial')))
+    
     # compute contingency table and export
     # contingency_values = binary_scores.contingency_table(thresholds, Q)
     # contingency_df = pd.DataFrame(data=contingency_values, index=subcatch.obsid)
