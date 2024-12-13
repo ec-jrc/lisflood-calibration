@@ -26,7 +26,7 @@ class LisfloodSettingsTemplate():
         Initializes the LisfloodSettingsTemplate object with configuration and subcatchment data.
     settings_path(suffix, run_id)
         Returns the path for a settings file given a suffix and run ID.
-    write_template(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters, write_states=False)
+    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, param_ranges, parameters, write_states=False)
         Writes the LISFLOOD settings file for both prerun and main run.
     write_init(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters)
         Writes the LISFLOOD initialization settings file.
@@ -55,24 +55,25 @@ class LisfloodSettingsTemplate():
     def settings_path(self, suffix, run_id):
         return self.outfix+suffix+run_id+'.xml'
 
-    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters, write_states=False):
+    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, param_ranges, parameters, write_states=False):
 
         prerun_file = self.settings_path('PreRun', run_id)
         run_file = self.settings_path('Run', run_id)
 
         out_xml = self.template_xml
 
-        for ii in range(len(param_ranges)):
-            ## DD Special Rule for the SAVA --> SAVA belongs to EFAS, these lines must be commented when running the GloFAS calibration
-            if self.timestep == 360 and self.obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
-                out_xml = out_xml.replace('%adjust_Normal_Flood',"0.8")
-                out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
-            out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
+        for oii in range(len(original_param_ranges)):
+            if original_param_ranges.index[oii] in param_ranges.index:
+                ii = param_ranges.index.get_loc(original_param_ranges.index[oii])
+                out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
+            else:
+                #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
+                out_xml = out_xml.replace("%"+original_param_ranges.index[oii],str(original_param_ranges.iloc[oii,2]))
 
         # Prerun file
         out_xml_prerun = out_xml
         out_xml_prerun = out_xml_prerun.replace('%InitLisflood',"1")
-        out_xml_run = out_xml_run.replace('%ColdStart',"0")
+        out_xml_prerun = out_xml_prerun.replace('%ColdStart',"0")
         out_xml_prerun = out_xml_prerun.replace('%EndMaps', "1")
         out_xml_prerun = out_xml_prerun.replace('%CalStart', prerun_start)
         out_xml_prerun = out_xml_prerun.replace('%CalEnd', prerun_end)
@@ -138,10 +139,6 @@ class LisfloodSettingsTemplate():
         
         # Common parameters
         for ii in range(len(param_ranges)):
-            ## DD Special Rule for the SAVA --> SAVA belongs to EFAS, these lines must be commented when running the GloFAS calibration
-            if self.timestep == 360 and self.obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
-                out_xml = out_xml.replace('%adjust_Normal_Flood',"0.8")
-                out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
             out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
         out_xml = out_xml.replace('%InitLisflood', "1")
         out_xml = out_xml.replace('%ColdStart', "0")
@@ -152,14 +149,14 @@ class LisfloodSettingsTemplate():
         for data in ['uz', 'uzf', 'uzi']:
             out_xml = out_xml.replace(f'%{data}_init', '0')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '0')
-        for data in ['tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml = out_xml.replace(f'%{data}_init', '-9999')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '-9999')
 
         # Prerun file
         out_xml_prerun = out_xml
         out_xml_prerun = out_xml_prerun.replace('%InitLisflood', "1")
-        out_xml_prerun = out_xml_run.replace('%ColdStart', "0")
+        out_xml_prerun = out_xml_prerun.replace('%ColdStart', "0")
         out_xml_prerun = out_xml_prerun.replace('%CalStart', prerun_start)
         out_xml_prerun = out_xml_prerun.replace('%CalEnd', prerun_end)
         out_xml_prerun = out_xml_prerun.replace('%EndMaps', "1")
