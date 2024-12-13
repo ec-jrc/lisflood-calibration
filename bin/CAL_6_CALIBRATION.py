@@ -45,10 +45,10 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
             if 'LakeMultiplier' in cfg.param_ranges.index:
                 cfg.param_ranges.drop("LakeMultiplier", inplace=True)
         if model.lissettings.options['simulateReservoirs']==False:
-            if 'adjust_Normal_Flood' in cfg.param_ranges.index:
-                cfg.param_ranges.drop("adjust_Normal_Flood", inplace=True)
-            if 'ReservoirRnormqMult' in cfg.param_ranges.index:
-                cfg.param_ranges.drop("ReservoirRnormqMult", inplace=True)
+            if 'ReservoirFloodStorage' in cfg.param_ranges.index:
+                cfg.param_ranges.drop("ReservoirFloodStorage", inplace=True)
+            if 'ReservoirFloodOutflowFactor' in cfg.param_ranges.index:
+                cfg.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
 
         # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
         station_data_file=os.path.join(os.path.join(subcatch.path_station,'station_data.csv'))
