@@ -12,7 +12,8 @@ class ObjectiveKGE():
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
-        self.weights = [1, 0, 0, 0, 0]
+        #self.weights = [1, 0, 0, 0, 0] # Stef_manipulation
+        self.weights = [1, 0] # Stef_manipulation
 
         if read_observations:
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
@@ -49,11 +50,11 @@ class ObjectiveKGE():
 
         return observed_streamflow
 
-    def read_simulated_streamflow_best(self):
-        simulated_streamflow = os.path.join(self.subcatch.path_out, 'streamflow_simulated_best.csv')
+    def read_simulated_streamflow_best(self):  # Stef_manipulation
+        simulated_streamflow = os.path.join(self.subcatch.path_out, 'normalized_lake_level_best.csv')
         simulated_streamflow = pd.read_csv(simulated_streamflow, sep=",", index_col=0)
         simulated_streamflow = simulated_streamflow[str(self.subcatch.obsid)]
-        print('Simulated streamflow best:')
+        print('Simulated normalized lake level best:') # Stef_manipulation
         print('---------------------------------------')
         print(simulated_streamflow)
         print('---------------------------------------')
@@ -64,11 +65,11 @@ class ObjectiveKGE():
 
         timestep = self.cfg.timestep
 
-        Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
+        Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'hLake.tss')
         if os.path.isfile(Qsim_tss)==False:
             print('run_id: {}'.format(str(run_id)))
-            print('Discharge file path: {}'.format(Qsim_tss))
-            raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
+            print('hLake.tss file path: {}'.format(Qsim_tss))
+            raise Exception("No simulated hLake.tss found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
@@ -79,7 +80,6 @@ class ObjectiveKGE():
         
         if simulated_streamflow.index[-1] != end:
             raise ValueError('Simulated streamflow with run_id {} not consistent: end date is {} and should be {}'.format(run_id, simulated_streamflow.index[-1], end))
-
         return simulated_streamflow
 
     def resample_streamflows(self, start, end, simulated_streamflow, observed_streamflow):
@@ -89,8 +89,25 @@ class ObjectiveKGE():
         freq = '{}min'.format(cfg.timestep)
 
         # Finally, extract equal-length arrays from it
+        
+      
+        
         Qobs = observed_streamflow[start:end]
         Qsim = simulated_streamflow[start:end]
+        
+        # normalize
+        avg_Qobs=np.nanmean(Qobs)
+        Qobs = Qobs  - avg_Qobs 
+        print('verify time series...................................observed lake h....................................')
+        print(Qobs)  
+                
+        print('verify time series...................................modelled lake h....................................')
+        print(Qsim)
+        # normalize simulated streamflow, SPIN UP___
+        avg_Qsim = np.mean(Qsim)
+        Qsim = Qsim  - avg_Qsim 
+        print(Qsim)
+                
         date_range = pd.date_range(start_pd, end_pd, freq=freq)
         if cfg.timestep == 360:
             # DD: Check if daily or 6-hourly observed streamflow is available
@@ -109,8 +126,12 @@ class ObjectiveKGE():
         elif cfg.timestep == 1440:
             # DD Untested code! DEBUG TODO
             Qobs.index = date_range
+            print('Stef to check')
+            print(Qobs)
             Qobs = Qobs.resample('24H', label="right", closed="right").mean()
             date_range = Qobs.index
+            print(Qobs)
+            print(date_range)
         
         else:
             raise Exception('Calibration timesteup {} not supported'.format(cfg.timestep))

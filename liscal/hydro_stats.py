@@ -259,11 +259,13 @@ def KGE(s,o):
         KGE: Kling Gupta Efficiency
     """
     s,o = filter_nan(s,o)
-    B = np.mean(s) / np.mean(o)
-    y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
+    #B = np.mean(s) / np.mean(o)   # Stef_manipulation
+    #y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o)) # Stef_manipulation
     r = np.corrcoef(o, s)[0,1]
 
-    KGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2)
+    #KGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2) # Stef_manipulation
+    
+    KGE = r # Stef_manipulation
 
     return KGE
 
@@ -305,7 +307,10 @@ def fKGE(s, o, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOn
         B = np.mean(s) / np.mean(o)
         y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
         se = sae(s, o)
-    aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2)
+    #aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2) # Stef_manipulation   
+    aKGE = r # Stef_manipulation   
+    
+    ''' # Stef_manipulation  
     if aKGE < -100:
         aKGE = -100
     if np.isnan(aKGE):
@@ -315,7 +320,7 @@ def fKGE(s, o, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOn
         print("y = " + str(y))
         print("sqrt = " + str((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2))
         aKGE = -100.0
-
+  
     # DD little trick to give more sensitivity to low flows
     if weightedLogWeight > 0:
         sl = np.log(s)
@@ -328,8 +333,9 @@ def fKGE(s, o, weightedLogWeight=0.0, lowFlowPercentileThreshold=0.0, usePeaksOn
         r = (((1 - weightedLogWeight) * r)**6.0 + (weightedLogWeight * rl)**6.0)**(1.0/6.0)
         B = (((1 - weightedLogWeight) * B)**6.0 + (weightedLogWeight * Bl)**6.0)**(1.0/6.0)
         y = (((1 - weightedLogWeight) * y)**6.0 + (weightedLogWeight * yl)**6.0)**(1.0/6.0)
-
-    return (aKGE, r, B, y, se)
+     ''' # Stef_manipulation  
+    #return (aKGE, r, B, y, se) # Stef_manipulation  
+    return (aKGE, r)
 
 def vr(s,o):
     """

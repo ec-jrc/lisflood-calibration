@@ -145,7 +145,7 @@ def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outna
         pass
     shutil.copy(tss_file, os.path.join(subcatch.path_out, outname+"_simulated_best.tss"))
 
-
+'''
 def stage_inflows(path_subcatch):
 
     inflow_tss = os.path.join(path_subcatch, "inflow", "chanq.tss")
@@ -157,7 +157,7 @@ def stage_inflows(path_subcatch):
         print(inflow_tss_last_run)
         os.rename(inflow_tss, inflow_tss_cal)
         os.rename(inflow_tss_last_run, inflow_tss)
-
+'''
 
 def generate_outlet_streamflow(cfg, subcatch, lis_template):
 
@@ -193,8 +193,8 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'chanq', 'chanq')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'hLake', 'hLake')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'qLakeOut', 'qLakeOut')
 
 
 def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
@@ -236,6 +236,7 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     f.write('{}\n'.format(t5-t4))
     f.close()
 
+'''
 def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start, end):
 
     run_id = 'Z'
@@ -268,3 +269,5 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     # required for downstream catchments
     simulated_best_tss2csv(cfg, subcatch, run_id, start, 'dis', 'streamflow')
     simulated_best_tss2csv(cfg, subcatch, run_id, start, 'chanq', 'chanq')
+
+'''
