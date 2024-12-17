@@ -35,11 +35,11 @@ class ObjectiveKGE():
         Reads simulated streamflow data for a given run.
     resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
         Resamples streamflow data to align simulated and observed streamflows.
-    compute_objectives(run_id, start, end, simulated_streamflow)
+    compute_objectives(run_id, start, end, simulated_streamflow, compute_additional_metrics=False)
         Computes the KGE and its components for a given simulation.
     compute_statistics(start, end, simulated_streamflow)
         Computes various statistics for a given simulation.
-    update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
+    update_parameter_history(run_id, parameters, fKGEComponents, evap_objective, additional_metrics, gen, run)
         Updates the parameter history log.
     read_param_history()
         Reads the parameter history from a log file.
@@ -176,7 +176,7 @@ class ObjectiveKGE():
 
         return date_range, Qsim, Qobs
 
-    def compute_objectives(self, run_id, start, end, simulated_streamflow):
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
 
         date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
@@ -184,9 +184,18 @@ class ObjectiveKGE():
 
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
 
-        return kge_components
+        additional_metrics = {}
+        if compute_additional_metrics:
+            additional_metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
+            additional_metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
+            additional_metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
+            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs)            
 
-    def compute_evap_index(self, run_id,precip_budyko,PET_budyko):
+        return kge_components, additional_metrics
+
+    def compute_evap_index(self, run_id, precip_budyko, PET_budyko):
         """
         computing evaporative index and budyko compliance
         """
@@ -222,7 +231,7 @@ class ObjectiveKGE():
 
         return Q, stats
 
-    def update_parameter_history(self, run_id, parameters, fKGEComponents,EVAP_index, gen, run):
+    def update_parameter_history(self, run_id, parameters, fKGEComponents, EVAP_index, additional_metrics, gen, run):
 
         cfg = self.cfg
 
@@ -241,9 +250,14 @@ class ObjectiveKGE():
             paramsHistory = "randId,"
             for i in [str(ip) + "," for ip in self.param_ranges.index.values]:
                 paramsHistory += i
-            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae","Evaporative Index","Fractional Budyko Distance", "generation", "runNumber"]]:
+            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae","Evaporative Index","Fractional Budyko Distance"]]:            
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in additional_metrics]:
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in ["generation", "runNumber"]]:
                 paramsHistory += i
             paramsHistory += "\n"
+            
             # Minimal values
             paramsHistory += str(self.param_ranges.head().columns.values[0]) + ","
             for i in [str(ip) + "," for ip in self.param_ranges[str(self.param_ranges.head().columns.values[0])].values]:
@@ -268,6 +282,8 @@ class ObjectiveKGE():
         for i in [str(ip) + "," for ip in fKGEComponents]:
             paramsHistory += i
         for i in [str(ip) + "," for ip in EVAP_index]:
+            paramsHistory += i
+        for i in [str(additional_metrics[ip]) + "," for ip in additional_metrics]:
             paramsHistory += i
         paramsHistory += str(gen) + ","
         paramsHistory += str(run)

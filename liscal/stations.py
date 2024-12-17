@@ -129,16 +129,13 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
         The computed split date.
     """
 
-    # if < 8 years: take all
-    if obs_period_years <= 8:
+    # if < 20 years: take all
+    if obs_period_years < 20:
         split_date = valid_start
-    # if > 8 and < 16 years, only use last 8 years
-    elif obs_period_years > 8 and obs_period_years < 16:    
-        steps_8years = 8*365.25*24/dt
-        split_date = observations_filtered.index[-steps_8years]
-    # if >= 16, split in two
-    elif obs_period_years >= 16:
-        split_date = observations_filtered.index[int(len(observations_filtered.index)/2)]
+    # if >=20, only use last 20 years
+    else:  
+        steps_20years = 20*365.25*24/dt
+        split_date = observations_filtered.index[-steps_20years]
 
     return split_date
 

@@ -164,13 +164,13 @@ class HydrologicalModel():
         lisf1.main(run_file, '-v')
             
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
-        objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
+        objectives, additional_metrics = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow, compute_additional_metrics=True)
         precip_budyko=self.subcatch.data['precip_budyko']
         PET_budyko=self.subcatch.data['PET_budyko']
 
         evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko)
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, objectives,evap_objective, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
         return objectives  # If using just one objective function, put a comma at the end!!!
 
