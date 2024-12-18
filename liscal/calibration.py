@@ -259,12 +259,45 @@ class CalibrationDeap():
                 return wrappper
             return decorator
 
+        def checkGwLossGwPerc(min, max, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc):
+            def decorator(func):
+                def wrappper(*args, **kargs):
+                    offspring = func(*args, **kargs)
+                    for child in offspring:
+                        # condition in Lisflood OS: if GWloss > GwPercValue -> GwPerc = GwLoss
+                        # then if GwPercValue < GWloss -> GwPerc = GwLoss
+                        GwPercScaled = (child[indexGwPerc]*scaleGwPerc)+offsetGwPerc
+                        GwLossScaled = (child[indexGwLoss]*scaleGwLoss)+offsetGwLoss
+                        if GwPercScaled<GwLossScaled:                            
+                            GwPercScaled=GwLossScaled
+                            child[indexGwPerc]=(GwPercScaled-offsetGwPerc)/scaleGwPerc                            
+                            assert(child[indexGwPerc]>=min)
+                            assert(child[indexGwPerc]<=max)
+                    return offspring
+                return wrappper
+            return decorator
+        
         toolbox.register("evaluate", fun)
         toolbox.register("mate", tools.cxBlend, alpha=0.15)
         toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.3, indpb=0.3)
         toolbox.register("select", tools.selNSGA2)
-        toolbox.decorate("mate", checkBounds(0, 1))
-        toolbox.decorate("mutate", checkBounds(0, 1))
+
+        #ipar, par in enumerate(param_ranges.index):
+        if ('GwLoss' in self.param_ranges.index) and ('GwPercValue' in self.param_ranges.index):
+            indexGwLoss=self.param_ranges.index.get_loc('GwLoss')
+            indexGwPerc=self.param_ranges.index.get_loc('GwPercValue')
+
+            scaleGwLoss=(self.param_ranges.iloc[indexGwLoss][1]-self.param_ranges.iloc[indexGwLoss][0])
+            offsetGwLoss=self.param_ranges.iloc[indexGwLoss][0]
+            scaleGwPerc=(self.param_ranges.iloc[indexGwPerc][1]-self.param_ranges.iloc[indexGwPerc][0])
+            offsetGwPerc=self.param_ranges.iloc[indexGwPerc][0]
+
+            toolbox.decorate("mate", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+            toolbox.decorate("mutate", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+            toolbox.decorate("population", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+        else:
+            toolbox.decorate("mate", checkBounds(0, 1))
+            toolbox.decorate("mutate", checkBounds(0, 1))
 
         self.toolbox = toolbox
 

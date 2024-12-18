@@ -53,7 +53,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
         station_data_file=os.path.join(os.path.join(subcatch.path_station,'station_data.csv'))
         StationDataFile=pd.read_csv(station_data_file,index_col=0)
-        if float(StationDataFile.loc["min_TAvg"]) > 1.0:
+        if float(StationDataFile.loc["min_TAvgS"]) > float(model.lissettings.binding['TempSnow']):
             if 'SnowMeltCoef' in cfg.param_ranges.index:
                 cfg.param_ranges.drop("SnowMeltCoef", inplace=True)
 
