@@ -49,6 +49,9 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
                 cfg.param_ranges.drop("ReservoirFloodStorage", inplace=True)
             if 'ReservoirFloodOutflowFactor' in cfg.param_ranges.index:
                 cfg.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
+        if model.lissettings.options['MCTRouting']==False:
+            if 'CalChanMan3' in cfg.param_ranges.index:
+                cfg.param_ranges.drop("CalChanMan3", inplace=True)
 
         # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
         station_data_file=os.path.join(os.path.join(subcatch.path_station,'station_data.csv'))
