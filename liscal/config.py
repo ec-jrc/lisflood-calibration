@@ -78,6 +78,7 @@ class DEAPParameters():
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
+        self.apply_statistical_stall_check = bool(parser.get('DEAP','apply_statistical_stall_check'))
 
 
 class ConfigCalibration(Config):

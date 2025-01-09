@@ -12,6 +12,7 @@ from deap import base
 from deap import creator
 from deap import tools
 
+from scipy.stats import ttest_ind_from_stats
 
 class LockManager():
     """
@@ -124,6 +125,8 @@ class Criteria():
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
         self.gen_offset = deap_param.gen_offset  # 3
+        self.apply_statistical_stall_check = deap_param.apply_statistical_stall_check
+        self.mu = deap_param.mu
 
         self.effmax_tol = deap_param.effmax_tol  # 0.003
 
@@ -133,7 +136,13 @@ class Criteria():
         self.effavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
         self.effstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
 
-        self.conditions = {"maxGen": False, "StallFit": False}
+        # Initialise population statistics arrays
+        self.popmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popmin = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+
+        self.conditions = {"maxGen": False, "StallFit": False, "StatisticalStallFit": False}
 
     def check_termination_conditions(self, gen):
         # Terminate the optimization after maxGen generations
@@ -141,13 +150,52 @@ class Criteria():
             print(">> Termination criterion maxGen fulfilled.")
             self.conditions['maxGen'] = True
 
-        if gen >= self.min_gen and (self.effmax[gen, 0] - self.effmax[gen - self.gen_offset, 0]) < self.effmax_tol:
-            # # DD attempt to stop early with different criterion
-            # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
-            #     print(">> Termination criterion no-improvement sae fulfilled.")
-            #     # conditions["StallFit"] = True
-            print(">> Termination criterion no-improvement KGE fulfilled.")
-            self.conditions["StallFit"] = True
+        if gen >= self.min_gen and (gen >= self.gen_offset) and (self.effmax[gen, 0] - self.effmax[gen - self.gen_offset, 0]) < self.effmax_tol:
+            if self.apply_statistical_stall_check:
+                # CR optional stopping condition: even if the no-improvement KGE criterion is fulfilled, check the statistics of the latest gen_offset population to check if any overall improvement is going on
+                # Calculate t-test over the last `gen_offset` generations
+                mean_current = self.popavg[gen, 0]
+                std_current = self.popstd[gen, 0]
+                n_current = self.mu  # Assuming self.mu is the population size
+                
+                # Combine statistics from previous `gen_offset` generations
+                means_previous = self.popavg[gen-self.gen_offset:gen, 0]
+                stds_previous = self.popstd[gen-self.gen_offset:gen, 0]
+                n_previous = self.mu * self.gen_offset  # Total samples in previous gen_offset generations
+                
+                # Compute weighted average of means and stds for the previous generations
+                mean_previous = sum(means_previous) / self.gen_offset
+                std_previous = (sum(stds_previous**2) / self.gen_offset)**0.5
+                
+                # Perform t-test
+                t_stat, p_val = ttest_ind_from_stats(mean_current, std_current, n_current, mean_previous, std_previous, n_previous)
+                
+                # Check p-value
+                if (not np.isnan(p_val)) and (mean_current > mean_previous and p_val < 0.05):
+                    print(">> Significant improvement detected (p_val={:.3f}), continuing optimization.".format(p_val))
+                else:
+                    print(">> Termination criterion statistical no-improvement KGE fulfilled (p_val={:.3f}).".format(p_val))
+                    self.conditions["StatisticalStallFit"] = True
+            else:
+                # # DD attempt to stop early with different criterion
+                # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
+                #     print(">> Termination criterion no-improvement sae fulfilled.")
+                #     # conditions["StallFit"] = True
+                print(">> Termination criterion no-improvement KGE fulfilled.")
+                self.conditions["StallFit"] = True
+
+    def update_statistics_population(self, gen, population):
+        # Loop through the different objective functions and calculate some statistics from the current selected population
+        # N.B: population is already selected using best self.mu individuals from previous population + new offspring items
+        for ii in range(self.n_obj):
+            self.popmax[gen, ii] = np.amax([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popmin[gen, ii] = np.amin([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popavg[gen, ii] = np.average([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popstd[gen, ii] = np.std([population[x].fitness.values[ii] for x in range(len(population))])
+        print(">> gen: " + str(gen) + ", selected population with offsprings: KGE max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(self.popmax[gen, 0], 
+                                                                                                                         self.popmin[gen, 0],
+                                                                                                                         self.popavg[gen, 0],
+                                                                                                                         self.popstd[gen, 0]))
 
     def update_statistics(self, gen, halloffame):
         # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
@@ -359,6 +407,7 @@ class CalibrationDeap():
                 else:
                     population = valid_ind
                 self.criteria.update_statistics(gen, halloffame)
+                self.criteria.update_statistics_population(gen, population)
                 self.criteria.check_termination_conditions(gen)
                 print('----> Generation {} recovered'.format(gen))
                 gen = gen+1
@@ -398,6 +447,7 @@ class CalibrationDeap():
         halloffame.update(population) # DD this selects the best one
 
         self.criteria.update_statistics(gen, halloffame)
+        self.criteria.update_statistics_population(gen, population)
 
         return population
 
@@ -423,6 +473,7 @@ class CalibrationDeap():
         # Loop through the different objective functions and calculate some statistics
         # from the Pareto optimal population
         self.criteria.update_statistics(gen, halloffame)
+        self.criteria.update_statistics_population(gen, population)
 
         self.criteria.check_termination_conditions(gen)
 

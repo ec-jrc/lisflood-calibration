@@ -64,6 +64,8 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         calib_deap.run(subcatch.path, lock_mgr)
 
         obj.process_results()
+    else:
+        print("pareto_front.csv already exists! Moving on...")
 
 
 if __name__ == '__main__':
