@@ -172,7 +172,8 @@ class Criteria():
                 
                 # Check p-value
                 if (not np.isnan(p_val)) and (mean_current > mean_previous and p_val < 0.05):
-                    print(">> Significant improvement detected (p_val={:.3f}), continuing optimization.".format(p_val))
+                    print(">> Significant improvement detected (p_val={:.3f}, mean_current={:.3f}, std_current={:.3f}, mean_previous={:.3f}, std_previous={:.3f}), continuing optimization." 
+                          .format(p_val, mean_current, std_current, mean_previous, std_previous))
                 else:
                     print(">> Termination criterion statistical no-improvement KGE fulfilled (p_val={:.3f}).".format(p_val))
                     self.conditions["StatisticalStallFit"] = True
