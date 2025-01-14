@@ -63,7 +63,8 @@ class ObjectiveKGE():
 
     def include_corr_sae_weights(self):
         # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
-        self.weights = [1, 1, 0, 0, 1]
+        # N.B: sae needs to be minimized
+        self.weights = [1, 1, 0, 0, -1]
 
 
     def get_parameters(self, Individual):
