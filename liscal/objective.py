@@ -61,6 +61,10 @@ class ObjectiveKGE():
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
+    def include_corr_sae_weights(self):
+        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
+        self.weights = [1, 1, 0, 0, 1]
+
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges

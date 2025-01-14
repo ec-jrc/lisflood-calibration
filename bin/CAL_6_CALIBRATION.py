@@ -32,6 +32,9 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
+        if cfg.deap_param.apply_multiobjective_calibration:
+            obj.include_corr_sae_weights()
+
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
         # load forcings and input maps in cache
