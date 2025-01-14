@@ -1,27 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import pandas as pd
-from datetime import datetime
 
 from liscal import config, stations
-
-
-class ConfigStation(config.Config):
-
-    def __init__(self, settings_file):
-        super().__init__(settings_file)
-        
-        # paths
-        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
-
-        # Date parameters
-        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
-        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
-        
-        # observations
-        self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
-        self.stations_data = self.parser.get('Stations', 'stations_data')
 
 
 if __name__ == '__main__':
@@ -38,7 +19,7 @@ if __name__ == '__main__':
     if args.no_check:
         check_obs = False
 
-    cfg = ConfigStation(settings_file)
+    cfg = config.ConfigCalibration(settings_file)
 
     # Read full list of stations, index is obsid
     print(">> Reading stations_data file...")

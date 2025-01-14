@@ -107,7 +107,7 @@ def observation_period_years(station_type, observed_streamflow):
     return obs_period_years
 
 
-def compute_split_date(obs_period_years, dt, valid_start, observations_filtered):
+def compute_split_date(obs_period_years, dt, valid_start, observations_filtered, num_max_calib_years):
     """
     Computes the split date for the dataset, which splits the dataset in
     two parts for calibration and validation.
@@ -129,13 +129,13 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
         The computed split date.
     """
 
-    # if < 20 years: take all
-    if obs_period_years < 20:
+    # if < num_max_calib_years (usually 20 years): take all
+    if obs_period_years < num_max_calib_years:
         split_date = valid_start
-    # if >=20, only use last 20 years
+    # if >=num_max_calib_years, only use last num_max_calib_years years
     else:  
-        steps_20years = 20*365.25*24/dt
-        split_date = observations_filtered.index[-steps_20years]
+        steps_MAXyears = num_max_calib_years*365.25*24/dt
+        split_date = observations_filtered.index[-steps_MAXyears]
 
     return split_date
 
@@ -186,7 +186,7 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
 
     # Compute split date
     dt = time_step_from_type(station_data['CAL_TYPE'])
-    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
+    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered, cfg.num_max_calib_years)
 
     # Create output directory
     subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))

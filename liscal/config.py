@@ -157,6 +157,8 @@ class ConfigCalibration(Config):
         self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))  # in minutes
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
+        
+        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years'))  # max calibration years, used to compute split date
 
         # deap
         self.deap_param = DEAPParameters(self.parser)
@@ -178,6 +180,10 @@ class ConfigCalibration(Config):
         # stations
         self.stations_links = self.parser.get('Stations', 'stations_links')
         
+        # observations
+        self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
+        self.stations_data = self.parser.get('Stations', 'stations_data')
+
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
