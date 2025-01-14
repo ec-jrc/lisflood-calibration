@@ -84,7 +84,7 @@ class LisfloodSettingsTemplate():
         for data in ['uz', 'uzf', 'uzi']:
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '0')
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_prerun_init', '0')
-        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+        for data in ['tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '-9999')
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_prerun_init', '-9999')
         out_xml_prerun = out_xml_prerun.replace('%run_rand_id', run_id)
@@ -112,7 +112,7 @@ class LisfloodSettingsTemplate():
             out_xml_run = out_xml_run.replace('%repStateGauges', "0")
             out_xml_run = out_xml_run.replace('%repRateGauges', "0")
             out_xml_run = out_xml_run.replace('%repMeteoGauges', "0")
-        init_data = ['uz', 'uzf', 'uzi', 'lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']
+        init_data = ['uz', 'uzf', 'uzi', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']
         for data in init_data:
             out_xml_run = out_xml_run.replace(f'%{data}_init', f'$(PathOut)/{data}.end.nc')
             # %{data}_prerun_init added to allow use of %initialize variable in output wrinting of the prerun
@@ -149,7 +149,7 @@ class LisfloodSettingsTemplate():
         for data in ['uz', 'uzf', 'uzi']:
             out_xml = out_xml.replace(f'%{data}_init', '0')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '0')
-        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+        for data in ['tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml = out_xml.replace(f'%{data}_init', '-9999')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '-9999')
 
