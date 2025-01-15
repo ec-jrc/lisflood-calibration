@@ -172,7 +172,14 @@ class HydrologicalModel():
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
-        return objectives  # If using just one objective function, put a comma at the end!!!
+        # return only obectives with non zero weight!
+        non_zero_indices = [index for index, weight in enumerate(self.objective.weights) if weight != 0]
+        filtered_objectives = [objectives[i] for i in non_zero_indices]
+
+        if len(filtered_objectives)==1:
+            return filtered_objectives,  # If using just one objective function, put a comma at the end!!!
+        else:
+            return filtered_objectives              
 
 
 def read_parameters(path_subcatch):

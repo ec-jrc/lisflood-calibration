@@ -230,6 +230,7 @@ class CalibrationDeap():
         The objective function to evaluate.
     objective_weights : List
         List containing the weights of each objective in the multi-objective optimization.
+        (Zero weights will be filtered out before using the vector to set fitness values)
     seed : int, optional
         Random seed for reproducibility.
 
@@ -275,7 +276,9 @@ class CalibrationDeap():
         self.lambda_ = deap_param.lambda_
 
         self.objective_weights = objective_weights
-        self.criteria = Criteria(deap_param, len(objective_weights))
+        # use only objectives with non zero weights in DEAP!
+        filtered_objective_weights = [weight for weight in objective_weights if weight != 0]
+        self.criteria = Criteria(deap_param, len(filtered_objective_weights))
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -283,7 +286,7 @@ class CalibrationDeap():
         self.param_ranges = cfg.param_ranges
 
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=objective_weights)
+        creator.create("FitnessMin", base.Fitness, weights=filtered_objective_weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
@@ -373,7 +376,8 @@ class CalibrationDeap():
             newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
 
             # add objectives (from file) to current individual
-            objectives = pHistory.iloc[ind, n_params+1:n_params+1+n_obj].values
+            non_zero_indices = [index for index, weight in enumerate(self.objective_weights) if weight != 0]
+            objectives = [pHistory.iloc[ind, n_params+1+i] for i in non_zero_indices]
             newInd.fitness.values = objectives
 
             invalid_ind.append(newInd)
