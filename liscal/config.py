@@ -78,8 +78,8 @@ class DEAPParameters():
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
-        self.apply_statistical_stall_check = bool(parser.get('DEAP','apply_statistical_stall_check'))
-        self.apply_multiobjective_calibration = bool(parser.get('DEAP','apply_multiobjective_calibration'))
+        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
+        self.apply_multiobjective_calibration = bool(int(parser.get('DEAP','apply_multiobjective_calibration')))
 
 
 class ConfigCalibration(Config):
@@ -179,7 +179,7 @@ class ConfigCalibration(Config):
 
         # stations
         self.stations_links = self.parser.get('Stations', 'stations_links')
-        
+
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
         self.stations_data = self.parser.get('Stations', 'stations_data')
