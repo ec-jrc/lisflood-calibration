@@ -188,3 +188,26 @@ class ConfigCalibration(Config):
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
+
+    def filter_param_ranges_after_init(self, model_initialized):
+        # Adjust param_ranges list if lakes or reservoirs are not included into the current catchment
+        self.original_param_ranges = self.param_ranges.copy()
+        if model_initialized.lissettings.options['simulateLakes']==False:
+            if 'LakeMultiplier' in self.param_ranges.index:
+                self.param_ranges.drop("LakeMultiplier", inplace=True)
+        if model_initialized.lissettings.options['simulateReservoirs']==False:
+            if 'ReservoirFloodStorage' in self.param_ranges.index:
+                self.param_ranges.drop("ReservoirFloodStorage", inplace=True)
+            if 'ReservoirFloodOutflowFactor' in self.param_ranges.index:
+                self.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
+        if model_initialized.lissettings.options['MCTRouting']==False:
+            if 'CalChanMan3' in self.param_ranges.index:
+                self.param_ranges.drop("CalChanMan3", inplace=True)
+
+        # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
+        station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
+        StationDataFile=pandas.read_csv(station_data_file,index_col=0)
+        if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
+            if 'SnowMeltCoef' in self.param_ranges.index:
+                self.param_ranges.drop("SnowMeltCoef", inplace=True)
+
