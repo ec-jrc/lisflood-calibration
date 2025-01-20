@@ -158,7 +158,7 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.original_param_ranges, cfg.param_ranges, parameters)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg, out_dir, parameters)
             
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
@@ -300,7 +300,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.original_param_ranges, cfg.param_ranges, parameters, write_states=True)
+    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
@@ -353,7 +353,7 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.original_param_ranges, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg, out_dir, parameters)
 
     # cache first
     f = open("timings.csv", "w")
@@ -413,7 +413,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.original_param_ranges, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg, out_dir, parameters)
 
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')

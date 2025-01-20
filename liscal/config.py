@@ -1,9 +1,11 @@
 import os
+import numpy as np
 import pandas
 from datetime import datetime
 from configparser import ConfigParser
 from liscal import pcr_utils, calibration
-
+from lisflood.global_modules.add1 import loadmap, compressArray
+from pcraster import boolean
 
 class Config():
     """
@@ -195,6 +197,33 @@ class ConfigCalibration(Config):
         if model_initialized.lissettings.options['simulateLakes']==False:
             if 'LakeMultiplier' in self.param_ranges.index:
                 self.param_ranges.drop("LakeMultiplier", inplace=True)
+        else:
+            # check how many lakes are in the catchment
+            self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
+            IsChannelPcr = boolean(loadmap('Channels', pcr=True))
+            IsChannel = np.bool8(compressArray(IsChannelPcr))
+            self.LakeSitesC[self.LakeSitesC < 1] = 0
+            self.LakeSitesC[IsChannel == 0] = 0
+            # Get rid of any lakes that are not part of the channel network
+
+            # mask lakes sites when using sub-catchments mask
+            LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC)
+            self.LakeIndex = np.nonzero(self.LakeSitesC)[0]
+
+            if LakeSitesCC.size > 1:
+                # get one param for each lake
+                if 'LakeMultiplier' in self.param_ranges.index:
+                    # Retrieve the original LakeMultiplier row values
+                    lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
+                    
+                    # Drop the original LakeMultiplier row
+                    self.param_ranges.drop('LakeMultiplier', inplace=True)
+                    
+                    # Add a new LakeMultiplier row for each lake
+                    for lake_id in self.LakeIndex:
+                        new_row_name = f'LakeMultiplier_{lake_id}'
+                        self.param_ranges.loc[new_row_name] = lake_multiplier_values
+
         if model_initialized.lissettings.options['simulateReservoirs']==False:
             if 'ReservoirFloodStorage' in self.param_ranges.index:
                 self.param_ranges.drop("ReservoirFloodStorage", inplace=True)

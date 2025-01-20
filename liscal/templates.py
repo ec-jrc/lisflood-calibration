@@ -1,5 +1,8 @@
 import os
-
+import numpy as np
+from netCDF4 import Dataset
+from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
+from lisflood.global_modules.settings import LisSettings
 
 class LisfloodSettingsTemplate():
     """
@@ -26,7 +29,7 @@ class LisfloodSettingsTemplate():
         Initializes the LisfloodSettingsTemplate object with configuration and subcatchment data.
     settings_path(suffix, run_id)
         Returns the path for a settings file given a suffix and run ID.
-    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, param_ranges, parameters, write_states=False)
+    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, cfg, out_dir, parameters, write_states=False)
         Writes the LISFLOOD settings file for both prerun and main run.
     write_init(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters)
         Writes the LISFLOOD initialization settings file.
@@ -55,8 +58,9 @@ class LisfloodSettingsTemplate():
     def settings_path(self, suffix, run_id):
         return self.outfix+suffix+run_id+'.xml'
 
-    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, param_ranges, parameters, write_states=False):
+    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, parameters, write_states=False):
 
+        original_param_ranges, param_ranges = cfg.original_param_ranges, cfg.param_ranges
         prerun_file = self.settings_path('PreRun', run_id)
         run_file = self.settings_path('Run', run_id)
 
@@ -66,6 +70,30 @@ class LisfloodSettingsTemplate():
             if original_param_ranges.index[oii] in param_ranges.index:
                 ii = param_ranges.index.get_loc(original_param_ranges.index[oii])
                 out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
+            elif original_param_ranges.index[oii]=='LakeMultiplier' and any(index.startswith('LakeMultiplier_') for index in param_ranges.index):
+                # if we have here more LakeMultiplier parameters, create a map for the lakes
+                LakeMultiplierMap = np.full_like(cfg.LakeSitesC, -1, dtype=float)
+                for i, lake_id in enumerate(cfg.LakeIndex):
+                    ii = param_ranges.index.get_loc(f'LakeMultiplier_{lake_id}')
+                    assert(cfg.LakeIndex[i]==lake_id)
+                    LakeMultiplierMap[lake_id]=parameters[ii]
+                strLakeMultiplierMap=os.path.join(out_dir, 'LakeMultiplierMap.nc')
+
+
+                # Save the new map to a NetCDF file                
+                map_name = "LakeMultiplierMap"
+                lissettings = LisSettings.instance()
+                nf1 = write_netcdf_header(lissettings, map_name, strLakeMultiplierMap, None,
+                                        map_name, map_name, "",
+                                        None, None, None)
+
+                map_np = uncompress_array(LakeMultiplierMap)
+
+                nf1.variables[map_name][:, :] = map_np
+
+                nf1.close()
+
+                out_xml = out_xml.replace("%"+original_param_ranges.index[oii],"$(PathInit)/LakeMultiplierMap")
             else:
                 #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
                 out_xml = out_xml.replace("%"+original_param_ranges.index[oii],str(original_param_ranges.iloc[oii,2]))
