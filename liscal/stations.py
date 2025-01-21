@@ -134,7 +134,7 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered,
         split_date = valid_start
     # if >=num_max_calib_years, only use last num_max_calib_years years
     else:  
-        steps_MAXyears = num_max_calib_years*365.25*24/dt
+        steps_MAXyears = int(num_max_calib_years*365.25*24/dt)
         split_date = observations_filtered.index[-steps_MAXyears]
 
     return split_date
