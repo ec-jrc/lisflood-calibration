@@ -82,6 +82,13 @@ class DEAPParameters():
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
         self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
         self.apply_multiobjective_calibration = bool(int(parser.get('DEAP','apply_multiobjective_calibration')))
+        if self.apply_multiobjective_calibration:
+            self.objective_KGE = bool(int(parser.get('DEAP','objective_KGE')))
+            self.objective_corr = bool(int(parser.get('DEAP','objective_corr')))
+            self.objective_bias = bool(int(parser.get('DEAP','objective_bias')))
+            self.objective_y = bool(int(parser.get('DEAP','objective_y')))
+            self.objective_sae = bool(int(parser.get('DEAP','objective_sae')))
+
 
 
 class ConfigCalibration(Config):

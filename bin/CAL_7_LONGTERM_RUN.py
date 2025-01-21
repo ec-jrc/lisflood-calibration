@@ -30,7 +30,11 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
         if cfg.deap_param.apply_multiobjective_calibration:
-            obj.include_corr_sae_weights()
+            obj.set_custom_multiobjective_weights(cfg.deap_param.objective_KGE,
+                                                  cfg.deap_param.objective_corr,
+                                                  cfg.deap_param.objective_bias,
+                                                  cfg.deap_param.objective_y,
+                                                  cfg.deap_param.objective_sae )
 
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 

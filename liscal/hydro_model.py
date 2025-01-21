@@ -174,6 +174,12 @@ class HydrologicalModel():
 
         # return only obectives with non zero weight!
         non_zero_indices = [index for index, weight in enumerate(self.objective.weights) if weight != 0]
+        objectives=list(objectives)
+        # the KGE formula is aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2) 
+        # THUS: r (corr), B (bias) and y terms need to be adjusted to be minimized:
+        objectives[1] = (objectives[1]-1)**2    # r (corr)
+        objectives[2] = (objectives[2]-1)**2    # B (bias)
+        objectives[3] = (objectives[3]-1)**2    # y
         filtered_objectives = [objectives[i] for i in non_zero_indices]
 
         return filtered_objectives              

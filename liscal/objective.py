@@ -61,10 +61,11 @@ class ObjectiveKGE():
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
-    def include_corr_sae_weights(self):
+    def set_custom_multiobjective_weights(self, objective_KGE, objective_corr, objective_bias, objective_y, objective_sae):
         # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
-        # N.B: sae needs to be minimized
-        self.weights = [1, 1, 0, 0, -1]
+        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae]
+        # THUS: only KGE shoud be maximized, while other terms need to be minimized
+        self.weights = [int(objective_KGE), -int(objective_corr), -int(objective_bias), -int(objective_y), -int(objective_sae)]
 
 
     def get_parameters(self, Individual):
