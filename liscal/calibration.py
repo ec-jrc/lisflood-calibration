@@ -238,7 +238,11 @@ class Criteria():
         else:
             raise Exception('At least the KGE or the terms r, B and y are needed as objectives')
 
-        print(">> gen: " + str(gen) + ", effmax_KGE: " + "{0:.3f}".format(self.effmax_KGE[gen]))
+        print(">> gen: " + str(gen) + ", HallOfFame items: {}, population items: {}".format(len(halloffame), len(population)))
+        print(">> gen: " + str(gen) + ", effmax_KGE: " + "{:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(self.effmax_KGE[gen], 
+                                                                                                                            self.effmin_KGE[gen],
+                                                                                                                            self.effavg_KGE[gen],
+                                                                                                                            self.effstd_KGE[gen]))
         print(">> gen: " + str(gen) + ", selected population with offsprings: KGE max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(self.popmax_KGE[gen], 
                                                                                                                             self.popmin_KGE[gen],
                                                                                                                             self.popavg_KGE[gen],
