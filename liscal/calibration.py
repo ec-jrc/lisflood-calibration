@@ -213,6 +213,13 @@ class Criteria():
             self.effavg[gen, ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
             self.effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
 
+    def compute_halloffame_KGE(self, original_weights, halloffame):
+        if (original_weights[0] != 0):
+            effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
+        else:
+            effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
+        return effKGEs
+
     def compute_effmax_pop_KGE(self, gen, original_weights, halloffame, population):
         if (original_weights[0] != 0):
             self.effmax_KGE[gen]=self.effmax[gen,0]
@@ -225,7 +232,7 @@ class Criteria():
             self.popstd_KGE[gen]=self.popstd[gen,0]
         elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
             assert(original_weights[0]==0)  # here the KGE obj is not in effmax vector, thus effmax[gen,0] is the correlation
-            effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
+            effKGEs=self.compute_halloffame_KGE(original_weights, halloffame)
             self.effmax_KGE[gen]=np.amax(effKGEs)
             self.effmin_KGE[gen]=np.amin(effKGEs)
             self.effavg_KGE[gen]=np.average(effKGEs)
@@ -394,6 +401,21 @@ class CalibrationDeap():
 
         self.toolbox = toolbox
 
+    def add_elites_KGEs_from_halloffame_to_population(self, halloffame, population, num_elites):
+        halloffame_not_in_pop = [ind for ind in halloffame if ind not in population]
+        if num_elites>=len(halloffame_not_in_pop):
+            return population + halloffame_not_in_pop
+        
+        halloffameKGEs=self.criteria.compute_halloffame_KGE(self.objective_weights, halloffame_not_in_pop)
+
+        # Pair individuals with their KGE values and sort by KGE in descending order
+        hof_with_kge = list(zip(halloffame_not_in_pop, halloffameKGEs))
+        hof_with_kge.sort(key=lambda x: x[1], reverse=True)
+
+        # Select the top individuals as elites based on KGE
+        elites = [ind for ind, kge in hof_with_kge[:num_elites]]
+        return population + elites
+
     def updatePopulationFromHistory(self, pHistory):
         param_ranges = self.param_ranges
         n = len(pHistory)
@@ -453,11 +475,14 @@ class CalibrationDeap():
                 valid_ind = self.updatePopulationFromHistory(parsHistory)
                 # Update the hall of fame with the generation's parameters
                 halloffame.update(valid_ind)
+                    
                 # prepare for the next stage
                 if population is not None:
                     population[:] = self.toolbox.select(population + valid_ind, self.mu)
+                    population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, max(2, int(self.mu*0.1)))  # take 10% of mu as elites to keep in new population
                 else:
                     population = valid_ind
+                
                 self.criteria.update_statistics(gen, halloffame)
                 self.criteria.update_statistics_population(gen, population)
                 self.criteria.compute_effmax_pop_KGE(gen, self.objective_weights, halloffame, population)
@@ -523,7 +548,8 @@ class CalibrationDeap():
 
         # Select the next generation population
         population[:] = self.toolbox.select(population + offspring, self.mu)
-
+        population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, max(2, int(self.mu*0.1)))  # take 10% of mu as elites to keep in new population
+        
         # Loop through the different objective functions and calculate some statistics
         # from the Pareto optimal population
         self.criteria.update_statistics(gen, halloffame)
