@@ -180,7 +180,10 @@ class HydrologicalModel():
         objectives[1] = (objectives[1]-1)**2    # r (corr)
         objectives[2] = (objectives[2]-1)**2    # B (bias)
         objectives[3] = (objectives[3]-1)**2    # y
-        filtered_objectives = [objectives[i] for i in non_zero_indices]
+        filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]     
+        #add JSD to objective vector
+        if 5 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["JSD"])
 
         return filtered_objectives              
 

@@ -34,7 +34,8 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                                                   cfg.deap_param.objective_corr,
                                                   cfg.deap_param.objective_bias,
                                                   cfg.deap_param.objective_y,
-                                                  cfg.deap_param.objective_sae )
+                                                  cfg.deap_param.objective_sae,
+                                                  cfg.deap_param.objective_JSD )
 
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 

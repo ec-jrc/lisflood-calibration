@@ -440,12 +440,14 @@ class CalibrationDeap():
             # add objectives (from file) to current individual
             non_zero_indices = [index for index, weight in enumerate(self.objective_weights) if weight != 0]
 
-            objectives=pHistory.iloc[ind, n_params+1:n_params+1+n_obj]
+            objectives=pHistory.iloc[ind, n_params+1:n_params+1+min(5,n_obj)]
             # actual objectives are (r - 1) ** 2, (B - 1) ** 2 and (y - 1) ** 2
             objectives[1] = (objectives[1]-1)**2    # r (corr)
             objectives[2] = (objectives[2]-1)**2    # B (bias)
             objectives[3] = (objectives[3]-1)**2    # y
-            filtered_objectives = [objectives[i] for i in non_zero_indices]
+            filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]
+            if 5 in non_zero_indices:
+                filtered_objectives.append(pHistory.iloc[ind, n_params+1+13])   # JSD
             newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)
