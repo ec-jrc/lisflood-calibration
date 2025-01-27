@@ -44,7 +44,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
         # otherwise each child will reload the maps
         model.init_run()
 
-        cfg.filter_param_ranges_after_init(model_initialized=model)        
+        cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)        
 
         hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template)
     else:

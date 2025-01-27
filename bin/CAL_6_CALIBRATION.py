@@ -47,7 +47,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # otherwise each child will reload the maps
         model.init_run()
 
-        cfg.filter_param_ranges_after_init(model_initialized=model)
+        cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)
 
         calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
         calib_deap.run(subcatch.path, lock_mgr)

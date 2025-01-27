@@ -76,10 +76,12 @@ class DEAPParameters():
         self.pop = int(parser.get('DEAP','pop'))
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
+        self.elite = int(parser.get('DEAP','elite')) # usually take 10% of mu as elites to keep in new population
         self.cxpb = 0.6
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
+        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
         self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
         self.apply_multiobjective_calibration = bool(int(parser.get('DEAP','apply_multiobjective_calibration')))
         if self.apply_multiobjective_calibration:
@@ -199,38 +201,39 @@ class ConfigCalibration(Config):
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
 
-    def filter_param_ranges_after_init(self, model_initialized):
+    def filter_param_ranges_after_init(self, model_initialized, split_lake_params):
         # Adjust param_ranges list if lakes or reservoirs are not included into the current catchment
         self.original_param_ranges = self.param_ranges.copy()
         if model_initialized.lissettings.options['simulateLakes']==False:
             if 'LakeMultiplier' in self.param_ranges.index:
                 self.param_ranges.drop("LakeMultiplier", inplace=True)
         else:
-            # check how many lakes are in the catchment
-            self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
-            IsChannelPcr = boolean(loadmap('Channels', pcr=True))
-            IsChannel = np.bool8(compressArray(IsChannelPcr))
-            self.LakeSitesC[self.LakeSitesC < 1] = 0
-            self.LakeSitesC[IsChannel == 0] = 0
-            # Get rid of any lakes that are not part of the channel network
+            if split_lake_params==True:
+                # check how many lakes are in the catchment
+                self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
+                IsChannelPcr = boolean(loadmap('Channels', pcr=True))
+                IsChannel = np.bool8(compressArray(IsChannelPcr))
+                self.LakeSitesC[self.LakeSitesC < 1] = 0
+                self.LakeSitesC[IsChannel == 0] = 0
+                # Get rid of any lakes that are not part of the channel network
 
-            # mask lakes sites when using sub-catchments mask
-            LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC)
-            self.LakeIndex = np.nonzero(self.LakeSitesC)[0]
+                # mask lakes sites when using sub-catchments mask
+                LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC)
+                self.LakeIndex = np.nonzero(self.LakeSitesC)[0]
 
-            if LakeSitesCC.size > 1:
-                # get one param for each lake
-                if 'LakeMultiplier' in self.param_ranges.index:
-                    # Retrieve the original LakeMultiplier row values
-                    lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
-                    
-                    # Drop the original LakeMultiplier row
-                    self.param_ranges.drop('LakeMultiplier', inplace=True)
-                    
-                    # Add a new LakeMultiplier row for each lake
-                    for lake_id in self.LakeIndex:
-                        new_row_name = f'LakeMultiplier_{lake_id}'
-                        self.param_ranges.loc[new_row_name] = lake_multiplier_values
+                if LakeSitesCC.size > 1:
+                    # get one param for each lake
+                    if 'LakeMultiplier' in self.param_ranges.index:
+                        # Retrieve the original LakeMultiplier row values
+                        lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
+                        
+                        # Drop the original LakeMultiplier row
+                        self.param_ranges.drop('LakeMultiplier', inplace=True)
+                        
+                        # Add a new LakeMultiplier row for each lake
+                        for lake_id in self.LakeIndex:
+                            new_row_name = f'LakeMultiplier_{lake_id}'
+                            self.param_ranges.loc[new_row_name] = lake_multiplier_values
 
         if model_initialized.lissettings.options['simulateReservoirs']==False:
             if 'ReservoirFloodStorage' in self.param_ranges.index:

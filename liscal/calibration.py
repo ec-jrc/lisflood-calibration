@@ -320,6 +320,7 @@ class CalibrationDeap():
 
         self.pop = deap_param.pop
         self.mu = deap_param.mu
+        self.elite = deap_param.elite
         self.lambda_ = deap_param.lambda_
 
         self.objective_weights = objective_weights
@@ -481,7 +482,8 @@ class CalibrationDeap():
                 # prepare for the next stage
                 if population is not None:
                     population[:] = self.toolbox.select(population + valid_ind, self.mu)
-                    population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, max(2, int(self.mu*0.1)))  # take 10% of mu as elites to keep in new population
+                    if self.elite > 0:
+                        population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, self.elite)
                 else:
                     population = valid_ind
                 
@@ -550,8 +552,9 @@ class CalibrationDeap():
 
         # Select the next generation population
         population[:] = self.toolbox.select(population + offspring, self.mu)
-        population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, max(2, int(self.mu*0.1)))  # take 10% of mu as elites to keep in new population
-        
+        if self.elite > 0:
+            population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, self.elite)
+
         # Loop through the different objective functions and calculate some statistics
         # from the Pareto optimal population
         self.criteria.update_statistics(gen, halloffame)
