@@ -66,6 +66,8 @@ class LisfloodSettingsTemplate():
 
         out_xml = self.template_xml
 
+        strLakeMultiplierMap = ""
+        LakeMultiplierMap = None
         for oii in range(len(original_param_ranges)):
             if original_param_ranges.index[oii] in param_ranges.index:
                 ii = param_ranges.index.get_loc(original_param_ranges.index[oii])
@@ -78,21 +80,6 @@ class LisfloodSettingsTemplate():
                     assert(cfg.LakeIndex[i]==lake_id)
                     LakeMultiplierMap[lake_id]=parameters[ii]
                 strLakeMultiplierMap=os.path.join(out_dir, 'LakeMultiplierMap.nc')
-
-
-                # Save the new map to a NetCDF file                
-                map_name = "LakeMultiplierMap"
-                lissettings = LisSettings.instance()
-                nf1 = write_netcdf_header(lissettings, map_name, strLakeMultiplierMap, None,
-                                        map_name, map_name, "",
-                                        None, None, None)
-
-                map_np = uncompress_array(LakeMultiplierMap)
-
-                nf1.variables[map_name][:, :] = map_np
-
-                nf1.close()
-
                 out_xml = out_xml.replace("%"+original_param_ranges.index[oii],"$(PathInit)/LakeMultiplierMap")
             else:
                 #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
@@ -155,6 +142,20 @@ class LisfloodSettingsTemplate():
     
         with open(run_file, "w") as f:
             f.write(out_xml_run)
+
+        if strLakeMultiplierMap != "" and LakeMultiplierMap is not None:
+            # Save the new map LakeMultiplierMap to a NetCDF file                
+            map_name = "LakeMultiplierMap"
+            settings = LisSettings(run_file)
+            nf1 = write_netcdf_header(settings, map_name, strLakeMultiplierMap, None,
+                                    map_name, map_name, "",
+                                    None, None, None)
+
+            map_np = uncompress_array(LakeMultiplierMap)
+
+            nf1.variables[map_name][:, :] = map_np
+
+            nf1.close()
 
         return prerun_file, run_file     
 
