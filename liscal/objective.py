@@ -61,11 +61,11 @@ class ObjectiveKGE():
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
-    def set_custom_multiobjective_weights(self, objective_KGE, objective_corr, objective_bias, objective_y, objective_sae, objective_JSD):
+    def set_custom_multiobjective_weights(self, objective_KGE, objective_corr, objective_bias, objective_y, objective_sae, objective_JSD, objective_KGE_JSD):
         # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
         # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae]
         # THUS: only KGE shoud be maximized, while other terms need to be minimized
-        self.weights = [int(objective_KGE), -int(objective_corr), -int(objective_bias), -int(objective_y), -int(objective_sae), -int(objective_JSD)]
+        self.weights = [int(objective_KGE), -int(objective_corr), -int(objective_bias), -int(objective_y), -int(objective_sae), -int(objective_JSD), int(objective_KGE_JSD)]
 
 
     def get_parameters(self, Individual):

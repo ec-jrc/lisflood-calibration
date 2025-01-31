@@ -214,14 +214,17 @@ class Criteria():
             self.effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
 
     def compute_halloffame_KGE(self, original_weights, halloffame):
-        if (original_weights[0] != 0):
+        if (original_weights[0] != 0):      # KGE
             effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
+        elif (original_weights[5] != 0):    # KGE_JSD
+            KGE_JSDpos=np.count_nonzero(original_weights[:6])
+            effKGEs=[halloffame[x].fitness.values[KGE_JSDpos] for x in range(len(halloffame))]
         else:
             effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
         return effKGEs
 
     def compute_effmax_pop_KGE(self, gen, original_weights, halloffame, population):
-        if (original_weights[0] != 0):
+        if (original_weights[0] != 0):  # KGE as objective
             self.effmax_KGE[gen]=self.effmax[gen,0]
             self.effmin_KGE[gen]=self.effmin[gen,0]
             self.effavg_KGE[gen]=self.effavg[gen,0]
@@ -230,6 +233,16 @@ class Criteria():
             self.popmin_KGE[gen]=self.popmin[gen,0]
             self.popavg_KGE[gen]=self.popavg[gen,0]
             self.popstd_KGE[gen]=self.popstd[gen,0]
+        elif (original_weights[6] != 0):  # KGE_JSD as objective
+            KGE_JSDpos=np.count_nonzero(original_weights[:6])
+            self.effmax_KGE[gen]=self.effmax[gen,KGE_JSDpos]
+            self.effmin_KGE[gen]=self.effmin[gen,KGE_JSDpos]
+            self.effavg_KGE[gen]=self.effavg[gen,KGE_JSDpos]
+            self.effstd_KGE[gen]=self.effstd[gen,KGE_JSDpos]
+            self.popmax_KGE[gen]=self.popmax[gen,KGE_JSDpos]
+            self.popmin_KGE[gen]=self.popmin[gen,KGE_JSDpos]
+            self.popavg_KGE[gen]=self.popavg[gen,KGE_JSDpos]
+            self.popstd_KGE[gen]=self.popstd[gen,KGE_JSDpos]
         elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
             assert(original_weights[0]==0)  # here the KGE obj is not in effmax vector, thus effmax[gen,0] is the correlation
             effKGEs=self.compute_halloffame_KGE(original_weights, halloffame)
@@ -243,14 +256,19 @@ class Criteria():
             self.popavg_KGE[gen]=np.average(popKGEs)
             self.popstd_KGE[gen]=np.std(popKGEs)
         else:
-            raise Exception('At least the KGE or the terms r, B and y are needed as objectives')
+            raise Exception('At least the KGE, KGE_JSD or the combination of the terms r, B and y are needed as objectives')
 
+        strJSD=""
+        if (original_weights[0] == 0) and (original_weights[6] != 0): # we are using KGE_JSD objective
+            strJSD="_JSD"
         print(">> gen: " + str(gen) + ", HallOfFame items: {}, population items: {}".format(len(halloffame), len(population)))
-        print(">> gen: " + str(gen) + ", effmax_KGE: " + "{:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(self.effmax_KGE[gen], 
-                                                                                                                            self.effmin_KGE[gen],
-                                                                                                                            self.effavg_KGE[gen],
-                                                                                                                            self.effstd_KGE[gen]))
-        print(">> gen: " + str(gen) + ", selected population with offsprings: KGE max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(self.popmax_KGE[gen], 
+        print(">> gen: " + str(gen) + ", effmax_KGE{:s}: {:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
+                                                                                                                self.effmax_KGE[gen], 
+                                                                                                                self.effmin_KGE[gen],
+                                                                                                                self.effavg_KGE[gen],
+                                                                                                                self.effstd_KGE[gen]))
+        print(">> gen: " + str(gen) + ", selected population with offsprings: KGE{:s} max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
+                                                                                                                            self.popmax_KGE[gen], 
                                                                                                                             self.popmin_KGE[gen],
                                                                                                                             self.popavg_KGE[gen],
                                                                                                                             self.popstd_KGE[gen]))
@@ -449,6 +467,8 @@ class CalibrationDeap():
             filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]
             if 5 in non_zero_indices:
                 filtered_objectives.append(pHistory.iloc[ind, n_params+1+13])   # JSD
+            if 6 in non_zero_indices:
+                filtered_objectives.append(pHistory.iloc[ind, n_params+1+12])   # KGE_JSD
             newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)

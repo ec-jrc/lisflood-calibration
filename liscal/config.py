@@ -91,6 +91,7 @@ class DEAPParameters():
             self.objective_y = bool(int(parser.get('DEAP','objective_y')))
             self.objective_sae = bool(int(parser.get('DEAP','objective_sae')))
             self.objective_JSD = bool(int(parser.get('DEAP','objective_JSD')))
+            self.objective_KGE_JSD = bool(int(parser.get('DEAP','objective_KGE_JSD')))
 
 
 

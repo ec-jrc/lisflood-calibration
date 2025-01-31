@@ -476,8 +476,8 @@ def js_div_bq_l2(obs, sim):
     q_hist = q_hist + epsilon
 
     # Normalize histograms to ensure they represent probability distributions
-    p_hist /= np.sum(p_hist)
-    q_hist /= np.sum(q_hist)
+    p_hist /= np.nansum(p_hist)
+    q_hist /= np.nansum(q_hist)
 
     # Compute the mixture distribution
     mix_hist = 0.5 * (p_hist + q_hist)
