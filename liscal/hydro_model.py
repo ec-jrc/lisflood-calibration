@@ -184,7 +184,8 @@ class HydrologicalModel():
         #add JSD to objective vector
         if 5 in non_zero_indices:
             filtered_objectives.append(additional_metrics["JSD"])
-
+        if 6 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["KGE_JSD"])   # KGE_JSD
         return filtered_objectives              
 
 
