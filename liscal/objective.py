@@ -35,11 +35,11 @@ class ObjectiveKGE():
         Reads simulated streamflow data for a given run.
     resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
         Resamples streamflow data to align simulated and observed streamflows.
-    compute_objectives(run_id, start, end, simulated_streamflow)
+    compute_objectives(run_id, start, end, simulated_streamflow, compute_additional_metrics=False)
         Computes the KGE and its components for a given simulation.
     compute_statistics(start, end, simulated_streamflow)
         Computes various statistics for a given simulation.
-    update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
+    update_parameter_history(run_id, parameters, fKGEComponents, evap_objective, additional_metrics, gen, run)
         Updates the parameter history log.
     read_param_history()
         Reads the parameter history from a log file.
@@ -55,11 +55,17 @@ class ObjectiveKGE():
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
-        self.weights = [1, 0, 0, 0, 0]
+        self.weights = [1, 0, 0, 0, 0, 0]
 
         if read_observations:
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
+
+    def set_custom_multiobjective_weights(self, objective_KGE, objective_corr, objective_bias, objective_y, objective_sae, objective_JSD, objective_KGE_JSD):
+        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
+        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae]
+        # THUS: only KGE shoud be maximized, while other terms need to be minimized
+        self.weights = [int(objective_KGE), -int(objective_corr), -int(objective_bias), -int(objective_y), -int(objective_sae), -int(objective_JSD), int(objective_KGE_JSD)]
 
 
     def get_parameters(self, Individual):
@@ -176,7 +182,7 @@ class ObjectiveKGE():
 
         return date_range, Qsim, Qobs
 
-    def compute_objectives(self, run_id, start, end, simulated_streamflow):
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
 
         date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
@@ -184,7 +190,32 @@ class ObjectiveKGE():
 
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
 
-        return kge_components
+        additional_metrics = {}
+        if compute_additional_metrics:
+            additional_metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
+            additional_metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
+            additional_metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
+            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs)            
+
+        return kge_components, additional_metrics
+
+    def compute_evap_index(self, run_id, precip_budyko, PET_budyko):
+        """
+        computing evaporative index and budyko compliance
+        """
+        # print(self.subcatch)
+        etactBudyko_tss = os.path.join(self.subcatch.path_out, run_id, 'actETPBUDYKOUpsTS.tss')
+        if os.path.isfile(etactBudyko_tss)==False:
+            # print('run_id: {}'.format(str(run_id)))
+            # print('etactBUDYKO file path: {}'.format(etactBudyko_tss))
+            raise Exception("No simulated etactBudyko found. Probably LISFLOOD failed to start? or you are not creating the correct output? check settings.xml file")
+
+        etactBudyko = utils.read_tss(etactBudyko_tss)[1]  # need to take [1] or we get 2d array
+        etactBudyko[etactBudyko==1e31] = np.nan
+        evap_index=hydro_stats.evap_index_BUDYKO(precip_budyko,etactBudyko.sum(),PET_budyko)
+        return evap_index
 
     def compute_statistics(self, start, end, simulated_streamflow):
 
@@ -206,7 +237,7 @@ class ObjectiveKGE():
 
         return Q, stats
 
-    def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
+    def update_parameter_history(self, run_id, parameters, fKGEComponents, EVAP_index, additional_metrics, gen, run):
 
         cfg = self.cfg
 
@@ -225,9 +256,14 @@ class ObjectiveKGE():
             paramsHistory = "randId,"
             for i in [str(ip) + "," for ip in self.param_ranges.index.values]:
                 paramsHistory += i
-            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae", "generation", "runNumber"]]:
+            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae","Evaporative Index","Fractional Budyko Distance"]]:            
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in additional_metrics]:
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in ["generation", "runNumber"]]:
                 paramsHistory += i
             paramsHistory += "\n"
+            
             # Minimal values
             paramsHistory += str(self.param_ranges.head().columns.values[0]) + ","
             for i in [str(ip) + "," for ip in self.param_ranges[str(self.param_ranges.head().columns.values[0])].values]:
@@ -250,6 +286,10 @@ class ObjectiveKGE():
         for i in [str(ip) + "," for ip in parameters]:
             paramsHistory += i
         for i in [str(ip) + "," for ip in fKGEComponents]:
+            paramsHistory += i
+        for i in [str(ip) + "," for ip in EVAP_index]:
+            paramsHistory += i
+        for i in [str(additional_metrics[ip]) + "," for ip in additional_metrics]:
             paramsHistory += i
         paramsHistory += str(gen) + ","
         paramsHistory += str(run)

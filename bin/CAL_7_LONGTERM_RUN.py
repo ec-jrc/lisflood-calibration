@@ -5,13 +5,13 @@ import os
 import sys
 import argparse
 import numpy as np
-import pandas
+import pandas as pd
 from configparser import ConfigParser # Python 3.8
 import glob
 import subprocess
 import traceback
 
-from liscal import templates, config, subcatchment, hydro_model
+from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 
 def longtermrun_subcatchment(cfg, obsid, station_data):
@@ -24,6 +24,29 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
     lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
     
     if os.path.exists(os.path.join(subcatch.path,"pareto_front.csv"))==True:
+
+        lock_mgr = calibration.LockManager(cfg.num_cpus)
+
+        obj = objective.ObjectiveKGE(cfg, subcatch)
+
+        if cfg.deap_param.apply_multiobjective_calibration:
+            obj.set_custom_multiobjective_weights(cfg.deap_param.objective_KGE,
+                                                  cfg.deap_param.objective_corr,
+                                                  cfg.deap_param.objective_bias,
+                                                  cfg.deap_param.objective_y,
+                                                  cfg.deap_param.objective_sae,
+                                                  cfg.deap_param.objective_JSD,
+                                                  cfg.deap_param.objective_KGE_JSD)
+
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+
+        # load forcings and input maps in cache
+        # required in front of processing pool
+        # otherwise each child will reload the maps
+        model.init_run()
+
+        cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)        
+
         hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template)
     else:
         raise Exception('Could not find optimnal parameters for long term run. Please calibrate to generate pareto_front.csv first.')

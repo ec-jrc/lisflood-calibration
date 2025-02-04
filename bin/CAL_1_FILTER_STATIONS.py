@@ -18,8 +18,6 @@ class ConfigFilter(config.Config):
         if self.timestep != 360 and self.timestep != 1440:
             raise Exception('Calibration timestep {} not supported'.format(self.timestep))
         
-        self.stations_data = self.parser.get('Stations', 'stations_data')
-
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
         self.stations_data = self.parser.get('Stations', 'stations_data')
@@ -78,5 +76,5 @@ if __name__ == '__main__':
     unvalid_stations = stations_meta.loc[unvalid_stations]
     print(valid_stations)
     valid_stations.to_csv(cfg.stations_data)
-    unvalid_stations.to_csv(cfg.stations_data+'_unvalid')
+    unvalid_stations.to_csv(cfg.stations_data[:-4]+'_invalid.csv')
     print("==================== END ====================")

@@ -9,7 +9,7 @@ SnowMeltCoef,2.5,6.5,4
 CalChanMan1,0.5,2,1
 CalChanMan2,0.5,5,1
 LakeMultiplier,0.5,2,1
-adjust_Normal_Flood,0.01,0.99,0.8
-ReservoirRnormqMult,0.25,2,1
+ReservoirFloodStorage,0.2,0.99,0.75
+ReservoirFloodOutflowFactor,0.1,0.5,0.3
 QSplitMult,0,20,2
 GwLoss,0,0.5,0
