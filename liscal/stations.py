@@ -5,13 +5,33 @@ import pandas as pd
 
 
 def time_step_from_type(station_type):
+    """
+    Determines the time step based on the station/calibration type.
 
-    if isinstance(station_type , float) or isinstance(station_type, np.float64):
+    Parameters
+    ----------
+    station_type : int, float, np.int64, np.float64, or str
+        Type of the station which could be an integer, float, or string
+        indicating the station/calibration type.
+
+    Returns
+    -------
+    int
+        The time step as an integer.
+
+    Raises
+    ------
+    Exception
+        If the station/calibration type is not supported.
+        Support formats for the station/calibration type are 6.0, 24.0, 6, 24, "*_6h", and "*_24h".
+    """
+
+    if isinstance(station_type, float) or isinstance(station_type, np.float64):
         if (station_type == 6.0 or station_type == 24.0):
             dt = int(station_type)
         else:
             raise Exception('Calibration type {} not supported'.format(station_type))
-    elif isinstance(station_type , int) or isinstance(station_type, np.int64):
+    elif isinstance(station_type, int) or isinstance(station_type, np.int64):
         if (station_type == 6 or station_type == 24):
             dt = station_type
         else:
@@ -28,6 +48,21 @@ def time_step_from_type(station_type):
 
 
 def observation_period_days(station_type, observed_streamflow):
+    """
+    Calculates the observation period in days.
+
+    Parameters
+    ----------
+    station_type : int, float, np.int64, np.float64, or str
+        Type of the station which could be an integer, float, or string indicating the calibration type.
+    observed_streamflow : pd.Series
+        Time series of observed streamflow.
+
+    Returns
+    -------
+    float
+        Observation period in days.
+    """
 
     # Extract total number of steps
     mask = observed_streamflow.notna().values
@@ -43,6 +78,21 @@ def observation_period_days(station_type, observed_streamflow):
 
 
 def observation_period_years(station_type, observed_streamflow):
+    """
+    Calculates the observation period in years.
+
+    Parameters
+    ----------
+    station_type : int, float, np.int64, np.float64, or str
+        Type of the station which could be an integer, float, or string indicating the calibration type.
+    observed_streamflow : pd.Series
+        Time series of observed streamflow.
+
+    Returns
+    -------
+    float
+        Observation period in years.
+    """
 
     # Extract total number of steps
     mask = observed_streamflow.notna().values
@@ -58,7 +108,27 @@ def observation_period_years(station_type, observed_streamflow):
 
 
 def compute_split_date(obs_period_years, dt, valid_start, observations_filtered):
-    
+    """
+    Computes the split date for the dataset, which splits the dataset in
+    two parts for calibration and validation.
+
+    Parameters
+    ----------
+    obs_period_years : float
+        Observation period in years.
+    dt : int
+        Time step (in hours).
+    valid_start : str
+        Start date of the valid observation period.
+    observations_filtered : pd.Series
+        Filtered observations.
+
+    Returns
+    -------
+    str
+        The computed split date.
+    """
+
     # if < 8 years: take all
     if obs_period_years <= 8:
         split_date = valid_start
@@ -74,6 +144,25 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
 
 
 def extract_station_data(cfg, obsid, station_data, check_obs=True):
+    """
+    Extracts and processes station data for calibration.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        A global configuration settings object.
+    obsid : str
+        Observation station ID.
+    station_data : pd.Series
+        Series containing station data.
+    check_obs : bool, optional
+        Flag to enable checking if the observation period meets the minimum required period (default is True).
+
+    Raises
+    ------
+    Exception
+        If the observation period is shorter than the required minimum calibration days.
+    """
 
     # A calibration requires a spinup
     # first valid observation point will be at forcing start + spinup

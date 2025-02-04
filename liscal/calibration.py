@@ -14,6 +14,23 @@ from deap import tools
 
 
 class LockManager():
+    """
+    A class to manage locks and counters in a multiprocessing environment.
+
+    Parameters
+    ----------
+    num_cpus : int
+        Number of CPU cores to be used in multiprocessing.
+
+    Attributes
+    ----------
+    counters : dict
+        A dictionary containing multiprocessing values for run and generation counters.
+    lock : multiprocessing.Lock
+        A lock to ensure thread-safe operations.
+    num_cpus : int
+        Number of CPU cores.
+    """
 
     def __init__(self, num_cpus):
 
@@ -70,6 +87,35 @@ class LockManager():
 
 
 class Criteria():
+    """
+    A class to manage the termination conditions and statistics of the evolutionary algorithm.
+
+    Parameters
+    ----------
+    deap_param : object
+        A configuration object containing DEAP parameters.
+    n_obj : int, optional
+        Number of objectives.
+
+    Attributes
+    ----------
+    n_obj : int
+        Number of objectives.
+    effmax, effmin, effavg, effstd : numpy.ndarray
+        Arrays to store maximum, minimum, average, and standard deviation of efficiency for each generation.
+    conditions : dict
+        Dictionary to track termination conditions.
+
+    Methods
+    -------
+    check_termination_conditions(gen)
+        Check if the termination conditions are met for a given generation.
+    update_statistics(gen, halloffame)
+        Update statistics for the current generation.
+        This function modifies the class attributes effmax, effmin, effavg, and effstd.
+    write_front_history(path_subcatch, gen)
+        Write the history of objective function changes to a CSV file.
+    """
 
     def __init__(self, deap_param, n_obj=1):
 
@@ -77,9 +123,9 @@ class Criteria():
 
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
-        self.gen_offset = deap_param.gen_offset #3
+        self.gen_offset = deap_param.gen_offset  # 3
 
-        self.effmax_tol = deap_param.effmax_tol #0.003
+        self.effmax_tol = deap_param.effmax_tol  # 0.003
 
         # Initialise statistics arrays
         self.effmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
@@ -123,6 +169,44 @@ class Criteria():
 
 
 class CalibrationDeap():
+    """
+    A class to manage the calibration process using DEAP library.
+
+    Parameters
+    ----------
+    cfg : object
+        A configuration object containing calibration parameters.
+    fun : callable
+        The objective function to evaluate.
+    objective_weights : List
+        List containing the weights of each objective in the multi-objective optimization.
+    seed : int, optional
+        Random seed for reproducibility.
+
+    Attributes
+    ----------
+    pop, mu, lambda_ : int
+        Population size, number of individuals to select, and number of children to produce.
+    cxpb, mutpb : float
+        Crossover and mutation probabilities.
+    param_ranges : pandas.DataFrame
+        DataFrame containing parameter ranges.
+    toolbox : deap.base.Toolbox
+        DEAP toolbox for evolutionary operators.
+
+    Methods
+    -------
+    updatePopulationFromHistory(pHistory)
+        Update the population from a historical record.
+    restore_calibration(halloffame, history_file)
+        Restore the calibration state from a history file.
+    generate_population(halloffame)
+        Generate the initial population for the calibration.
+    generate_offspring(gen, halloffame, population)
+        Generate offspring for a new generation.
+    run(path_subcatch, lock_mgr)
+        Run the calibration process.
+    """
 
     def __init__(self, cfg, fun, objective_weights, seed=None):
 
