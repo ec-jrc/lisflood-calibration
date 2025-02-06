@@ -83,6 +83,7 @@ class DEAPParameters():
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
         self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
         self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
+        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population')))
         self.apply_multiobjective_calibration = bool(int(parser.get('DEAP','apply_multiobjective_calibration')))
         if self.apply_multiobjective_calibration:
             self.objective_KGE = bool(int(parser.get('DEAP','objective_KGE')))

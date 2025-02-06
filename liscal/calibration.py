@@ -126,6 +126,7 @@ class Criteria():
         self.max_gen = deap_param.max_gen
         self.gen_offset = deap_param.gen_offset  # 3
         self.apply_statistical_stall_check = deap_param.apply_statistical_stall_check
+        self.use_filtered_population = deap_param.use_filtered_population
         self.mu = deap_param.mu
 
         self.effmax_tol = deap_param.effmax_tol  # 0.003
@@ -151,8 +152,32 @@ class Criteria():
         self.popmin_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
         self.popavg_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
         self.popstd_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popnum_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popavg_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popstd_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popnum_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
 
         self.conditions = {"maxGen": False, "StallFit": False, "StatisticalStallFit": False}
+
+    def filter_outliers(self, data):
+        # Tukey's fences method
+        q1 = np.percentile(data, 25)
+        q3 = np.percentile(data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        return [x for x in data if lower_bound <= x <= upper_bound]
+
+    def combine_stats(self, means, stds, sample_sizes):
+        # Calculate the weighted mean
+        total_samples = sum(sample_sizes)
+        weighted_mean = sum(m * n for m, n in zip(means, sample_sizes)) / total_samples
+        
+        # Calculate the pooled standard deviation
+        pooled_variance = sum((n - 1) * (s ** 2) for s, n in zip(stds, sample_sizes)) / (total_samples - len(sample_sizes))            
+        pooled_std = np.sqrt(pooled_variance)
+        
+        return weighted_mean, pooled_std, total_samples
 
     def check_termination_conditions(self, gen):
         # Terminate the optimization after maxGen generations
@@ -164,18 +189,24 @@ class Criteria():
             if self.apply_statistical_stall_check:
                 # CR optional stopping condition: even if the no-improvement KGE criterion is fulfilled, check the statistics of the latest gen_offset population to check if any overall improvement is going on
                 # Calculate t-test over the last `gen_offset` generations
-                mean_current = self.popavg_KGE[gen]
-                std_current = self.popstd_KGE[gen]
-                n_current = self.mu  # Assuming self.mu is the population size
+                if self.use_filtered_population == True:
+                    mean_current = self.popavg_KGE_filtered[gen]
+                    std_current = self.popstd_KGE_filtered[gen]
+                    n_current = self.popnum_KGE_filtered[gen]
+
+                    # Compute weighted average of means and stds for the previous "gen_offset" generations
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE_filtered[gen-self.gen_offset:gen],
+                                                                    self.popstd_KGE_filtered[gen-self.gen_offset:gen], 
+                                                                    self.popnum_KGE_filtered[gen-self.gen_offset:gen])
+                else:
+                    mean_current = self.popavg_KGE[gen]
+                    std_current = self.popstd_KGE[gen]
+                    n_current = self.popnum_KGE[gen] 
                 
-                # Combine statistics from previous `gen_offset` generations
-                means_previous = self.popavg_KGE[gen-self.gen_offset:gen]
-                stds_previous = self.popstd_KGE[gen-self.gen_offset:gen]
-                n_previous = self.mu * self.gen_offset  # Total samples in previous gen_offset generations
-                
-                # Compute weighted average of means and stds for the previous generations
-                mean_previous = sum(means_previous) / self.gen_offset
-                std_previous = (sum(stds_previous**2) / self.gen_offset)**0.5
+                    # Compute weighted average of means and stds for the previous "gen_offset" generations
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE[gen-self.gen_offset:gen],
+                                                                    self.popstd_KGE[gen-self.gen_offset:gen], 
+                                                                    self.popnum_KGE[gen-self.gen_offset:gen])
                 
                 # Perform t-test
                 t_stat, p_val = ttest_ind_from_stats(mean_current, std_current, n_current, mean_previous, std_previous, n_previous)
@@ -233,6 +264,13 @@ class Criteria():
             self.popmin_KGE[gen]=self.popmin[gen,0]
             self.popavg_KGE[gen]=self.popavg[gen,0]
             self.popstd_KGE[gen]=self.popstd[gen,0]
+            self.popnum_KGE[gen]=len(population)
+            # Filter outliers from the current generation population
+            current_data = [ind.fitness.values[0] for ind in population]
+            current_filtered = self.filter_outliers(current_data)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)
         elif (original_weights[6] != 0):  # KGE_JSD as objective
             KGE_JSDpos=np.count_nonzero(original_weights[:6])
             self.effmax_KGE[gen]=self.effmax[gen,KGE_JSDpos]
@@ -243,6 +281,13 @@ class Criteria():
             self.popmin_KGE[gen]=self.popmin[gen,KGE_JSDpos]
             self.popavg_KGE[gen]=self.popavg[gen,KGE_JSDpos]
             self.popstd_KGE[gen]=self.popstd[gen,KGE_JSDpos]
+            self.popnum_KGE[gen]=len(population)
+            # Filter outliers from the current generation population
+            current_data = [ind.fitness.values[KGE_JSDpos] for ind in population]
+            current_filtered = self.filter_outliers(current_data)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)
         elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
             assert(original_weights[0]==0)  # here the KGE obj is not in effmax vector, thus effmax[gen,0] is the correlation
             effKGEs=self.compute_halloffame_KGE(original_weights, halloffame)
@@ -255,6 +300,12 @@ class Criteria():
             self.popmin_KGE[gen]=np.amin(popKGEs)
             self.popavg_KGE[gen]=np.average(popKGEs)
             self.popstd_KGE[gen]=np.std(popKGEs)
+            self.popnum_KGE[gen]=len(popKGEs)
+            # Filter outliers from the current generation population
+            current_filtered = self.filter_outliers(popKGEs)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)            
         else:
             raise Exception('At least the KGE, KGE_JSD or the combination of the terms r, B and y are needed as objectives')
 
@@ -272,6 +323,10 @@ class Criteria():
                                                                                                                             self.popmin_KGE[gen],
                                                                                                                             self.popavg_KGE[gen],
                                                                                                                             self.popstd_KGE[gen]))
+        print(">> gen: " + str(gen) + ", selected population with offsprings filtered: KGE{:s} avg={:.3f}, std={:.3f}, num={}".format(strJSD,
+                                                                                                                            self.popavg_KGE_filtered[gen],
+                                                                                                                            self.popstd_KGE_filtered[gen],
+                                                                                                                            self.popnum_KGE_filtered[gen]))
 
     def write_front_history(self, path_subcatch, gen):
         front_history = pandas.DataFrame()
@@ -506,7 +561,6 @@ class CalibrationDeap():
                         population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, self.elite)
                 else:
                     population = valid_ind
-                
                 self.criteria.update_statistics(gen, halloffame)
                 self.criteria.update_statistics_population(gen, population)
                 self.criteria.compute_effmax_pop_KGE(gen, self.objective_weights, halloffame, population)
