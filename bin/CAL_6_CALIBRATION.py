@@ -6,7 +6,7 @@ import sys
 import argparse
 import random
 import numpy as np
-import pandas
+import pandas as pd
 from configparser import ConfigParser # Python 3.8
 import glob
 import subprocess
@@ -32,6 +32,15 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
+        if cfg.deap_param.apply_multiobjective_calibration:
+            obj.set_custom_multiobjective_weights(cfg.deap_param.objective_KGE,
+                                                  cfg.deap_param.objective_corr,
+                                                  cfg.deap_param.objective_bias,
+                                                  cfg.deap_param.objective_y,
+                                                  cfg.deap_param.objective_sae,
+                                                  cfg.deap_param.objective_JSD,
+                                                  cfg.deap_param.objective_KGE_JSD)
+
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
         # load forcings and input maps in cache
@@ -39,10 +48,14 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         # otherwise each child will reload the maps
         model.init_run()
 
+        cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)
+
         calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
         calib_deap.run(subcatch.path, lock_mgr)
 
         obj.process_results()
+    else:
+        print("pareto_front.csv already exists! Moving on...")
 
 
 if __name__ == '__main__':

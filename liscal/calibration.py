@@ -12,6 +12,7 @@ from deap import base
 from deap import creator
 from deap import tools
 
+from scipy.stats import ttest_ind_from_stats
 
 class LockManager():
     """
@@ -124,6 +125,9 @@ class Criteria():
         self.min_gen = deap_param.min_gen
         self.max_gen = deap_param.max_gen
         self.gen_offset = deap_param.gen_offset  # 3
+        self.apply_statistical_stall_check = deap_param.apply_statistical_stall_check
+        self.use_filtered_population = deap_param.use_filtered_population
+        self.mu = deap_param.mu
 
         self.effmax_tol = deap_param.effmax_tol  # 0.003
 
@@ -133,7 +137,47 @@ class Criteria():
         self.effavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
         self.effstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
 
-        self.conditions = {"maxGen": False, "StallFit": False}
+        # Initialise population statistics arrays
+        self.popmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popmin = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+
+        # Initialise KGE statistics arrays
+        self.effmax_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.effmin_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.effavg_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.effstd_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popmax_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popmin_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popavg_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popstd_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popnum_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popavg_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popstd_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.popnum_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+
+        self.conditions = {"maxGen": False, "StallFit": False, "StatisticalStallFit": False}
+
+    def filter_outliers(self, data):
+        # Tukey's fences method
+        q1 = np.percentile(data, 25)
+        q3 = np.percentile(data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        return [x for x in data if lower_bound <= x <= upper_bound]
+
+    def combine_stats(self, means, stds, sample_sizes):
+        # Calculate the weighted mean
+        total_samples = sum(sample_sizes)
+        weighted_mean = sum(m * n for m, n in zip(means, sample_sizes)) / total_samples
+        
+        # Calculate the pooled standard deviation
+        pooled_variance = sum((n - 1) * (s ** 2) for s, n in zip(stds, sample_sizes)) / (total_samples - len(sample_sizes))            
+        pooled_std = np.sqrt(pooled_variance)
+        
+        return weighted_mean, pooled_std, total_samples
 
     def check_termination_conditions(self, gen):
         # Terminate the optimization after maxGen generations
@@ -141,13 +185,56 @@ class Criteria():
             print(">> Termination criterion maxGen fulfilled.")
             self.conditions['maxGen'] = True
 
-        if gen >= self.min_gen and (self.effmax[gen, 0] - self.effmax[gen - self.gen_offset, 0]) < self.effmax_tol:
-            # # DD attempt to stop early with different criterion
-            # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
-            #     print(">> Termination criterion no-improvement sae fulfilled.")
-            #     # conditions["StallFit"] = True
-            print(">> Termination criterion no-improvement KGE fulfilled.")
-            self.conditions["StallFit"] = True
+        if gen >= self.min_gen and (gen >= self.gen_offset) and (self.effmax_KGE[gen] - self.effmax_KGE[gen - self.gen_offset]) < self.effmax_tol:
+            if self.apply_statistical_stall_check:
+                # CR optional stopping condition: even if the no-improvement KGE criterion is fulfilled, check the statistics of the latest gen_offset population to check if any overall improvement is going on
+                # Calculate t-test over the last `gen_offset` generations
+                if self.use_filtered_population == True:
+                    mean_current = self.popavg_KGE_filtered[gen]
+                    std_current = self.popstd_KGE_filtered[gen]
+                    n_current = self.popnum_KGE_filtered[gen]
+
+                    # Compute weighted average of means and stds for the previous "gen_offset" generations
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE_filtered[gen-self.gen_offset:gen],
+                                                                    self.popstd_KGE_filtered[gen-self.gen_offset:gen], 
+                                                                    self.popnum_KGE_filtered[gen-self.gen_offset:gen])
+                else:
+                    mean_current = self.popavg_KGE[gen]
+                    std_current = self.popstd_KGE[gen]
+                    n_current = self.popnum_KGE[gen] 
+                
+                    # Compute weighted average of means and stds for the previous "gen_offset" generations
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE[gen-self.gen_offset:gen],
+                                                                    self.popstd_KGE[gen-self.gen_offset:gen], 
+                                                                    self.popnum_KGE[gen-self.gen_offset:gen])
+                
+                # Perform t-test
+                t_stat, p_val = ttest_ind_from_stats(mean_current, std_current, n_current, mean_previous, std_previous, n_previous)
+                
+                # Check p-value
+                print(">> No-improvement KGE fulfilled, checking statistical no-improvement KGE: p_val={}, mean_current={}, std_current={}, mean_previous={}, std_previous={}." 
+                        .format(p_val, mean_current, std_current, mean_previous, std_previous))
+                if (not np.isnan(p_val)) and ((mean_current - mean_previous) > 0.0001 and p_val < 0.05):
+                    print(">> Significant improvement detected, continuing optimization.")
+                else:
+                    print(">> Termination criterion statistical no-improvement KGE fulfilled.")
+                    self.conditions["StatisticalStallFit"] = True
+            else:
+                # # DD attempt to stop early with different criterion
+                # if (effmax[gen.value,0]-effmax[gen.value-1,0]) < 0.001 and np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value, :]) > np.nanmin(np.frombuffer(totSumError.get_obj(), 'f').reshape((maxGen+1), max(pop,lambda_))[gen.value - 1, :]):
+                #     print(">> Termination criterion no-improvement sae fulfilled.")
+                #     # conditions["StallFit"] = True
+                print(">> Termination criterion no-improvement KGE fulfilled.")
+                self.conditions["StallFit"] = True
+
+    def update_statistics_population(self, gen, population):
+        # Loop through the different objective functions and calculate some statistics from the current selected population
+        # N.B: population is already selected using best self.mu individuals from previous population + new offspring items
+        for ii in range(self.n_obj):
+            self.popmax[gen, ii] = np.amax([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popmin[gen, ii] = np.amin([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popavg[gen, ii] = np.average([population[x].fitness.values[ii] for x in range(len(population))])
+            self.popstd[gen, ii] = np.std([population[x].fitness.values[ii] for x in range(len(population))])
 
     def update_statistics(self, gen, halloffame):
         # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
@@ -156,15 +243,98 @@ class Criteria():
             self.effmin[gen, ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
             self.effavg[gen, ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
             self.effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-        print(">> gen: " + str(gen) + ", effmax_KGE: " + "{0:.3f}".format(self.effmax[gen, 0]))
+
+    def compute_halloffame_KGE(self, original_weights, halloffame):
+        if (original_weights[0] != 0):      # KGE
+            effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
+        elif (original_weights[5] != 0):    # KGE_JSD
+            KGE_JSDpos=np.count_nonzero(original_weights[:6])
+            effKGEs=[halloffame[x].fitness.values[KGE_JSDpos] for x in range(len(halloffame))]
+        else:
+            effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
+        return effKGEs
+
+    def compute_effmax_pop_KGE(self, gen, original_weights, halloffame, population):
+        if (original_weights[0] != 0):  # KGE as objective
+            self.effmax_KGE[gen]=self.effmax[gen,0]
+            self.effmin_KGE[gen]=self.effmin[gen,0]
+            self.effavg_KGE[gen]=self.effavg[gen,0]
+            self.effstd_KGE[gen]=self.effstd[gen,0]
+            self.popmax_KGE[gen]=self.popmax[gen,0]
+            self.popmin_KGE[gen]=self.popmin[gen,0]
+            self.popavg_KGE[gen]=self.popavg[gen,0]
+            self.popstd_KGE[gen]=self.popstd[gen,0]
+            self.popnum_KGE[gen]=len(population)
+            # Filter outliers from the current generation population
+            current_data = [ind.fitness.values[0] for ind in population]
+            current_filtered = self.filter_outliers(current_data)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)
+        elif (original_weights[6] != 0):  # KGE_JSD as objective
+            KGE_JSDpos=np.count_nonzero(original_weights[:6])
+            self.effmax_KGE[gen]=self.effmax[gen,KGE_JSDpos]
+            self.effmin_KGE[gen]=self.effmin[gen,KGE_JSDpos]
+            self.effavg_KGE[gen]=self.effavg[gen,KGE_JSDpos]
+            self.effstd_KGE[gen]=self.effstd[gen,KGE_JSDpos]
+            self.popmax_KGE[gen]=self.popmax[gen,KGE_JSDpos]
+            self.popmin_KGE[gen]=self.popmin[gen,KGE_JSDpos]
+            self.popavg_KGE[gen]=self.popavg[gen,KGE_JSDpos]
+            self.popstd_KGE[gen]=self.popstd[gen,KGE_JSDpos]
+            self.popnum_KGE[gen]=len(population)
+            # Filter outliers from the current generation population
+            current_data = [ind.fitness.values[KGE_JSDpos] for ind in population]
+            current_filtered = self.filter_outliers(current_data)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)
+        elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
+            assert(original_weights[0]==0)  # here the KGE obj is not in effmax vector, thus effmax[gen,0] is the correlation
+            effKGEs=self.compute_halloffame_KGE(original_weights, halloffame)
+            self.effmax_KGE[gen]=np.amax(effKGEs)
+            self.effmin_KGE[gen]=np.amin(effKGEs)
+            self.effavg_KGE[gen]=np.average(effKGEs)
+            self.effstd_KGE[gen]=np.std(effKGEs)
+            popKGEs=[1-np.sqrt(population[x].fitness.values[0] + population[x].fitness.values[1] + population[x].fitness.values[2]) for x in range(len(population))]
+            self.popmax_KGE[gen]=np.amax(popKGEs)
+            self.popmin_KGE[gen]=np.amin(popKGEs)
+            self.popavg_KGE[gen]=np.average(popKGEs)
+            self.popstd_KGE[gen]=np.std(popKGEs)
+            self.popnum_KGE[gen]=len(popKGEs)
+            # Filter outliers from the current generation population
+            current_filtered = self.filter_outliers(popKGEs)
+            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
+            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
+            self.popnum_KGE_filtered[gen]=len(current_filtered)            
+        else:
+            raise Exception('At least the KGE, KGE_JSD or the combination of the terms r, B and y are needed as objectives')
+
+        strJSD=""
+        if (original_weights[0] == 0) and (original_weights[6] != 0): # we are using KGE_JSD objective
+            strJSD="_JSD"
+        print(">> gen: " + str(gen) + ", HallOfFame items: {}, population items: {}".format(len(halloffame), len(population)))
+        print(">> gen: " + str(gen) + ", effmax_KGE{:s}: {:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
+                                                                                                                self.effmax_KGE[gen], 
+                                                                                                                self.effmin_KGE[gen],
+                                                                                                                self.effavg_KGE[gen],
+                                                                                                                self.effstd_KGE[gen]))
+        print(">> gen: " + str(gen) + ", selected population with offsprings: KGE{:s} max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
+                                                                                                                            self.popmax_KGE[gen], 
+                                                                                                                            self.popmin_KGE[gen],
+                                                                                                                            self.popavg_KGE[gen],
+                                                                                                                            self.popstd_KGE[gen]))
+        print(">> gen: " + str(gen) + ", selected population with offsprings filtered: KGE{:s} avg={:.3f}, std={:.3f}, num={}".format(strJSD,
+                                                                                                                            self.popavg_KGE_filtered[gen],
+                                                                                                                            self.popstd_KGE_filtered[gen],
+                                                                                                                            self.popnum_KGE_filtered[gen]))
 
     def write_front_history(self, path_subcatch, gen):
         front_history = pandas.DataFrame()
         front_history['gen'] = range(gen)
-        front_history['effmax_R'] = self.effmax[0:gen, 0]
-        front_history['effmin_R'] = self.effmin[0:gen, 0]
-        front_history['effstd_R'] = self.effstd[0:gen, 0]
-        front_history['effavg_R'] = self.effavg[0:gen, 0]
+        front_history['effmax_KGE'] = self.effmax_KGE[0:gen]
+        front_history['effmin_KGE'] = self.effmin_KGE[0:gen]
+        front_history['effstd_KGE'] = self.effstd_KGE[0:gen]
+        front_history['effavg_KGE'] = self.effavg_KGE[0:gen]
         front_history.to_csv(os.path.join(path_subcatch, "front_history.csv"))
 
 
@@ -180,6 +350,7 @@ class CalibrationDeap():
         The objective function to evaluate.
     objective_weights : List
         List containing the weights of each objective in the multi-objective optimization.
+        (Zero weights will be filtered out before using the vector to set fitness values)
     seed : int, optional
         Random seed for reproducibility.
 
@@ -222,10 +393,13 @@ class CalibrationDeap():
 
         self.pop = deap_param.pop
         self.mu = deap_param.mu
+        self.elite = deap_param.elite
         self.lambda_ = deap_param.lambda_
 
         self.objective_weights = objective_weights
-        self.criteria = Criteria(deap_param, len(objective_weights))
+        # use only objectives with non zero weights in DEAP!
+        filtered_objective_weights = [weight for weight in objective_weights if weight != 0]
+        self.criteria = Criteria(deap_param, len(filtered_objective_weights))
 
         self.cxpb = deap_param.cxpb
         self.mutpb = deap_param.mutpb
@@ -233,7 +407,7 @@ class CalibrationDeap():
         self.param_ranges = cfg.param_ranges
 
         # Setup DEAP
-        creator.create("FitnessMin", base.Fitness, weights=objective_weights)
+        creator.create("FitnessMin", base.Fitness, weights=filtered_objective_weights)
         creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
@@ -259,14 +433,62 @@ class CalibrationDeap():
                 return wrappper
             return decorator
 
+        def checkGwLossGwPerc(min, max, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc):
+            def decorator(func):
+                def wrappper(*args, **kargs):
+                    offspring = func(*args, **kargs)
+                    for child in offspring:
+                        # condition in Lisflood OS: if GWloss > GwPercValue -> GwPerc = GwLoss
+                        # then if GwPercValue < GWloss -> GwPerc = GwLoss
+                        GwPercScaled = (child[indexGwPerc]*scaleGwPerc)+offsetGwPerc
+                        GwLossScaled = (child[indexGwLoss]*scaleGwLoss)+offsetGwLoss
+                        if GwPercScaled<GwLossScaled:                            
+                            GwPercScaled=GwLossScaled
+                            child[indexGwPerc]=(GwPercScaled-offsetGwPerc)/scaleGwPerc                            
+                            assert(child[indexGwPerc]>=min)
+                            assert(child[indexGwPerc]<=max)
+                    return offspring
+                return wrappper
+            return decorator
+        
         toolbox.register("evaluate", fun)
         toolbox.register("mate", tools.cxBlend, alpha=0.15)
         toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.3, indpb=0.3)
         toolbox.register("select", tools.selNSGA2)
-        toolbox.decorate("mate", checkBounds(0, 1))
-        toolbox.decorate("mutate", checkBounds(0, 1))
+
+        #ipar, par in enumerate(param_ranges.index):
+        if ('GwLoss' in self.param_ranges.index) and ('GwPercValue' in self.param_ranges.index):
+            indexGwLoss=self.param_ranges.index.get_loc('GwLoss')
+            indexGwPerc=self.param_ranges.index.get_loc('GwPercValue')
+
+            scaleGwLoss=(self.param_ranges.iloc[indexGwLoss][1]-self.param_ranges.iloc[indexGwLoss][0])
+            offsetGwLoss=self.param_ranges.iloc[indexGwLoss][0]
+            scaleGwPerc=(self.param_ranges.iloc[indexGwPerc][1]-self.param_ranges.iloc[indexGwPerc][0])
+            offsetGwPerc=self.param_ranges.iloc[indexGwPerc][0]
+
+            toolbox.decorate("mate", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+            toolbox.decorate("mutate", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+            toolbox.decorate("population", checkBounds(0, 1), checkGwLossGwPerc(0, 1, indexGwLoss, indexGwPerc, scaleGwLoss, offsetGwLoss, scaleGwPerc, offsetGwPerc))
+        else:
+            toolbox.decorate("mate", checkBounds(0, 1))
+            toolbox.decorate("mutate", checkBounds(0, 1))
 
         self.toolbox = toolbox
+
+    def add_elites_KGEs_from_halloffame_to_population(self, halloffame, population, num_elites):
+        halloffame_not_in_pop = [ind for ind in halloffame if ind not in population]
+        if num_elites>=len(halloffame_not_in_pop):
+            return population + halloffame_not_in_pop
+        
+        halloffameKGEs=self.criteria.compute_halloffame_KGE(self.objective_weights, halloffame_not_in_pop)
+
+        # Pair individuals with their KGE values and sort by KGE in descending order
+        hof_with_kge = list(zip(halloffame_not_in_pop, halloffameKGEs))
+        hof_with_kge.sort(key=lambda x: x[1], reverse=True)
+
+        # Select the top individuals as elites based on KGE
+        elites = [ind for ind, kge in hof_with_kge[:num_elites]]
+        return population + elites
 
     def updatePopulationFromHistory(self, pHistory):
         param_ranges = self.param_ranges
@@ -290,8 +512,19 @@ class CalibrationDeap():
             newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
 
             # add objectives (from file) to current individual
-            objectives = pHistory.iloc[ind, n_params+1:n_params+1+n_obj].values
-            newInd.fitness.values = objectives
+            non_zero_indices = [index for index, weight in enumerate(self.objective_weights) if weight != 0]
+
+            objectives=pHistory.iloc[ind, n_params+1:n_params+1+min(5,n_obj)]
+            # actual objectives are (r - 1) ** 2, (B - 1) ** 2 and (y - 1) ** 2
+            objectives[1] = (objectives[1]-1)**2    # r (corr)
+            objectives[2] = (objectives[2]-1)**2    # B (bias)
+            objectives[3] = (objectives[3]-1)**2    # y
+            filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]
+            if 5 in non_zero_indices:
+                filtered_objectives.append(pHistory.iloc[ind, n_params+1+13])   # JSD
+            if 6 in non_zero_indices:
+                filtered_objectives.append(pHistory.iloc[ind, n_params+1+12])   # KGE_JSD
+            newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)
 
@@ -320,12 +553,17 @@ class CalibrationDeap():
                 valid_ind = self.updatePopulationFromHistory(parsHistory)
                 # Update the hall of fame with the generation's parameters
                 halloffame.update(valid_ind)
+                    
                 # prepare for the next stage
                 if population is not None:
                     population[:] = self.toolbox.select(population + valid_ind, self.mu)
+                    if self.elite > 0:
+                        population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, self.elite)
                 else:
                     population = valid_ind
                 self.criteria.update_statistics(gen, halloffame)
+                self.criteria.update_statistics_population(gen, population)
+                self.criteria.compute_effmax_pop_KGE(gen, self.objective_weights, halloffame, population)
                 self.criteria.check_termination_conditions(gen)
                 print('----> Generation {} recovered'.format(gen))
                 gen = gen+1
@@ -365,6 +603,8 @@ class CalibrationDeap():
         halloffame.update(population) # DD this selects the best one
 
         self.criteria.update_statistics(gen, halloffame)
+        self.criteria.update_statistics_population(gen, population)
+        self.criteria.compute_effmax_pop_KGE(gen, self.objective_weights, halloffame, population)
 
         return population
 
@@ -386,11 +626,14 @@ class CalibrationDeap():
 
         # Select the next generation population
         population[:] = self.toolbox.select(population + offspring, self.mu)
+        if self.elite > 0:
+            population = self.add_elites_KGEs_from_halloffame_to_population(halloffame, population, self.elite)
 
         # Loop through the different objective functions and calculate some statistics
         # from the Pareto optimal population
         self.criteria.update_statistics(gen, halloffame)
-
+        self.criteria.update_statistics_population(gen, population)
+        self.criteria.compute_effmax_pop_KGE(gen, self.objective_weights, halloffame, population)
         self.criteria.check_termination_conditions(gen)
 
         print('Done generation {}'.format(gen))

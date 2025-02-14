@@ -88,6 +88,7 @@ def test_update(dummy_cfg):
 
     gen = 1
     criteria.update_statistics(gen, halloffame)
+    # TODO: update test with self.criteria.compute_effmax_popmax_KGE(gen)
 
     print(criteria.effmin[1, 0])
     assert criteria.effmin[1, 0] == 0.1

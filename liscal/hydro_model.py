@@ -14,6 +14,7 @@ import sys
 # lisflood
 import lisf1
 from lisflood.global_modules.decorators import Cache
+from lisflood.global_modules.settings import LisSettings
 
 from liscal import utils
 
@@ -83,12 +84,10 @@ class HydrologicalModel():
         self.prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
         self.prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
 
-    def init_run(self):
+    def init_settings(self):
         """
-        Initialize the model run. This method prepares the model by caching static maps and forcings.
-        It runs LISFLOOD in initialization mode.
+        Initialize the settings file
         """
-
         # dummy Individual, doesn't matter here
         param_ranges = self.cfg.param_ranges
         Individual = 0.5*np.ones(len(param_ranges))
@@ -101,11 +100,21 @@ class HydrologicalModel():
         os.makedirs(out_dir, exist_ok=True)
 
         parameters = self.objective.get_parameters(Individual)
+        prerun_file, run_file = self.lis_template.write_init(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)  
+        return prerun_file, run_file       
+
+    def init_run(self):
+        """
+        Initialize the model run. This method prepares the model by caching static maps and forcings.
+        It runs LISFLOOD in initialization mode.
+        """
+
+        prerun_file, run_file = self.init_settings()
+
         print('---------------------------------------------------------')
         print('Intialising prerun: caching static maps and forcings')
         print('---------------------------------------------------------')
         print('Cache size before initialisation: {}'.format(Cache.size()))
-        prerun_file, run_file = self.lis_template.write_init(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)          
         lisf1.main(prerun_file, '-i')
         print('Cache size after initialising prerun: {}'.format(Cache.size()))
 
@@ -120,6 +129,7 @@ class HydrologicalModel():
         print('---------------------------------------------------------')
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()
+        self.lissettings = LisSettings.instance()
 
     def run(self, Individual):
         """
@@ -148,18 +158,35 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg, out_dir, parameters)
             
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
             
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
-        objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
+        objectives, additional_metrics = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow, compute_additional_metrics=True)
+        precip_budyko=self.subcatch.data['precip_budyko']
+        PET_budyko=self.subcatch.data['PET_budyko']
 
+        evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko)
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
-        return objectives  # If using just one objective function, put a comma at the end!!!
+        # return only obectives with non zero weight!
+        non_zero_indices = [index for index, weight in enumerate(self.objective.weights) if weight != 0]
+        objectives=list(objectives)
+        # the KGE formula is aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2) 
+        # THUS: r (corr), B (bias) and y terms need to be adjusted to be minimized:
+        objectives[1] = (objectives[1]-1)**2    # r (corr)
+        objectives[2] = (objectives[2]-1)**2    # B (bias)
+        objectives[3] = (objectives[3]-1)**2    # y
+        filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]     
+        #add JSD to objective vector
+        if 5 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["JSD"])
+        if 6 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["KGE_JSD"])   # KGE_JSD
+        return filtered_objectives              
 
 
 def read_parameters(path_subcatch):
@@ -280,7 +307,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
+    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
@@ -333,7 +360,7 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg, out_dir, parameters)
 
     # cache first
     f = open("timings.csv", "w")
@@ -393,7 +420,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg, out_dir, parameters)
 
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')
