@@ -220,10 +220,9 @@ class ConfigCalibration(Config):
                 # Get rid of any lakes that are not part of the channel network
 
                 # mask lakes sites when using sub-catchments mask
-                LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC)
-                self.LakeIndex = np.nonzero(self.LakeSitesC)[0]
+                self.LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC).astype(int)
 
-                if LakeSitesCC.size > 1:
+                if self.LakeSitesCC.size > 1:
                     # get one param for each lake
                     if 'LakeMultiplier' in self.param_ranges.index:
                         # Retrieve the original LakeMultiplier row values
@@ -233,7 +232,7 @@ class ConfigCalibration(Config):
                         self.param_ranges.drop('LakeMultiplier', inplace=True)
                         
                         # Add a new LakeMultiplier row for each lake
-                        for lake_id in self.LakeIndex:
+                        for lake_id in self.LakeSitesCC:
                             new_row_name = f'LakeMultiplier_{lake_id}'
                             self.param_ranges.loc[new_row_name] = lake_multiplier_values
 

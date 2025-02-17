@@ -75,10 +75,11 @@ class LisfloodSettingsTemplate():
             elif original_param_ranges.index[oii]=='LakeMultiplier' and any(index.startswith('LakeMultiplier_') for index in param_ranges.index):
                 # if we have here more LakeMultiplier parameters, create a map for the lakes
                 LakeMultiplierMap = np.full_like(cfg.LakeSitesC, -1, dtype=float)
-                for i, lake_id in enumerate(cfg.LakeIndex):
+                for i, lake_id in enumerate(cfg.LakeSitesCC):
                     ii = param_ranges.index.get_loc(f'LakeMultiplier_{lake_id}')
-                    assert(cfg.LakeIndex[i]==lake_id)
-                    LakeMultiplierMap[lake_id]=parameters[ii]
+                    assert(cfg.LakeSitesCC[i]==lake_id)
+                    # get index from LakeSitesC
+                    LakeMultiplierMap[cfg.LakeSitesC==lake_id]=parameters[ii]
                 strLakeMultiplierMap=os.path.join(out_dir, 'LakeMultiplierMap.nc')
                 out_xml = out_xml.replace("%"+original_param_ranges.index[oii],"$(PathInit)/LakeMultiplierMap")
             else:
