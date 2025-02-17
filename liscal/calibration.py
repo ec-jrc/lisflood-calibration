@@ -187,6 +187,8 @@ class Criteria():
 
         if gen >= self.min_gen and (gen >= self.gen_offset) and (self.effmax_KGE[gen] - self.effmax_KGE[gen - self.gen_offset]) < self.effmax_tol:
             if self.apply_statistical_stall_check:
+                statistical_gen_offset=self.gen_offset
+                #statistical_gen_offset=1
                 # CR optional stopping condition: even if the no-improvement KGE criterion is fulfilled, check the statistics of the latest gen_offset population to check if any overall improvement is going on
                 # Calculate t-test over the last `gen_offset` generations
                 if self.use_filtered_population == True:
@@ -195,18 +197,18 @@ class Criteria():
                     n_current = self.popnum_KGE_filtered[gen]
 
                     # Compute weighted average of means and stds for the previous "gen_offset" generations
-                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE_filtered[gen-self.gen_offset:gen],
-                                                                    self.popstd_KGE_filtered[gen-self.gen_offset:gen], 
-                                                                    self.popnum_KGE_filtered[gen-self.gen_offset:gen])
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE_filtered[gen-statistical_gen_offset:gen],
+                                                                    self.popstd_KGE_filtered[gen-statistical_gen_offset:gen], 
+                                                                    self.popnum_KGE_filtered[gen-statistical_gen_offset:gen])
                 else:
                     mean_current = self.popavg_KGE[gen]
                     std_current = self.popstd_KGE[gen]
                     n_current = self.popnum_KGE[gen] 
                 
                     # Compute weighted average of means and stds for the previous "gen_offset" generations
-                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE[gen-self.gen_offset:gen],
-                                                                    self.popstd_KGE[gen-self.gen_offset:gen], 
-                                                                    self.popnum_KGE[gen-self.gen_offset:gen])
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE[gen-statistical_gen_offset:gen],
+                                                                    self.popstd_KGE[gen-statistical_gen_offset:gen], 
+                                                                    self.popnum_KGE[gen-statistical_gen_offset:gen])
                 
                 # Perform t-test
                 t_stat, p_val = ttest_ind_from_stats(mean_current, std_current, n_current, mean_previous, std_previous, n_previous)
