@@ -249,7 +249,7 @@ class Criteria():
     def compute_halloffame_KGE(self, original_weights, halloffame):
         if (original_weights[0] != 0):      # KGE
             effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
-        elif (original_weights[5] != 0):    # KGE_JSD
+        elif (original_weights[6] != 0):    # KGE_JSD
             KGE_JSDpos=np.count_nonzero(original_weights[:6])
             effKGEs=[halloffame[x].fitness.values[KGE_JSDpos] for x in range(len(halloffame))]
         else:

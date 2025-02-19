@@ -303,12 +303,18 @@ class ObjectiveKGE():
         return pHistory
 
     def write_ranked_solution(self, pHistory, path_out=None):
+        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+            KGEcolumn="KGE_JSD"
+            KGERankName="KGEJSDRank"
+        else:
+            KGEcolumn="Kling Gupta Efficiency"
+            KGERankName="KGERank"
         if path_out is None:
             path_subcatch = self.subcatch.path
         else:
             path_subcatch = path_out
         # Keep only the best 10% of the runs for the selection of the parameters for the next generation
-        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
+        pHistory = pHistory.sort_values(by=KGEcolumn, ascending=False)
         pHistory = pHistory.head(int(max(2, round(len(pHistory) * 0.1))))
         n = len(pHistory)
         minOffset = 0.1
@@ -320,16 +326,22 @@ class ObjectiveKGE():
         pHistory = pHistory.sort_values(by="sae", ascending=True)
         pHistory["saeRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["sae"].values)]
         # Give ranking scores to KGE
-        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-        pHistory["KGERank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Kling Gupta Efficiency"].values)]
+        pHistory = pHistory.sort_values(by=KGEcolumn, ascending=False)
+        pHistory[KGERankName] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory[KGEcolumn].values)]
         # Give pareto score
-        pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
+        pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory[KGERankName].values
         pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
         pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',', float_format='%g')
 
         return pHistory
 
     def write_pareto_front(self, pHistory, path_out=None):
+        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+            KGEcolumn="KGE_JSD"
+            KGERankName="(KGEJSD)"
+        else:
+            KGEcolumn="Kling Gupta Efficiency"
+            KGERankName="(KGE)"
         if path_out is None:
             path_subcatch = self.subcatch.path
         else:
@@ -342,11 +354,12 @@ class ObjectiveKGE():
         paramvals[:] = np.NaN
         for ipar, par in enumerate(param_ranges.index):
             paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
+
         pareto_front = pd.DataFrame(
             {
-                'effover': pHistory["Kling Gupta Efficiency"].loc[bestParetoIndex],
-                'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]
-            }, index=[0]
+                f'effover{KGERankName}': pHistory[KGEcolumn].loc[bestParetoIndex],
+                f'R{KGERankName}': pHistory[KGEcolumn].    loc[bestParetoIndex]
+            }
         )
         for ii in range(len(param_ranges)):
             pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
