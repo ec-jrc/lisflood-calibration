@@ -55,18 +55,25 @@ class ObjectiveKGE():
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
-        self.weights = [1, 0, 0, 0, 0, 0]
+            
+        # Initialize weights, assuming 0 for not included, and +1/-1 based on maximization/minimization
+        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae), JSD, KGE_JSD]
+        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae, JSD, KGE_JSD]
+        # THUS: only KGE and KGE_JSD shoud be maximized, while other terms need to be minimized
+        self.weights = [
+            1 if 'KGE' in cfg.deap_param.objectives_list else 0,           # Maximize KGE
+            -1 if 'CORR' in cfg.deap_param.objectives_list else 0,         # Minimize corr
+            -1 if 'BIAS' in cfg.deap_param.objectives_list else 0,         # Minimize bias
+            -1 if 'Y' in cfg.deap_param.objectives_list else 0,            # Minimize y
+            -1 if 'SAE' in cfg.deap_param.objectives_list else 0,          # Minimize sae
+            -1 if 'JSD' in cfg.deap_param.objectives_list else 0,          # Minimize JSD
+            1 if 'KGE_JSD' in cfg.deap_param.objectives_list else 0        # Maximize KGE_JSD
+        ]
+    
 
         if read_observations:
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
-
-    def set_custom_multiobjective_weights(self, objective_KGE, objective_corr, objective_bias, objective_y, objective_sae, objective_JSD, objective_KGE_JSD):
-        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae)]
-        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae]
-        # THUS: only KGE shoud be maximized, while other terms need to be minimized
-        self.weights = [int(objective_KGE), -int(objective_corr), -int(objective_bias), -int(objective_y), -int(objective_sae), -int(objective_JSD), int(objective_KGE_JSD)]
-
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges

@@ -31,7 +31,7 @@ prerun_start = 02/01/1990 06:00  # When to start the prerun
 prerun_end = 31/12/2017 06:00 # When to end the prerun
 prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
 fast_debug = 0  # Flag to set to 1 for quicker debugging
-min_obs_years = 3.5  # Minimum number of years of observation required to calibrate the station
+num_max_calib_years = 20 # Maximum number of years of observation to use during calibration
 
 [Stations]
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
@@ -55,6 +55,20 @@ lambda_ = 36  # Size of generation of offsprings
 pop = 72  # Population
 gen_offset = 3  # Stopping criteria: check efficiency vs that from 3 generations before
 effmax_tol = 0.003  # Stopping criteria: if efficiency difference lower than tolerance, stop calibration
+
+# number of elites individual to carry on next generation from the pareto front (not used in single objective calibration
+elite = 0  		 
+# option to split lake multiplier parameter: 1 = one param for each lake, 0 = one param only for all the lakes
+split_lake_params = 1
+# use statistical t-test between population individuals KGE values of current generation VS previous "gen_offset" generations and continue if the KGE is significantly higher
+apply_statistical_stall_check = 1
+# filter out outliers when computing t_test in statistical stop condition
+use_filtered_population = 1
+
+# Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"
+# Possible values are: KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD.
+# At least settings "KGE" or "KGE_JSD" or the 3 terms for the KGE evaluation [corr, bias, y] are needed, to compute the KGE score for the stopping conditions
+objectives = KGE, SAE
 ```
 
 ## Format of station and observations files

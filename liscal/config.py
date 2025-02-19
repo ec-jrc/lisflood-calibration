@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas
 from datetime import datetime
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
 from liscal import pcr_utils, calibration
 from lisflood.global_modules.add1 import loadmap, compressArray
 from pcraster import boolean
@@ -84,16 +84,28 @@ class DEAPParameters():
         self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
         self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
         self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population')))
-        self.apply_multiobjective_calibration = bool(int(parser.get('DEAP','apply_multiobjective_calibration')))
-        if self.apply_multiobjective_calibration:
-            self.objective_KGE = bool(int(parser.get('DEAP','objective_KGE')))
-            self.objective_corr = bool(int(parser.get('DEAP','objective_corr')))
-            self.objective_bias = bool(int(parser.get('DEAP','objective_bias')))
-            self.objective_y = bool(int(parser.get('DEAP','objective_y')))
-            self.objective_sae = bool(int(parser.get('DEAP','objective_sae')))
-            self.objective_JSD = bool(int(parser.get('DEAP','objective_JSD')))
-            self.objective_KGE_JSD = bool(int(parser.get('DEAP','objective_KGE_JSD')))
 
+        try:
+            objectives_str = parser.get('DEAP', 'objectives')
+            self.objectives_list = [obj.strip().upper() for obj in objectives_str.split(',')]
+        except NoOptionError:
+            self.objectives_list =['KGE']
+
+        # check for valid objectives
+        valid_objectives = {'KGE', 'CORR', 'BIAS', 'Y', 'SAE', 'JSD', 'KGE_JSD'}
+        
+        # Check for any unknown objectives
+        unknown_objectives = [obj for obj in self.objectives_list if obj not in valid_objectives]
+        if unknown_objectives:
+            raise ValueError(f"Unknown objectives found: {', '.join(unknown_objectives)}")
+
+        # Ensure at least "KGE" or "KGE_JSD" or all three ["CORR", "BIAS", "Y"] are present
+        has_kge = 'KGE' in self.objectives_list
+        has_kge_jsd = 'KGE_JSD' in self.objectives_list
+        has_kge_terms = all(obj in self.objectives_list for obj in ['CORR', 'BIAS', 'Y'])
+        
+        if not (has_kge or has_kge_jsd or has_kge_terms):
+            raise ValueError("At least 'KGE', 'KGE_JSD', or all of ['CORR', 'BIAS', 'Y'] must be included in objectives.")
 
 
 class ConfigCalibration(Config):

@@ -29,15 +29,6 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
 
         obj = objective.ObjectiveKGE(cfg, subcatch)
 
-        if cfg.deap_param.apply_multiobjective_calibration:
-            obj.set_custom_multiobjective_weights(cfg.deap_param.objective_KGE,
-                                                  cfg.deap_param.objective_corr,
-                                                  cfg.deap_param.objective_bias,
-                                                  cfg.deap_param.objective_y,
-                                                  cfg.deap_param.objective_sae,
-                                                  cfg.deap_param.objective_JSD,
-                                                  cfg.deap_param.objective_KGE_JSD)
-
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
         # load forcings and input maps in cache
