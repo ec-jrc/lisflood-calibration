@@ -216,10 +216,16 @@ class Criteria():
                 # Check p-value
                 print(">> No-improvement KGE fulfilled, checking statistical no-improvement KGE: p_val={}, mean_current={}, std_current={}, mean_previous={}, std_previous={}." 
                         .format(p_val, mean_current, std_current, mean_previous, std_previous))
-                if (not np.isnan(p_val)) and ((mean_current - mean_previous) > 0.0001 and p_val < 0.05):
+                if (not np.isnan(p_val)) and ((mean_current - mean_previous) > 0.0001 and p_val < 0.05 and std_current>0.001):
                     print(">> Significant improvement detected, continuing optimization.")
                 else:
-                    print(">> Termination criterion statistical no-improvement KGE fulfilled.")
+                    if (mean_current - mean_previous) <= 0.0001:
+                        reason = "Mean_current - mean_previous <= 0.0001"
+                    elif p_val >= 0.05:
+                        reason = "p_value >= 0.05"
+                    elif std_current<=0.001:
+                        reason = "std_current <= 0.001"
+                    print(f">> Termination criterion statistical no-improvement KGE fulfilled (reason: {reason}).")
                     self.conditions["StatisticalStallFit"] = True
             else:
                 # # DD attempt to stop early with different criterion
