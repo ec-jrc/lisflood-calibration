@@ -4,6 +4,8 @@ from netCDF4 import Dataset
 from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
 from lisflood.global_modules.settings import LisSettings
 
+import xml.etree.ElementTree as ET
+
 class LisfloodSettingsTemplate():
     """
     A class to generate LISFLOOD model settings file from a template.
@@ -29,7 +31,7 @@ class LisfloodSettingsTemplate():
         Initializes the LisfloodSettingsTemplate object with configuration and subcatchment data.
     settings_path(suffix, run_id)
         Returns the path for a settings file given a suffix and run ID.
-    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, cfg, out_dir, parameters, write_states=False)
+    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, cfg, out_dir, path_station, parameters, write_states=False)
         Writes the LISFLOOD settings file for both prerun and main run.
     write_init(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters)
         Writes the LISFLOOD initialization settings file.
@@ -58,7 +60,7 @@ class LisfloodSettingsTemplate():
     def settings_path(self, suffix, run_id):
         return self.outfix+suffix+run_id+'.xml'
 
-    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, parameters, write_states=False):
+    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, path_station, parameters, write_states=False):
 
         original_param_ranges, param_ranges = cfg.original_param_ranges, cfg.param_ranges
         prerun_file = self.settings_path('PreRun', run_id)
@@ -85,7 +87,26 @@ class LisfloodSettingsTemplate():
             else:
                 #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
                 out_xml = out_xml.replace("%"+original_param_ranges.index[oii],str(original_param_ranges.iloc[oii,2]))
+        
+        # Check if FilteredReservoirMap.nc exists. If so, use it instead of standard map during calibration
+        # Parse the XML from the string
+        root = ET.fromstring(out_xml)
 
+        # Check if FilteredReservoirMap.nc exists and use it in 'ReservoirSites' Key in xml
+        strFilteredReservoirMap=os.path.join(path_station, 'FilteredReservoirMap.nc')    
+        if os.path.exists(strFilteredReservoirMap):
+            # Parse the XML from the string
+            root = ET.fromstring(out_xml)
+
+            # Find the element with the tag 'ReservoirSites'
+            reservoir_sites_element = root.find(".//textvar[@name='ReservoirSites']")
+
+            # Check if the element is found and update its content
+            if reservoir_sites_element is not None:
+                reservoir_sites_element.set("value", strFilteredReservoirMap)
+                print("Updated ReservoirSites content to:", strFilteredReservoirMap)
+                out_xml = ET.tostring(root, encoding="unicode")
+        
         # Prerun file
         out_xml_prerun = out_xml
         out_xml_prerun = out_xml_prerun.replace('%InitLisflood',"1")
