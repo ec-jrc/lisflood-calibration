@@ -37,6 +37,7 @@ num_max_calib_years = 20 # Maximum number of years of observation to use during 
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
 stations_links = STATIONS/stations_links.csv  # Path to the stations hydrological dependencies file
 observed_discharges = OBS  # Path to the observations
+reservoir_events = STATIONS/reservoir_events.csv # Path to the reservoir creation/demolition dates file
 
 [Path]
 param_ranges = TEMPLATES/param_ranges.csv  # Path to the parameters ranges file
@@ -71,7 +72,7 @@ use_filtered_population = 1
 objectives = KGE, SAE
 ```
 
-## Format of station and observations files
+## Format of station, reservoir events and observations files
 
 ### stations.csv (metadata)
 
@@ -92,6 +93,16 @@ DATE,G0001,G0002,G0003,G0004
 4/1/1914,,30.1,42.7,51.8
 ...
 ```
+### reservoir_events.csv (reservoir creation/demolition dates file)
+
+```csv
+FID,CONSTR_YEAR,DEMOL_YEAR
+1,1987,
+5,1979,
+6,1942,
+7,1977,
+...
+```
 
 # Summary
 
@@ -99,5 +110,6 @@ DATE,G0001,G0002,G0003,G0004
 2. Prepare static maps (dem, landuse etc.) and NetCDF forcing data (such as ERA5 dataset).
 3. Prepare the stations csv file. This is a file containing the stations metadata.
 4. Prepare the observations csv file. This file contains observed discharge data for each station.
-5. Make a copy of integration/settings.txt and edit according your system.
+5. Prepare the reservoir csv file if needed. This file contains columns FID (id of the reservoir), CONSTR_YEAR and DEMOL_YEAR
+6. Make a copy of integration/settings.txt and edit according your system.
 

@@ -144,7 +144,7 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered,
 
     return split_date
 
-def find_valid_period_reservoir(model_initialized, dt, observations_filtered, valid_start, valid_end, min_years=4):
+def find_valid_period_reservoir(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4):
     # copy dates as string
     best_period_start, best_period_end = valid_start, valid_end
 
@@ -165,8 +165,7 @@ def find_valid_period_reservoir(model_initialized, dt, observations_filtered, va
         ReservoirSitesCC = np.compress(reservoirs > 0, reservoirs)
 
         if ReservoirSitesCC.size > 0:
-            # Load and filter reservoir events data
-            reservoir_events_df = pd.read_csv('reservoir_events.csv')
+            # filter reservoir events data
             reservoir_events_df = reservoir_events_df[reservoir_events_df['FID'].isin(ReservoirSitesCC)]
 
             # Convert year columns to datetime
@@ -264,8 +263,13 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     valid_end = observations_filtered.index[-1]
 
     if model_initialized is not None:
-        valid_start, valid_end = find_valid_period_reservoir(model_initialized, dt, observations_filtered, valid_start, valid_end, min_years=4)
-                
+        if os.path.exists(cfg.reservoir_events):
+            reservoir_events_df = pd.read_csv(cfg.reservoir_events)
+            valid_start, valid_end = find_valid_period_reservoir(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4)
+        else:
+            print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
+
+
     valid_observations = observed_streamflow[valid_start:valid_end]
 
     # Compute split date

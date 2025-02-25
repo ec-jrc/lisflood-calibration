@@ -13,6 +13,7 @@ stations_data = STATIONS/stations_data.csv
 stations_links = STATIONS/stations_links.csv
 observed_discharges = OBS
 return_periods = STATIONS/return_levels.nc
+reservoir_events = STATIONS/reservoir_events.csv
 
 [Path]
 param_ranges = TEMPLATES/param_ranges.csv
@@ -31,6 +32,16 @@ lambda_ = 36
 pop = 72
 gen_offset = 3
 effmax_tol = 0.003
+elite = 0  		 
+split_lake_params = 1
+apply_statistical_stall_check = 1
+use_filtered_population = 0
+
+# Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"
+# Possible values are: KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD.
+# At least settings "KGE" or "KGE_JSD" or the 3 terms for the KGE evaluation [corr, bias, y] are needed, to compute the KGE score for the stopping conditions
+objectives = KGE
+
 # NOTES:
 # min_gen = Run at least this number of generations.
 # max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
@@ -38,5 +49,9 @@ effmax_tol = 0.003
 #      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
 # Lamda = # of children spawned at every generation (= # threads to run in parallel)
 #         This must always be twice mu
+# elite = number of elites individual to carry on next generation from the pareto front (not used in single objective calibration)
+# split_lake_params = option to split lake multiplier parameter: 1 = one param for each lake, 0 = one param only for all the lakes
+# apply_statistical_stall_check = use statistical t-test between population individuals KGE values of current generation VS previous "gen_offset" generations and continue if the KGE is significantly higher
+# use_filtered_population = filter out outliers when computing t_test in statistical stop condition
 
 

@@ -210,6 +210,9 @@ class ConfigCalibration(Config):
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
         self.stations_data = self.parser.get('Stations', 'stations_data')
 
+        # Reservoir creation/demolition dates
+        self.reservoir_events = self.parser.get('Stations', 'reservoir_events')
+
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
