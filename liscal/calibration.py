@@ -522,16 +522,18 @@ class CalibrationDeap():
             # add objectives (from file) to current individual
             non_zero_indices = [index for index, weight in enumerate(self.objective_weights) if weight != 0]
 
-            objectives=pHistory.iloc[ind, n_params+1:n_params+1+min(5,n_obj)]
+            # columns written in update_parameter_history in the same order and names:
+            # [Kling Gupta Efficiency], then [Correlation], [Signal ratio (s/o) (Bias)], [Noise ratio (s/o) (Spread)], [sae]
+            objectives=pHistory.iloc[ind].loc['Kling Gupta Efficiency':][:min(5,n_obj)]
             # actual objectives are (r - 1) ** 2, (B - 1) ** 2 and (y - 1) ** 2
             objectives[1] = (objectives[1]-1)**2    # r (corr)
             objectives[2] = (objectives[2]-1)**2    # B (bias)
             objectives[3] = (objectives[3]-1)**2    # y
             filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]
             if 5 in non_zero_indices:
-                filtered_objectives.append(pHistory.iloc[ind, n_params+1+13])   # JSD
+                filtered_objectives.append(pHistory.iloc[ind].loc['JSD'])   # JSD
             if 6 in non_zero_indices:
-                filtered_objectives.append(pHistory.iloc[ind, n_params+1+12])   # KGE_JSD
+                filtered_objectives.append(pHistory.iloc[ind].loc['KGE_JSD'])   # KGE_JSD
             newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)

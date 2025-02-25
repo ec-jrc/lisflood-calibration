@@ -263,7 +263,8 @@ class ObjectiveKGE():
             paramsHistory = "randId,"
             for i in [str(ip) + "," for ip in self.param_ranges.index.values]:
                 paramsHistory += i
-            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae","Evaporative Index","Fractional Budyko Distance"]]:            
+            # these columns should match the order of the updatePopulationFromHistory function
+            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae", "Evaporative Index", "Fractional Budyko Distance"]]:
                 paramsHistory += i
             for i in [str(ip) + "," for ip in additional_metrics]:
                 paramsHistory += i
