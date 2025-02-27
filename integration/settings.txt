@@ -45,10 +45,10 @@ objectives = KGE
 # NOTES:
 # min_gen = Run at least this number of generations.
 # max_gen = Maximum number of generations to run, used as failsafe stop criterion. Takes precedence over minGen (handy for fast debugging)
-# mu = # of best children chosen to feed into the next generation (JRC decided to make it 2x calibration parameters)
+# mu = # of best children chosen to feed into the next generation 
 #      This must always be at least 2, otherwhise DEAP cannot crossover-mutate the children
 # Lamda = # of children spawned at every generation (= # threads to run in parallel)
-#         This must always be twice mu
+#         This should be twice mu
 # elite = number of elites individual to carry on next generation from the pareto front (not used in single objective calibration)
 # split_lake_params = option to split lake multiplier parameter: 1 = one param for each lake, 0 = one param only for all the lakes
 # apply_statistical_stall_check = use statistical t-test between population individuals KGE values of current generation VS previous "gen_offset" generations and continue if the KGE is significantly higher

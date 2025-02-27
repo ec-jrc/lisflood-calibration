@@ -311,7 +311,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, 
-                                                        run_end, cfg, out_dir, self.subcatch.path_station, parameters, write_states=True)
+                                                        run_end, cfg, out_dir, subcatch.path_station, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
