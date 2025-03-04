@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 import numpy as np
 from netCDF4 import Dataset
@@ -57,8 +58,11 @@ class LisfloodSettingsTemplate():
 
         self.template_xml = template_xml
 
-    def settings_path(self, suffix, run_id):
-        return self.outfix+suffix+run_id+'.xml'
+    def settings_path(self, suffix, run_id, warmstart_idx = None):
+        if warmstart_idx is None:
+            return self.outfix+suffix+run_id+'.xml'
+        else:
+            return self.outfix+suffix+run_id+'_ws_'+str(warmstart_idx)+'.xml'
 
     def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, path_station, parameters, write_states=False):
 
@@ -93,19 +97,20 @@ class LisfloodSettingsTemplate():
         root = ET.fromstring(out_xml)
 
         # Check if FilteredReservoirMap.nc exists and use it in 'ReservoirSites' Key in xml
-        strFilteredReservoirMap=os.path.join(path_station, 'FilteredReservoirMap.nc')    
-        if os.path.exists(strFilteredReservoirMap):
-            # Parse the XML from the string
-            root = ET.fromstring(out_xml)
+        if run_id!='long_term_run':
+            strFilteredReservoirMap=os.path.join(path_station, 'FilteredReservoirMap.nc')
+            if os.path.exists(strFilteredReservoirMap):
+                # Parse the XML from the string
+                root = ET.fromstring(out_xml)
 
-            # Find the element with the tag 'ReservoirSites'
-            reservoir_sites_element = root.find(".//textvar[@name='ReservoirSites']")
+                # Find the element with the tag 'ReservoirSites'
+                reservoir_sites_element = root.find(".//textvar[@name='ReservoirSites']")
 
-            # Check if the element is found and update its content
-            if reservoir_sites_element is not None:
-                reservoir_sites_element.set("value", strFilteredReservoirMap)
-                print("Updated ReservoirSites content to:", strFilteredReservoirMap)
-                out_xml = ET.tostring(root, encoding="unicode")
+                # Check if the element is found and update its content
+                if reservoir_sites_element is not None:
+                    reservoir_sites_element.set("value", strFilteredReservoirMap)
+                    print("Updated ReservoirSites content to:", strFilteredReservoirMap)
+                    out_xml = ET.tostring(root, encoding="unicode")
         
         # Prerun file
         out_xml_prerun = out_xml
@@ -180,6 +185,136 @@ class LisfloodSettingsTemplate():
             nf1.close()
 
         return prerun_file, run_file     
+
+    def write_warmstart_settings_files(self, run_id, original_run_file, path_station, subperiods):
+
+        textvar_end_mappings = {
+            "OFDirectInitValue": "OFDirectEnd",
+            "OFOtherInitValue": "OFOtherEnd",
+            "OFForestInitValue": "OFForestEnd",
+            "SnowCoverAInitValue": "SnowCoverAEnd",
+            "SnowCoverBInitValue": "SnowCoverBEnd",
+            "SnowCoverCInitValue": "SnowCoverCEnd",
+            "FrostIndexInitValue": "FrostIndexEnd",
+            "CumIntInitValue": "CumInterceptionEnd",
+            "UZInitValue": "UZEnd",
+            "DSLRInitValue": "DSLREnd",
+            "LZInitValue": "LZEnd",
+            "TotalCrossSectionAreaInitValue": "ChanCrossSectionEnd",
+            "ThetaInit1Value": "Theta1End",
+            "ThetaInit2Value": "Theta2End",
+            "ThetaInit3Value": "Theta3End",
+            "CrossSection2AreaInitValue": "CrossSection2End",
+            "PrevSideflowInitValue": "ChSideEnd",
+            "LakeInitialLevelValue": "LakeLevelEnd",
+            "LakePrevInflowValue": "LakePrevInflowEnd",
+            "LakePrevOutflowValue": "LakePrevOutflowEnd",
+            "PrevDischarge": "ChanQEnd",
+            "PrevDischargeAvg": "ChanQAvgDtEnd",
+            "PrevCmMCTInitValue": "PrevCmMCTEnd",
+            "PrevDmMCTInitValue": "PrevDmMCTEnd",
+            "CumIntForestInitValue": "CumInterceptionForestEnd",
+            "UZForestInitValue": "UZForestEnd",
+            "DSLRForestInitValue": "DSLRForestEnd",
+            "ThetaForestInit1Value": "Theta1ForestEnd",
+            "ThetaForestInit2Value": "Theta2ForestEnd",
+            "ThetaForestInit3Value": "Theta3ForestEnd",
+            "CumIntIrrigationInitValue": "CumInterceptionIrrigationEnd",
+            "UZIrrigationInitValue": "UZIrrigationEnd",
+            "DSLRIrrigationInitValue": "DSLRIrrigationEnd",
+            "ThetaIrrigationInit1Value": "Theta1IrrigationEnd",
+            "ThetaIrrigationInit2Value": "Theta2IrrigationEnd",
+            "ThetaIrrigationInit3Value": "Theta3IrrigationEnd",
+            "CumIntSealedInitValue": "CumIntSealedEnd",
+            "ReservoirInitialFill": "ReservoirFillEnd"
+        }
+        with open(original_run_file, "r") as f:
+            out_xml = f.read()
+            warmstart_run_files = []
+
+            # Generate NetCDF map for each subperiod
+            last_sub_end = None     # start without setting timestepInit
+            for idx, (sub_start, sub_end) in enumerate(subperiods):
+                warmstart_run_file = self.settings_path('Run', run_id, idx)
+                strFilteredReservoirMap=os.path.join(path_station, f"ReservoirMap_Subperiod_{idx}.nc")
+                if os.path.exists(strFilteredReservoirMap):
+                    # Parse the XML from the string
+                    root = ET.fromstring(out_xml)
+                    lfuser_section = root.find(".//lfuser")
+
+                    # Get DtSec value to get the timestep
+                    dtsec_element = lfuser_section.find(".//textvar[@name='DtSec']")
+                    timestepInit_element = lfuser_section.find(".//textvar[@name='timestepInit']")
+
+                    ColdStart_element = root.find(".//setoption[@name='ColdStart']")
+                    repEndMaps_element = root.find(".//setoption[@name='repEndMaps']")
+
+                    # Find the element with the tag 'ReservoirSites'
+                    reservoir_sites_element = lfuser_section.find(".//textvar[@name='ReservoirSites']")
+                    if reservoir_sites_element is None:
+                        reservoir_sites_element = root.find(".//textvar[@name='ReservoirSites']")
+
+                    # Find elements with the tag 'StepStart' and 'StepEnd'
+                    step_start_element = lfuser_section.find(".//textvar[@name='StepStart']")
+                    step_end_element = lfuser_section.find(".//textvar[@name='StepEnd']")
+
+                    # Check if elements are found and update content
+                    if (reservoir_sites_element is not None) and \
+                            (dtsec_element is not None) and \
+                            (step_start_element is not None) and \
+                            (timestepInit_element is not None) and \
+                            (ColdStart_element is not None) and \
+                            (repEndMaps_element is not None) and \
+                            (step_end_element is not None):
+                        
+                        # we need end maps to run the Warm Start
+                        repEndMaps_element.set("choice", "1")   
+
+                        dtsec_value = int(dtsec_element.get('value'))  # Convert to integer
+                        reservoir_sites_element.set("value", strFilteredReservoirMap)
+                                    
+                        str_sub_start = sub_start.strftime('%d/%m/%Y %H:%M')
+                        str_sub_end = sub_end.strftime('%d/%m/%Y %H:%M')
+                        step_start_element.set("value", str_sub_start)
+                        step_end_element.set("value", str_sub_end)
+                        print(f"Updated Period and ReservoirSites content to: {str_sub_start}, {str_sub_end}, {strFilteredReservoirMap} in {warmstart_run_file}")
+
+                        if idx>0:
+                            assert(last_sub_end is not None)
+                            timestepInit_element.set("value", (last_sub_end - timedelta(seconds=dtsec_value)).strftime('%d/%m/%Y %H:%M'))   
+                            ColdStart_element.set("choice", "0")   
+
+                            n = 0                     
+                            for init_name, end_name in textvar_end_mappings.items():
+                                # Find the InitValue element
+                                init_element = lfuser_section.find(f".//textvar[@name='{init_name}']")
+                                if init_element is None:
+                                    init_element = root.find(f".//textvar[@name='{init_name}']")
+                                # Find the corresponding End element
+                                end_element = lfuser_section.find(f".//textvar[@name='{end_name}']")
+                                if end_element is None:
+                                    end_element = root.find(f".//textvar[@name='{end_name}']")
+                                
+                                if init_element is not None and end_element is not None:
+                                    n+=1
+                                    # Set the value of the InitValue element to the value of the End element
+                                    init_element.set('value', end_element.get('value'))
+                                else:
+                                    raise Exception(f'Missing Init element {init_name} or End element {end_name} in XML file for the longrun warmstart') 
+
+                            print(f"Updated {n} Init Vars for warm start in {warmstart_run_file}")
+                                    
+                        out_xml = ET.tostring(root, encoding="unicode")
+
+                        # update last sub_end for the next timesetpInit value
+                        last_sub_end = sub_end
+                    else:
+                        raise Exception('Missing element in XML file for the longrun warmstart')
+                with open(warmstart_run_file, "w") as f:
+                    f.write(out_xml)
+                warmstart_run_files.append(warmstart_run_file)                
+
+            return warmstart_run_files
 
     def write_init(self, run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters):
 

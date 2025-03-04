@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from lisflood.global_modules.add1 import loadmap, compressArray
+from lisflood.global_modules.add1 import loadmap, loadmap_base, compressArray
 from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
 
 from pcraster import boolean
@@ -144,15 +144,13 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered,
 
     return split_date
 
-def find_valid_period_reservoir(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4):
+def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False):
     # copy dates as string
     best_period_start, best_period_end = valid_start, valid_end
 
-    # convert valid_start and valid_end in datetime objects
+    # Ensure valid_start and valid_end are datetime objects
     valid_start = pd.to_datetime(valid_start, format="%d/%m/%Y %H:%M")
     valid_end = pd.to_datetime(valid_end, format="%d/%m/%Y %H:%M")
-    
-    min_steps = int(min_years*365.25*24/dt)
 
     # Check if reservoirs are simulated and load necessary maps
     if model_initialized.lissettings.options['simulateReservoirs']:
@@ -174,48 +172,97 @@ def find_valid_period_reservoir(model_initialized, reservoir_events_df, dt, obse
 
             # Gather potentially impacting events
             reservoir_events = sorted(
-                [date for date in reservoir_events_df['CONSTR_YEAR'].dropna().tolist() + 
-                 reservoir_events_df['DEMOL_YEAR'].dropna().tolist() 
-                 if valid_start <= date <= valid_end]
+                [date for date in reservoir_events_df['CONSTR_YEAR'].dropna().tolist() +
+                 reservoir_events_df['DEMOL_YEAR'].dropna().tolist()
+                 if valid_start < date < valid_end]
             )
 
-            # Determine the most recent valid observation period
-            last_valid_end = valid_end
-            for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
-                period_observations = observations_filtered[event.strftime('%d/%m/%Y %H:%M'):last_valid_end.strftime('%d/%m/%Y %H:%M')]
-                if len(period_observations) >= min_steps:
-                    best_period_start, best_period_end = period_observations.index[0], period_observations.index[-1]
-                    best_period_end_dt = pd.to_datetime(best_period_end, format="%d/%m/%Y %H:%M")
-                    best_period_start_dt = pd.to_datetime(best_period_start, format="%d/%m/%Y %H:%M")
-                    break
-                last_valid_end = event - pd.Timedelta(days=1)
+            if isLongRun:
+                # Define subperiods from valid_start to valid_end interrupted by events
+                start_date = valid_start
+                subperiods = []
+                for event in reservoir_events + [valid_end]:
+                    if start_date < event:
+                        if start_date != valid_start:
+                            start_date += datetime.timedelta(hours=dt)
+                    subperiods.append((start_date, event))
+                    start_date = event
 
-            # Identify active reservoirs for the selected period
-            active_reservoirs = {
-                row['FID'] for _, row in reservoir_events_df.iterrows()
-                if (pd.isna(row['CONSTR_YEAR']) or row['CONSTR_YEAR'] <= best_period_end_dt) and
-                   (pd.isna(row['DEMOL_YEAR']) or row['DEMOL_YEAR'] > best_period_start_dt)
-            }
+                # Generate NetCDF map for each subperiod
+                for idx, (sub_start, sub_end) in enumerate(subperiods):
+                    map_name = f"ReservoirMap_Subperiod_{idx}"
+                    create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, sub_start, sub_end)                
+                return subperiods, reservoir_events_df
+            else:
+                # Determine the most recent valid observation period
+                min_steps = int(min_years*365.25*24/dt)
+                last_valid_end = valid_end
+                for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
+                    period_observations = observations_filtered[event.strftime('%d/%m/%Y %H:%M'):last_valid_end.strftime('%d/%m/%Y %H:%M')]
+                    if len(period_observations) >= min_steps:
+                        best_period_start, best_period_end = period_observations.index[0], period_observations.index[-1]
+                        best_period_end_dt = pd.to_datetime(best_period_end, format="%d/%m/%Y %H:%M")
+                        best_period_start_dt = pd.to_datetime(best_period_start, format="%d/%m/%Y %H:%M")
+                        break
+                    last_valid_end = event - pd.Timedelta(days=1)
+                
+                map_name = "FilteredReservoirMap"
+                create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, best_period_start_dt, best_period_end_dt)
 
-            # Save the reservoir filtered map for the selected period
-            FilteredReservoirMap = np.full_like(reservoirs, -1, dtype=float)
-            for res_id in active_reservoirs:
-                # get index from reservoirs map
-                FilteredReservoirMap[reservoirs==res_id]=res_id
-            strFilteredReservoirMap=os.path.join(model_initialized.subcatch.path_station, 'FilteredReservoirMap.nc')
-            # Save the new map LakeMultiplierMap to a NetCDF file                
-            map_name = "FilteredReservoirMap"
-            nf1 = write_netcdf_header(model_initialized.lissettings, map_name, strFilteredReservoirMap, None,
-                                    map_name, map_name, "",
-                                    None, None, None)
-
-            map_np = uncompress_array(FilteredReservoirMap)
-            nf1.variables[map_name][:, :] = map_np
-            nf1.close()
-            print("Generated new ReservoirSites content to:", strFilteredReservoirMap)
-
-
+    if isLongRun:
+        return None, None  # If isLongRun, no specific period to return
     return best_period_start, best_period_end
+
+def create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, period_start_dt, period_end_dt):
+    # Identify active reservoirs for the selected period
+    active_reservoirs = {
+        row['FID'] for _, row in reservoir_events_df.iterrows()
+        if (pd.isna(row['CONSTR_YEAR']) or row['CONSTR_YEAR'] < period_end_dt) and
+            (pd.isna(row['DEMOL_YEAR']) or row['DEMOL_YEAR'] > period_start_dt)
+    }
+
+    # Save the reservoir filtered map for the selected period
+    FilteredReservoirMap = np.full_like(reservoirs, -9999, dtype=float)
+    for res_id in active_reservoirs:
+        # get index from reservoirs map
+        FilteredReservoirMap[reservoirs==res_id]=res_id
+
+    strFilteredReservoirMap=os.path.join(model_initialized.subcatch.path_station, f'{map_name}.nc')
+    # Save the new map LakeMultiplierMap to a NetCDF file                
+    nf1 = write_netcdf_header(model_initialized.lissettings, map_name, strFilteredReservoirMap, None,
+                            map_name, map_name, "",
+                            None, None, None)
+
+    map_np = uncompress_array(FilteredReservoirMap)
+    nf1.variables[map_name][:, :] = map_np
+    nf1.close()
+    print("Generated new ReservoirSites content to:", strFilteredReservoirMap)
+
+def update_rsfil_netcdf_map(map_name, reservoir_events_df, settings, period_start_dt):
+    reservoirs = loadmap('ReservoirSites')
+    ReservoirFillMap = loadmap_base('ReservoirFillEnd',force_load_with_nans=True)
+    
+    # Identify new reservoirs for the selected period
+    new_reservoirs = {
+        row['FID'] for _, row in reservoir_events_df.iterrows()
+        if (row['CONSTR_YEAR'].year == period_start_dt.year)
+    }
+
+    # Save the reservoir fill  map for the selected period
+    for res_id in new_reservoirs:
+        # get index from reservoirs map
+        ReservoirFillMap[reservoirs==res_id]=0.1    # set new reservoir fill state to 0.1
+
+    strReservoirFillMap=os.path.join(settings.output_dir, f'{map_name}.nc')
+    # Save the new map LakeMultiplierMap to a NetCDF file                
+    nf1 = write_netcdf_header(settings, map_name, strReservoirFillMap, None,
+                            map_name, map_name, "",
+                            None, None, None)
+
+    map_np = uncompress_array(ReservoirFillMap)
+    nf1.variables[map_name][:, :] = map_np
+    nf1.close()
+    print("Generated new ReservoirFill content to:", strReservoirFillMap)
 
 def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=True):
     """
@@ -257,7 +304,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     # Extract valid calibration period
     observations_filtered = observed_streamflow[observed_streamflow.notna()]
 
-    dt = time_step_from_type(station_data['CAL_TYPE'])
+    dt = time_step_from_type(station_data['CAL_TYPE'])  # here we use dt to calculate the obseration period in process_reservoir_periods
 
     valid_start = observations_filtered.index[0]
     valid_end = observations_filtered.index[-1]
@@ -265,7 +312,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     if model_initialized is not None:
         if os.path.exists(cfg.reservoir_events):
             reservoir_events_df = pd.read_csv(cfg.reservoir_events)
-            valid_start, valid_end = find_valid_period_reservoir(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4)
+            valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False)
         else:
             print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 

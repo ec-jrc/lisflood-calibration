@@ -16,7 +16,8 @@ import lisf1
 from lisflood.global_modules.decorators import Cache
 from lisflood.global_modules.settings import LisSettings
 
-from liscal import utils
+from liscal import stations, utils
+import xml.etree.ElementTree as ET
 
 
 class HydrologicalModel():
@@ -282,7 +283,7 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss_last_run, inflow_tss)
 
 
-def generate_outlet_streamflow(cfg, subcatch, lis_template):
+def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
     Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.
 
@@ -322,8 +323,26 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     cmd = 'cp {0}/out/{1}/lzavin.nc {0}/out/{1}/lzavin.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
-    # SECOND LISFLOOD RUN
-    lisf1.main(run_file, '-q')
+    if subperiods is None:
+        # SECOND LISFLOOD RUN
+        lisf1.main(run_file, '-q')
+    else:
+        # generate subperiods settings files
+        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods)
+        # run different periods with warm start
+        idx=0
+        for idx, warmstart_run_file in enumerate(warmstart_run_files):
+            if idx>0:
+                settings = LisSettings(warmstart_run_file, "")
+                rsfil_map_name = settings.binding['ReservoirFillEnd']
+                rsfil_map_name = rsfil_map_name[:-3] if rsfil_map_name.lower().endswith('.nc') else rsfil_map_name
+                # copy the ReservoirFill end map to a backup before editing it for the next run
+                cmd = f'cp {rsfil_map_name}.nc {rsfil_map_name}_ws_{idx-1}.nc'
+                utils.run_cmd(cmd)
+                sub_start, _ = subperiods[idx]
+                map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
+                stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
+            lisf1.main(warmstart_run_file, '-q')
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
