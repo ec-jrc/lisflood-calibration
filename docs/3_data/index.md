@@ -37,7 +37,7 @@ num_max_calib_years = 20 # Maximum number of years of observation to use during 
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
 stations_links = STATIONS/stations_links.csv  # Path to the stations hydrological dependencies file
 observed_discharges = OBS  # Path to the observations
-reservoir_events = STATIONS/reservoir_events.csv # Path to the reservoir creation/demolition dates file
+reservoir_events = STATIONS/reservoir_events.csv # Path to the reservoir creation/demolition dates file (can be omitted if not used)
 
 [Path]
 param_ranges = TEMPLATES/param_ranges.csv  # Path to the parameters ranges file

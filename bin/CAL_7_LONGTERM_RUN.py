@@ -41,14 +41,16 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
         dt=cfg.timestep/60      # in the long term run we use dt to set the shift of the starting period, instead of counting the observation period lenght.
                                 # Thus this value is now taken from the configuration timestep.
         subperiods = None
+        filtered_reservoir_events = None
         if model is not None:
-            if os.path.exists(cfg.reservoir_events):
-                reservoir_events_df = pd.read_csv(cfg.reservoir_events)
-                run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-                run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-                subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, min_years=None, isLongRun=True)
-            else:
-                print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
+            if cfg.reservoir_events is not None:
+                if os.path.exists(cfg.reservoir_events):
+                    reservoir_events_df = pd.read_csv(cfg.reservoir_events)
+                    run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
+                    run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+                    subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, min_years=None, isLongRun=True)
+                else:
+                    print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 
             hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events)
         else:

@@ -211,7 +211,7 @@ class ConfigCalibration(Config):
         self.stations_data = self.parser.get('Stations', 'stations_data')
 
         # Reservoir creation/demolition dates
-        self.reservoir_events = self.parser.get('Stations', 'reservoir_events')
+        self.reservoir_events = self.parser.get('Stations', 'reservoir_events', fallback=None)
 
         # pcraster commands
         self.pcraster_cmd = {}

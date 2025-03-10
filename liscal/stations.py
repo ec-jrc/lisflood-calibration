@@ -310,11 +310,12 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     valid_end = observations_filtered.index[-1]
 
     if model_initialized is not None:
-        if os.path.exists(cfg.reservoir_events):
-            reservoir_events_df = pd.read_csv(cfg.reservoir_events)
-            valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False)
-        else:
-            print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
+        if cfg.reservoir_events is not None:
+            if os.path.exists(cfg.reservoir_events):
+                reservoir_events_df = pd.read_csv(cfg.reservoir_events)
+                valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False)
+            else:
+                print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 
 
     valid_observations = observed_streamflow[valid_start:valid_end]

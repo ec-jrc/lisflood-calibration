@@ -36,16 +36,18 @@ if __name__ == '__main__':
     # first run of exctraction_station_data, without checking the reservoir events
     stations.extract_station_data(cfg, None, obsid, station_data, check_obs)
 
-    subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data)
-    lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
-    lock_mgr = calibration.LockManager(cfg.num_cpus)
-    obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
-    model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
-    # load forcings and input maps in cache
-    # required to find reservoir
-    model.init_run()
+    # if reservoir_events is None we can just skip the second execution of extract_station_data
+    if cfg.reservoir_events is not None:
+        subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data)
+        lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+        lock_mgr = calibration.LockManager(cfg.num_cpus)
+        obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+        # load forcings and input maps in cache
+        # required to find reservoir
+        model.init_run()
 
-    # second run of exctraction_station_data, checking the reservoir events to filter observations
-    stations.extract_station_data(cfg, model, obsid, station_data, check_obs)
+        # second run of exctraction_station_data, checking the reservoir events to filter observations
+        stations.extract_station_data(cfg, model, obsid, station_data, check_obs)
 
     print("==================== END ====================")

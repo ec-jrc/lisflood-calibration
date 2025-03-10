@@ -92,12 +92,8 @@ class LisfloodSettingsTemplate():
                 #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
                 out_xml = out_xml.replace("%"+original_param_ranges.index[oii],str(original_param_ranges.iloc[oii,2]))
         
-        # Check if FilteredReservoirMap.nc exists. If so, use it instead of standard map during calibration
-        # Parse the XML from the string
-        root = ET.fromstring(out_xml)
-
         # Check if FilteredReservoirMap.nc exists and use it in 'ReservoirSites' Key in xml
-        if run_id!='long_term_run':
+        if run_id!='long_term_run' and cfg.reservoir_events is not None:
             strFilteredReservoirMap=os.path.join(path_station, 'FilteredReservoirMap.nc')
             if os.path.exists(strFilteredReservoirMap):
                 # Parse the XML from the string
