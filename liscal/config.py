@@ -213,6 +213,10 @@ class ConfigCalibration(Config):
         # Reservoir creation/demolition dates
         self.reservoir_events = self.parser.get('Stations', 'reservoir_events', fallback=None)
 
+        # flag to enable aridity index check 
+        self.use_aridity_index_check = bool(self.parser.get('Main', 'use_aridity_index_check', fallback=0))
+
+
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
@@ -266,4 +270,12 @@ class ConfigCalibration(Config):
         if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
             if 'SnowMeltCoef' in self.param_ranges.index:
                 self.param_ranges.drop("SnowMeltCoef", inplace=True)
+
+        if self.use_aridity_index_check == True:
+            # Adjust param_ranges list if min Aridity Index > 0.5 so that TransLoss coefficient should not be calibrated for the current catchment
+            station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
+            StationDataFile=pandas.read_csv(station_data_file,index_col=0)
+            if float(StationDataFile.loc["min_AridIdx"]) >= 0.5:
+                if 'TransSub' in self.param_ranges.index:
+                    self.param_ranges.drop("TransSub", inplace=True)
 
