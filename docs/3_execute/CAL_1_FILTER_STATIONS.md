@@ -26,5 +26,5 @@ An example of settings file can be found in [Create a settings file](../3_data/i
 The input ```STATIONS_CSV``` file should at least contain the following entries per station:
 - ```Min_calib_days```: minimum number of days in observations to include the station in the calibration.
 - ```Spinup_days```: number of days required to spinup the model, that means the calibration period can only start after ```forcing_start+spinup_days```.
-- ```CAL_TYPE```: 
+- ```CAL_TYPE```: time step used. Support formats for the station/calibration type are 6.0, 24.0, 6, 24, "*_6h", and "*_24h".
 - ```EC_calib```: group ID of the station, used to include or exclude stations from the calibration manually, the stations are filtered using this entry in the CSV and the command line argument station group ID.
