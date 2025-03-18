@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     full_path_to_prog = sys.argv[0]
     prog_name = parser.prog
-    new_prog_name = full_path_to_prog.replace(prog_name,"CAL_6_CUT_MAPS.py")
+    new_prog_name = full_path_to_prog.replace(prog_name,"CAL_4_CUT_MAPS.py")
 
     for index, row in stationdata_sorted.iterrows():
       catchment = index
