@@ -292,6 +292,23 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     # Retrieve observed streamflow and extract observation period
     observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+    
+    # Convert the index to datetime
+    observations.index = pd.to_datetime(observations.index, format='%d/%m/%Y %H:%M')
+
+    if cfg.timestep==1440:
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='D')
+    else:
+        assert(cfg.timestep==360)
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='6H')
+
+    # Reindex the DataFrame to include the full date range
+    observations = observations.reindex(full_date_range)
+
     observed_streamflow = observations[str(obsid)]
     observed_streamflow = observed_streamflow[start_date:end_date]
     obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
