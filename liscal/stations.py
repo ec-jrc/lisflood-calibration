@@ -308,6 +308,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     # Reindex the DataFrame to include the full date range
     observations = observations.reindex(full_date_range)
+    observations.index = observations.index.strftime('%d/%m/%Y %H:%M')
 
     observed_streamflow = observations[str(obsid)]
     observed_streamflow = observed_streamflow[start_date:end_date]
@@ -323,8 +324,8 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     dt = time_step_from_type(station_data['CAL_TYPE'])  # here we use dt to calculate the obseration period in process_reservoir_periods
 
-    valid_start = observations_filtered.index[0].strftime('%d/%m/%Y %H:%M')
-    valid_end = observations_filtered.index[-1].strftime('%d/%m/%Y %H:%M')
+    valid_start = observations_filtered.index[0]
+    valid_end = observations_filtered.index[-1]
 
     if model_initialized is not None:
         if cfg.reservoir_events is not None:
@@ -338,7 +339,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     valid_observations = observed_streamflow[valid_start:valid_end]
 
     # Compute split date
-    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered, cfg.num_max_calib_years).strftime('%d/%m/%Y %H:%M')
+    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered, cfg.num_max_calib_years)
 
     # Create output directory
     subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
@@ -346,7 +347,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     os.makedirs(out_dir, exist_ok=True)
 
     # Export observation at station
-    obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index.strftime('%d/%m/%Y %H:%M'))
+    obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index)
     obs_df.columns = [str(obsid)]
     obs_df.index.name = 'Timestamp'
     print('Station observations:')

@@ -60,6 +60,7 @@ if __name__ == '__main__':
 
     # Reindex the DataFrame to include the full date range
     observed_data = observed_data.reindex(full_date_range)
+    observed_data.index = observed_data.index.strftime('%d/%m/%Y %H:%M')
 
     valid_stations = []
     unvalid_stations = []
