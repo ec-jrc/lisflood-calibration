@@ -346,7 +346,7 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     os.makedirs(out_dir, exist_ok=True)
 
     # Export observation at station
-    obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index)
+    obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index.strftime('%d/%m/%Y %H:%M'))
     obs_df.columns = [str(obsid)]
     obs_df.index.name = 'Timestamp'
     print('Station observations:')
