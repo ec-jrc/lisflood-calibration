@@ -166,13 +166,14 @@ class HydrologicalModel():
             
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
-            
-        simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
+        Qsim_tss=LisSettings.instance().binding['DisTS']  
+        simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end, Qsim_tss)
         objectives, additional_metrics = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow, compute_additional_metrics=True)
         precip_budyko=self.subcatch.data['precip_budyko']
         PET_budyko=self.subcatch.data['PET_budyko']
 
-        evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko)
+        etactBudyko_tss=LisSettings.instance().binding['actETPBUDYKOUpsTS'] 
+        evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko, etactBudyko_tss)
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
@@ -240,7 +241,7 @@ def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outna
         Prefix for the output CSV file.
     """
 
-    tss_file = os.path.join(subcatch.path_out, run_id, dataname + '.tss')
+    tss_file = os.path.join(subcatch.path_out, run_id, dataname)
 
     tss = utils.read_tss(tss_file)
 
@@ -347,9 +348,10 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
-
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'chanq', 'chanq')
+    Qsim_tss=LisSettings.instance().binding['DisTS']
+    Chanq_tss=LisSettings.instance().binding['QInTS']
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Qsim_tss, 'streamflow')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Chanq_tss, 'chanq')
 
 
 def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
@@ -452,7 +454,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
 
     # Outputing synthetic observed discharge
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
-    Qsim_tss = os.path.join(subcatch.path, "out", run_id, 'dis.tss')
+    Qsim_tss=LisSettings.instance().binding['DisTS']
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values

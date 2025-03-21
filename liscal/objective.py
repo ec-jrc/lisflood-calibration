@@ -116,15 +116,15 @@ class ObjectiveKGE():
 
         return simulated_streamflow
 
-    def read_simulated_streamflow(self, run_id, start, end):
+    def read_simulated_streamflow(self, run_id, start, end, Qsim_tss = None):
 
         timestep = self.cfg.timestep
-
-        Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
+        if Qsim_tss is None:
+            Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
         if os.path.isfile(Qsim_tss)==False:
             print('run_id: {}'.format(str(run_id)))
             print('Discharge file path: {}'.format(Qsim_tss))
-            raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
+            raise Exception(f"No simulated streamflow {Qsim_tss} found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
@@ -208,16 +208,15 @@ class ObjectiveKGE():
 
         return kge_components, additional_metrics
 
-    def compute_evap_index(self, run_id, precip_budyko, PET_budyko):
+    def compute_evap_index(self, run_id, precip_budyko, PET_budyko, etactBudyko_tss):
         """
         computing evaporative index and budyko compliance
         """
-        # print(self.subcatch)
-        etactBudyko_tss = os.path.join(self.subcatch.path_out, run_id, 'actETPBUDYKOUpsTS.tss')
+        # print(self.subcatch)        
         if os.path.isfile(etactBudyko_tss)==False:
             # print('run_id: {}'.format(str(run_id)))
             # print('etactBUDYKO file path: {}'.format(etactBudyko_tss))
-            raise Exception("No simulated etactBudyko found. Probably LISFLOOD failed to start? or you are not creating the correct output? check settings.xml file")
+            raise Exception(f"No simulated etactBudyko found {etactBudyko_tss}. Probably LISFLOOD failed to start? or you are not creating the correct output? check settings.xml file")
 
         etactBudyko = utils.read_tss(etactBudyko_tss)[1]  # need to take [1] or we get 2d array
         etactBudyko[etactBudyko==1e31] = np.nan
