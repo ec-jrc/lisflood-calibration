@@ -343,8 +343,8 @@ class ObjectiveKGE():
 
         return pHistory
 
-    def write_pareto_front(self, pHistory, path_out=None):
-        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+    def write_pareto_front(self, pHistory, isKGE_JSD, path_out=None, pareto_front_filename = "pareto_front.csv"):
+        if isKGE_JSD: # we are using KGE_JSD objective
             KGEcolumn="KGE_JSD"
             KGERankName="(KGEJSD)"
         else:
@@ -371,11 +371,48 @@ class ObjectiveKGE():
         )
         for ii in range(len(param_ranges)):
             pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
-        pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"), ',', float_format='%g')
+        pareto_front.to_csv(os.path.join(path_subcatch, pareto_front_filename), ',', float_format='%g')
 
     def process_results(self):
 
         pHistory = self.read_param_history()
         pHistory_ranked = self.write_ranked_solution(pHistory)
 
-        self.write_pareto_front(pHistory_ranked)
+        isKGE_JSD=False
+        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+            isKGE_JSD=True
+
+        if isKGE_JSD:   # in this case we perform the check on Correlation
+            # Select max correlation value of the whole param history csv file
+            maxCORRhistory = pHistory["Correlation"].max()  # store the maximum value of the correlation
+        
+            # get Correlation of the selected KGEJSD calibrated paramtere set
+            bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
+            CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]
+
+            # if maxCORRhistory - CORR_bestKGE-JSD > 0.15, stop here with a warning and a text file, avoiding to write the pareto_front file
+            if maxCORRhistory - CORR_bestKGEJSD > 0.15:
+                paretofront_filename = "CorrelationIssue_pareto_front.csv"
+                message = f"WARNING!\n" \
+                    f"Max correlation value in param history = {maxCORRhistory}\n" \
+                    f"Selected kge-jsd correlation value = {CORR_bestKGEJSD}\n" \
+                    f"Consider repeating the calibration with 'KGE objective function'\n" \
+                    f"(pareto_front written in {self.subcatch.path_out} -> {paretofront_filename})\n"
+                print(message)
+                file_path = os.path.join(self.subcatch.path_out,'CorrelationIssue_Warning_message.txt')
+                # Open the file in write mode
+                with open(file_path, 'w') as file:
+                    # Write the message to the file
+                    file.write(message)
+
+                self.write_pareto_front(pHistory_ranked, isKGE_JSD, self.subcatch.path_out, paretofront_filename)
+                return  # exit here, without writing the final pareto_front.csv file, thus stopping next linked catchments
+        
+        self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+
+        # 2) aggiungere check: confronto CORR dell'individuo scelto da KGE-JSD con tutti i valori di CORR della paramHistory (prima del ranking). 
+        # Se maxCORRhistory - CORR_bestKGE-JSD > 0.15 --> warning message scritto in .txt  generato ad hoc in out folder "Attention! 
+        # Max correlation value in param history = XXX
+        # kge-jsd correlation = XXX
+        # Consider repeating the calibration with 'KGE objective function"
+
