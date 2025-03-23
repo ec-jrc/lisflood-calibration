@@ -44,6 +44,6 @@ if __name__=="__main__":
     else:
         raise FileNotFoundError('Incorrect path to setting file: {}'.format(settings_file))
 
-    parser['Main']['prerun_start'] = prerun_start  
+    parser['Main']['prerun_start'] = prerun_start
     with open(settings_file, 'w') as configfile:    # save
         parser.write(configfile)

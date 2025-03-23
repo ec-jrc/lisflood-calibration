@@ -7,6 +7,7 @@ from liscal import pcr_utils, calibration
 from lisflood.global_modules.add1 import loadmap, compressArray
 from pcraster import boolean
 
+
 class Config():
     """
     A class to handle the configuration settings from a settings file.
@@ -93,7 +94,7 @@ class DEAPParameters():
 
         # check for valid objectives
         valid_objectives = {'KGE', 'CORR', 'BIAS', 'Y', 'SAE', 'JSD', 'KGE_JSD'}
-        
+
         # Check for any unknown objectives
         unknown_objectives = [obj for obj in self.objectives_list if obj not in valid_objectives]
         if unknown_objectives:
@@ -103,7 +104,7 @@ class DEAPParameters():
         has_kge = 'KGE' in self.objectives_list
         has_kge_jsd = 'KGE_JSD' in self.objectives_list
         has_kge_terms = all(obj in self.objectives_list for obj in ['CORR', 'BIAS', 'Y'])
-        
+
         if not (has_kge or has_kge_jsd or has_kge_terms):
             raise ValueError("At least 'KGE', 'KGE_JSD', or all of ['CORR', 'BIAS', 'Y'] must be included in objectives.")
 
@@ -183,7 +184,7 @@ class ConfigCalibration(Config):
         self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))  # in minutes
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
-        
+
         self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years'))  # max calibration years, used to compute split date
 
         # deap
@@ -222,9 +223,9 @@ class ConfigCalibration(Config):
             if 'LakeMultiplier' in self.param_ranges.index:
                 self.param_ranges.drop("LakeMultiplier", inplace=True)
         else:
-            if split_lake_params==True:
+            if split_lake_params is True:
                 # check how many lakes are in the catchment
-                self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
+                self.LakeSitesC = loadmap('LakeSites')  # moved here to use the caching feature during calibration
                 IsChannelPcr = boolean(loadmap('Channels', pcr=True))
                 IsChannel = np.bool8(compressArray(IsChannelPcr))
                 self.LakeSitesC[self.LakeSitesC < 1] = 0
@@ -239,10 +240,10 @@ class ConfigCalibration(Config):
                     if 'LakeMultiplier' in self.param_ranges.index:
                         # Retrieve the original LakeMultiplier row values
                         lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
-                        
+
                         # Drop the original LakeMultiplier row
                         self.param_ranges.drop('LakeMultiplier', inplace=True)
-                        
+
                         # Add a new LakeMultiplier row for each lake
                         for lake_id in self.LakeSitesCC:
                             new_row_name = f'LakeMultiplier_{lake_id}'
@@ -263,4 +264,3 @@ class ConfigCalibration(Config):
         if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
             if 'SnowMeltCoef' in self.param_ranges.index:
                 self.param_ranges.drop("SnowMeltCoef", inplace=True)
-

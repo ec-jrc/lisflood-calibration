@@ -22,7 +22,7 @@ if __name__ == '__main__':
     target_id = os.path.basename(args.target)
 
     output_dir = os.path.join(args.target, "out", args.regionalisation)
-    if os.path.exists(output_dir) == False:   
+    if os.path.exists(output_dir) == False:
         os. makedirs(output_dir, exist_ok=False)
 
     for run_type in ['PreRun', 'Run']:

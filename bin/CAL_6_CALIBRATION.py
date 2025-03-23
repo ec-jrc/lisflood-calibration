@@ -15,7 +15,6 @@ import traceback
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 
-
 def calibrate_subcatchment(cfg, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")

@@ -130,7 +130,7 @@ class LisfloodSettingsTemplate():
             dt_sec = self.prerun_timestep*60  # daily step for prerun
             out_xml_prerun = out_xml_prerun.replace('%dtsec', f'{dt_sec}')
             out_xml_prerun = out_xml_prerun.replace('%timestep', 'daily')
-        
+
         with open(prerun_file, "w") as f:
             f.write(out_xml_prerun)
 
@@ -161,7 +161,7 @@ class LisfloodSettingsTemplate():
             dt_sec = self.timestep*60
             out_xml_run = out_xml_run.replace('%dtsec', f'{dt_sec}')
             out_xml_run = out_xml_run.replace('%timestep', 'hourly')
-    
+
         with open(run_file, "w") as f:
             f.write(out_xml_run)
 

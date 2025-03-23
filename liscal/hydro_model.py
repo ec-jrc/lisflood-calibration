@@ -161,11 +161,9 @@ class HydrologicalModel():
         prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, 
                                                                  self.cal_end, cfg, out_dir, self.subcatch.path_station, parameters)
 
-        
-            
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
-            
+
         simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
         objectives, additional_metrics = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow, compute_additional_metrics=True)
         precip_budyko=self.subcatch.data['precip_budyko']
@@ -425,7 +423,7 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, 
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start,
                                                         end, cfg, out_dir, subcatch.path_station, parameters)
 
     lisf1.main(prerun_file, '-v')
