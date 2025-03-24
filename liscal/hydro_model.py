@@ -349,7 +349,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
     Qsim_tss=LisSettings.instance().binding['DisTS']
-    Chanq_tss=LisSettings.instance().binding['QInTS']
+    Chanq_tss=LisSettings.instance().binding['ChanqTS']
     simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Qsim_tss, 'streamflow')
     simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Chanq_tss, 'chanq')
 
