@@ -1,0 +1,45 @@
+[Main]
+prerun_start = 02/01/2001 00:00
+prerun_end = 01/01/2024 00:00
+forcing_start = 02/01/1975 00:00
+forcing_end = 01/01/2024 00:00
+timestep = 1440
+prerun_timestep = 1440
+fast_debug = 0
+min_obs_years = 4
+num_max_calib_years = 20
+
+[Stations]
+stations_data = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_data.csv
+stations_links = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_links.csv
+observed_discharges = /BGFS/DISASTER/grimast/GloFASv5_stationsselection_Australia/observations_GloFASv5_Australia_corrected.csv
+return_periods = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_GloFAS/return_levels.nc
+reservoir_events = /BGFS/DISASTER/grimast/GloFASv5_tables/reservoirs_glofas5_years_20250228.csv
+
+[Path]
+param_ranges = /BGFS/DISASTER/grimast/GloFASv5_templates/param_ranges_v1.csv
+subcatchment_path = /BGFS/DISASTER/russcar/cal_workflow_2025/catchments
+
+[Templates]
+LISFLOODSettings = /BGFS/DISASTER/russcar/cal_workflow_2025/templates_GloFAS/OSLisfloodGloFASv5calibration_v1.xml
+
+[DEAP]
+numCPUs = 32
+min_gen = 8
+max_gen = 30
+mu = 16
+lambda_ = 32
+
+pop = 64
+gen_offset = 3
+effmax_tol = 0.003
+
+elite = 0  		 
+
+split_lake_params = 0
+
+apply_statistical_stall_check = 1
+
+use_filtered_population = 0
+
+objectives = KGE_JSD
