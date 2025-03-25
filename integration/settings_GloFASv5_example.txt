@@ -10,18 +10,18 @@ min_obs_years = 4
 num_max_calib_years = 20
 
 [Stations]
-stations_data = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_data.csv
-stations_links = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_links.csv
-observed_discharges = /BGFS/DISASTER/grimast/GloFASv5_stationsselection_Australia/observations_GloFASv5_Australia_corrected.csv
-return_periods = /BGFS/DISASTER/russcar/cal_workflow_2025/stations_GloFAS/stations_GloFAS/return_levels.nc
-reservoir_events = /BGFS/DISASTER/grimast/GloFASv5_tables/reservoirs_glofas5_years_20250228.csv
+stations_data = STATIONS/stations_data.csv
+stations_links = STATIONS/stations_links.csv
+observed_discharges = OBS
+return_periods = STATIONS/return_levels.nc
+reservoir_events = STATIONS/reservoirs.csv
 
 [Path]
-param_ranges = /BGFS/DISASTER/grimast/GloFASv5_templates/param_ranges_v1.csv
-subcatchment_path = /BGFS/DISASTER/russcar/cal_workflow_2025/catchments
+param_ranges = TEMPLATES/param_ranges.csv
+subcatchment_path = CATCHMENTS_DIR
 
 [Templates]
-LISFLOODSettings = /BGFS/DISASTER/russcar/cal_workflow_2025/templates_GloFAS/OSLisfloodGloFASv5calibration_v1.xml
+LISFLOODSettings = TEMPLATES/OSLisfloodGloFASv5calibration_v1.xml
 
 [DEAP]
 numCPUs = 32
