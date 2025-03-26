@@ -6,7 +6,12 @@ import xarray as xr
 from IPython.display import clear_output, display
 from ipywidgets import Layout, Output, VBox
 import ipywidgets
-import os
+
+from IPython.display import display, HTML
+from io import BytesIO
+import base64
+
+
 
 class CalibPlotWidget(Widget):
 
@@ -16,12 +21,8 @@ class CalibPlotWidget(Widget):
         self.config = lisflood_config
 
         self.figure = Output()
-        output = VBox(
-            [self.figure],
-            layout=Layout(width="1000px", align_items="center"),
-        )
 
-        super().__init__(output)
+        super().__init__(self.figure)
 
     def update(self, *args, **kwargs):
 
@@ -34,13 +35,34 @@ class CalibPlotWidget(Widget):
         try:
             obj = objective.ObjectiveKGE(self.config, subcatch)
 
-            with self.figure:
+            figs = products.create_products(self.config, subcatch, obj, False)
+
+            with self.output:
                 clear_output(wait=True)
-                figs = products.create_products(self.config, subcatch, obj, False)
+                html_content = """
+                <div style="max-height: 500px; overflow-y: scroll;">
+                """
+
                 for fig in figs:
-                    display(fig)
+                    # Save the figure to a BytesIO buffer instead of a file
+                    buf = BytesIO()
+                    fig.savefig(buf, format='png')
+                    buf.seek(0)  # Go to the beginning of the BytesIO buffer
+                    img_data = buf.getvalue()
+                    
+                    # Encode the image data to base64
+                    img_base64 = base64.b64encode(img_data).decode('utf-8')
+                    
+                    # Embed the image as a base64 string in the HTML
+                    html_content += f'<img src="data:image/png;base64,{img_base64}" style="max-width:100%;"/><br>'
+
+                html_content += "</div>"
+
+                display(HTML(html_content))
         except:
             print(f"Error generating plot for obsid {obsid}")
+
+        return
 
 
 
@@ -57,33 +79,34 @@ class CalibrationExplorer(StationsExplorer):
     def create_frame(self):
         main_layout = ipywidgets.Layout(
             justify_content="space-around",
-            align_items="stretch",
-            spacing="2px",
-            width="2000px",
+            align_items="center",
+            spacing="20px",
+            width="1500px",
         )
-        left_layout = ipywidgets.Layout(
+        top_layout = ipywidgets.Layout(
             justify_content="space-around",
             align_items="center",
-            spacing="10px",
-            width="30%",
+            spacing="20px",
+            width="100%",
+            height='750px',
         )
-        right_layout = ipywidgets.Layout(
-            justify_content="center",
+        bottom_layout = ipywidgets.Layout(
+            justify_content="space-around",
             align_items="center",
-            spacing="10px",
-            width="60%",
+            spacing="20px",
+            width="100%",
+            overflow="auto",
         )
 
         # # Frames
-        top_left_frame = self.leafletmap.output(left_layout)
-        top_right_frame = ipywidgets.VBox(
+        top_frame = self.leafletmap.output(top_layout)
+        bottom_frame = ipywidgets.VBox(
             [self.widgets["plot"].figure],
-            layout=right_layout,
+            layout=bottom_layout,
         )
-        main_top_frame = ipywidgets.HBox([top_left_frame, top_right_frame])
 
         main_frame = ipywidgets.VBox(
-            [self.title_label, main_top_frame],
+            [self.title_label, top_frame, bottom_frame],
             layout=main_layout,
         )
         return main_frame
