@@ -920,7 +920,7 @@ class MonthlyBoxPlot:
 
         # Esthetics
         # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
-        ax.grid(b=True, axis="y")
+        ax.grid(True, axis="y")
 
         # horizontal axis
         plt.xlabel(r"Month", fontsize=self.label_size)
@@ -1408,6 +1408,7 @@ class SpatialPlot:
         pcraster.setclone(rows, cols, 1, 0, 0)
 
         fullmask = pcraster.readmap(full_mask_map)
+
         fullmask = pcraster.pcr2numpy(fullmask, 0)
         fullmask = ldd_xr.fillna(0) * 0 + fullmask
 
