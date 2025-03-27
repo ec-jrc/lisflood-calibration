@@ -85,6 +85,7 @@ stations_links_path = parser.get('Stations', 'stations_links')
 
 SubCatchmentPath = parser.get('Path','subcatchment_path')
 numCPUs = parser.get('DEAP','numCPUs')
+seed = parser.get('DEAP','seed', fallback=0)
 
 python_cmd = parser.get('Path', 'PYTHONCMD')
 
@@ -169,21 +170,21 @@ for index, row in stationdata_sorted.iterrows():
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
-            f.write("source activate liscal \n")
+            f.write("source activate liscalnew \n")
             f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
             f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
-            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + '\n'
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + ' --seed=' +str(seed) + '\n'
             f.write(cmd)
             cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
             f.write(cmd)
-            # delete all unnecessary files in out directory after calibration
-            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
-            f.write("find . -type d | grep -P \"^./[0-9]{1,}_[0-9]{1,}$\" | xargs -d\"\\n\" rm -r\n")
-            # delete all unnecessary files in settings directory after calibration
-            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
-            f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")
+            # # delete all unnecessary files in out directory after calibration
+            # f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
+            # f.write("find . -type d | grep -P \"^./[0-9]{1,}_[0-9]{1,}$\" | xargs -d\"\\n\" rm -r\n")
+            # # delete all unnecessary files in settings directory after calibration
+            # f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
+            # f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")
             if (numba_cache_root[:8]=="/local0/"):
                 f.write("rm -Rf " + path_current_numba_cache_dir + " \n")
             f.close()
