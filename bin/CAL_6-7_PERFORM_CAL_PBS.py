@@ -176,6 +176,10 @@ for index, row in stationdata_sorted.iterrows():
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
             f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_5_EXTRACT_STATION.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
+            f.write(cmd)
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_5c_FORCING_STATS.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
+            f.write(cmd)
             cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ SettingsPath + ' ' + str(index) + ' ' + str(numCPUs) + ' --seed=' +str(seed) + '\n'
             f.write(cmd)
             cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
