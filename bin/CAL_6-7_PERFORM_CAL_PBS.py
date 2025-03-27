@@ -84,6 +84,7 @@ stations_data_path = parser.get("Stations", "stations_data")
 stations_links_path = parser.get('Stations', 'stations_links')
 
 SubCatchmentPath = parser.get('Path','subcatchment_path')
+SettingsPath = parser.get('Path','settings_file')
 numCPUs = parser.get('DEAP','numCPUs')
 seed = parser.get('DEAP','seed', fallback=0)
 
@@ -175,9 +176,9 @@ for index, row in stationdata_sorted.iterrows():
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
             f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
-            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + ' --seed=' +str(seed) + '\n'
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ SettingsPath + ' ' + str(index) + ' ' + str(numCPUs) + ' --seed=' +str(seed) + '\n'
             f.write(cmd)
-            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
             f.write(cmd)
             # # delete all unnecessary files in out directory after calibration
             # f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
