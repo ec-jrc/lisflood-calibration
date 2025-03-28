@@ -1,28 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import pandas as pd
-from datetime import datetime
 
 from liscal import config, stations
 
-
-class ConfigStation(config.Config):
-
-    def __init__(self, settings_file):
-        super().__init__(settings_file)
-        
-        # paths
-        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
-
-        # Date parameters
-        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
-        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
-        
-        # observations
-        self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
-        self.stations_data = self.parser.get('Stations', 'stations_data')
-
+from liscal import templates, calibration, config, subcatchment, objective, hydro_model
 
 if __name__ == '__main__':
 
@@ -38,7 +20,7 @@ if __name__ == '__main__':
     if args.no_check:
         check_obs = False
 
-    cfg = ConfigStation(settings_file)
+    cfg = config.ConfigCalibration(settings_file)
 
     # Read full list of stations, index is obsid
     print(">> Reading stations_data file...")
@@ -51,5 +33,21 @@ if __name__ == '__main__':
     except KeyError as e:
         raise Exception('Station {} not found in stations file'.format(obsid))
 
-    stations.extract_station_data(cfg, obsid, station_data, check_obs)
+    # first run of exctraction_station_data, without checking the reservoir events
+    stations.extract_station_data(cfg, None, obsid, station_data, check_obs)
+
+    # if reservoir_events is None we can just skip the second execution of extract_station_data
+    if cfg.reservoir_events is not None:
+        subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data)
+        lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+        lock_mgr = calibration.LockManager(cfg.num_cpus)
+        obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+        # load forcings and input maps in cache
+        # required to find reservoir
+        model.init_run()
+
+        # second run of exctraction_station_data, checking the reservoir events to filter observations
+        stations.extract_station_data(cfg, model, obsid, station_data, check_obs)
+
     print("==================== END ====================")

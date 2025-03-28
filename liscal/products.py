@@ -90,7 +90,7 @@ def create_products(cfg, subcatch, obj):
 
     # create (inter)catchment plot
     spatialplot = evaluation.SpatialPlot(cfg.plot_params)
-    spatialplot.plot(os.path.join(subcatch.path, 'maps'), os.path.join(subcatch.path_out, 'spatial'))
+    spatialplot.plot(subcatch.path, os.path.join(subcatch.path_out, 'spatial'))
     os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'spatial')))
     
     # compute contingency table and export

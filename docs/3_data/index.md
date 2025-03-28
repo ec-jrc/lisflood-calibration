@@ -31,12 +31,13 @@ prerun_start = 02/01/1990 06:00  # When to start the prerun
 prerun_end = 31/12/2017 06:00 # When to end the prerun
 prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
 fast_debug = 0  # Flag to set to 1 for quicker debugging
-min_obs_years = 3.5  # Minimum number of years of observation required to calibrate the station
+num_max_calib_years = 20 # Maximum number of years of observation to use during calibration
 
 [Stations]
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
 stations_links = STATIONS/stations_links.csv  # Path to the stations hydrological dependencies file
 observed_discharges = OBS  # Path to the observations
+reservoir_events = STATIONS/reservoir_events.csv # Path to the reservoir creation/demolition dates file (can be omitted if not used)
 
 [Path]
 param_ranges = TEMPLATES/param_ranges.csv  # Path to the parameters ranges file
@@ -55,9 +56,23 @@ lambda_ = 36  # Size of generation of offsprings
 pop = 72  # Population
 gen_offset = 3  # Stopping criteria: check efficiency vs that from 3 generations before
 effmax_tol = 0.003  # Stopping criteria: if efficiency difference lower than tolerance, stop calibration
+
+# number of elites individual to carry on next generation from the pareto front (not used in single objective calibration
+elite = 0  		 
+# option to split lake multiplier parameter: 1 = one param for each lake, 0 = one param only for all the lakes
+split_lake_params = 1
+# use statistical t-test between population individuals KGE values of current generation VS previous "gen_offset" generations and continue if the KGE is significantly higher
+apply_statistical_stall_check = 1
+# filter out outliers when computing t_test in statistical stop condition
+use_filtered_population = 1
+
+# Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"
+# Possible values are: KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD.
+# At least settings "KGE" or "KGE_JSD" or the 3 terms for the KGE evaluation [corr, bias, y] are needed, to compute the KGE score for the stopping conditions
+objectives = KGE, SAE
 ```
 
-## Format of station and observations files
+## Format of station, reservoir events and observations files
 
 ### stations.csv (metadata)
 
@@ -78,6 +93,16 @@ DATE,G0001,G0002,G0003,G0004
 4/1/1914,,30.1,42.7,51.8
 ...
 ```
+### reservoir_events.csv (reservoir creation/demolition dates file)
+
+```csv
+FID,CONSTR_YEAR,DEMOL_YEAR
+1,1987,
+5,1979,
+6,1942,
+7,1977,
+...
+```
 
 # Summary
 
@@ -85,5 +110,6 @@ DATE,G0001,G0002,G0003,G0004
 2. Prepare static maps (dem, landuse etc.) and NetCDF forcing data (such as ERA5 dataset).
 3. Prepare the stations csv file. This is a file containing the stations metadata.
 4. Prepare the observations csv file. This file contains observed discharge data for each station.
-5. Make a copy of integration/settings.txt and edit according your system.
+5. Prepare the reservoir csv file if needed. This file contains columns FID (id of the reservoir), CONSTR_YEAR and DEMOL_YEAR
+6. Make a copy of integration/settings.txt and edit according your system.
 
