@@ -28,6 +28,7 @@ class DummyDEAPParameters():
 
         self.gen_offset = 3
         self.effmax_tol = 0.003
+        self.objectives_list = ["KGE"]
 
 
 class DummyConfig():
