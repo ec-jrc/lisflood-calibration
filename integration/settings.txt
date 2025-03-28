@@ -7,6 +7,7 @@ prerun_end = 31/12/2017 06:00
 prerun_timestep = 1440
 fast_debug = 0
 min_obs_years = 3.5
+num_max_calib_years = 20
 
 [Stations]
 stations_data = STATIONS/stations_data.csv
