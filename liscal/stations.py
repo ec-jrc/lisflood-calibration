@@ -198,12 +198,12 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 min_steps = int(min_years*365.25*24/dt)
                 last_valid_end = valid_end
                 for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
-                    period_observations = observations_filtered
+                    period_observations = observations_filtered.copy()
                     period_observations.index = pd.to_datetime(period_observations.index, format='%d/%m/%Y %H:%M')
                     period_observations = period_observations[event:last_valid_end]
                     if len(period_observations) >= min_steps:
-                        best_period_end_dt, best_period_start_dt = period_observations.index[0], period_observations.index[-1]
-                        best_period_start, best_period_end = best_period_end_dt.strftime('%d/%m/%Y %H:%M'), best_period_start_dt.strftime('%d/%m/%Y %H:%M')
+                        best_period_start_dt, best_period_end_dt = period_observations.index[0], period_observations.index[-1]
+                        best_period_start, best_period_end = best_period_start_dt.strftime('%d/%m/%Y %H:%M'), best_period_end_dt.strftime('%d/%m/%Y %H:%M')
                         break
                     last_valid_end = event - pd.Timedelta(days=1)
                 
