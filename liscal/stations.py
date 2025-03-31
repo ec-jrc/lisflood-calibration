@@ -5,6 +5,7 @@ import pandas as pd
 
 from lisflood.global_modules.add1 import loadmap, loadmap_base, compressArray
 from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
+from lisflood.global_modules.settings import LisSettings
 
 from pcraster import boolean
 
@@ -240,8 +241,15 @@ def create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initializ
     print("Generated new ReservoirSites content to:", strFilteredReservoirMap)
 
 def update_rsfil_netcdf_map(map_name, reservoir_events_df, settings, period_start_dt):
-    reservoirs = loadmap('ReservoirSites')
-    ReservoirFillMap = loadmap_base('ReservoirFillEnd',force_load_with_nans=True)
+    settings_instance = LisSettings.instance()
+    settings_instance.binding['ReservoirSites'] = settings.binding['ReservoirSites']
+    settings_instance.binding['ReservoirFillEnd'] = settings.binding['ReservoirFillEnd']
+    reservoirs = loadmap_base('ReservoirSites')
+    try:
+        ReservoirFillMap = loadmap_base('ReservoirFillEnd',force_load_with_nans=True)
+    except:
+        # in case map doesn't exist, initialize an empty map
+        ReservoirFillMap = np.full_like(reservoirs, 0, dtype=float)
     
     # Identify new reservoirs for the selected period
     new_reservoirs = {

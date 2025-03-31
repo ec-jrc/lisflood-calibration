@@ -182,7 +182,7 @@ class LisfloodSettingsTemplate():
 
         return prerun_file, run_file     
 
-    def write_warmstart_settings_files(self, run_id, original_run_file, path_station, subperiods):
+    def write_warmstart_settings_files(self, run_id, original_run_file, path_station, subperiods, includeLakes, includeMCT):
 
         textvar_end_mappings = {
             "OFDirectInitValue": "OFDirectEnd",
@@ -202,13 +202,6 @@ class LisfloodSettingsTemplate():
             "ThetaInit3Value": "Theta3End",
             "CrossSection2AreaInitValue": "CrossSection2End",
             "PrevSideflowInitValue": "ChSideEnd",
-            "LakeInitialLevelValue": "LakeLevelEnd",
-            "LakePrevInflowValue": "LakePrevInflowEnd",
-            "LakePrevOutflowValue": "LakePrevOutflowEnd",
-            "PrevDischarge": "ChanQEnd",
-            "PrevDischargeAvg": "ChanQAvgDtEnd",
-            "PrevCmMCTInitValue": "PrevCmMCTEnd",
-            "PrevDmMCTInitValue": "PrevDmMCTEnd",
             "CumIntForestInitValue": "CumInterceptionForestEnd",
             "UZForestInitValue": "UZForestEnd",
             "DSLRForestInitValue": "DSLRForestEnd",
@@ -224,6 +217,22 @@ class LisfloodSettingsTemplate():
             "CumIntSealedInitValue": "CumIntSealedEnd",
             "ReservoirInitialFill": "ReservoirFillEnd"
         }
+        if includeLakes is True:
+            textvar_end_mappings.update({
+                    "LakeInitialLevelValue": "LakeLevelEnd",
+                    "LakePrevInflowValue": "LakePrevInflowEnd",
+                    "LakePrevOutflowValue": "LakePrevOutflowEnd",
+                    "PrevDischarge": "ChanQEnd",
+                    "PrevDischargeAvg": "ChanQAvgDtEnd",
+                })
+        if includeMCT is True:
+            textvar_end_mappings.update({
+                "PrevCmMCTInitValue": "PrevCmMCTEnd",
+                "PrevDmMCTInitValue": "PrevDmMCTEnd"
+            })
+
+
+
         with open(original_run_file, "r") as f:
             out_xml = f.read()
             warmstart_run_files = []

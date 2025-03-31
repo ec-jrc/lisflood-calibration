@@ -328,8 +328,12 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
         # SECOND LISFLOOD RUN
         lisf1.main(run_file, '-q')
     else:
-        # generate subperiods settings files
-        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods)
+        #check if lakes and MCT were switched to OFF during the FIRST LISFLOOD RUN, for the write_warmstart_settings_files
+        instsettings = LisSettings.instance()
+        includeLakes, includeMCT = instsettings.options['simulateLakes'], instsettings.options['MCTRouting']
+
+        # generate subperiods settings files        
+        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods, includeLakes, includeMCT)
         # run different periods with warm start
         idx=0
         for idx, warmstart_run_file in enumerate(warmstart_run_files):
@@ -344,6 +348,7 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
                 map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
                 stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
             lisf1.main(warmstart_run_file, '-q')
+            # in case there are no Lakes, remove the simulateLakes in the warmstart setting files
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
