@@ -471,7 +471,7 @@ class MonthlyBoxPlot():
 
         # Esthetics
         # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
-        ax.grid(b=True, axis='y')
+        ax.grid(visible=True, axis='y')
 
         # horizontal axis
         plt.xlabel(r'Month', fontsize=self.label_size)
@@ -675,11 +675,12 @@ class BestParamPlot():
     def __init__(self, plot_params):
         self.plot_params = plot_params
 
-    
-    def plot(self, path_out, infile_path):
-        bestparam_df = pd.read_csv(infile_path, index_col=0)
+    def plot(self, path_out, infile_path, obsid):
+        bestparam_df = pd.read_csv(infile_path)
         bestparam_df = bestparam_df.T.dropna()
-        bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[0].values})
+        bestparam_df['Param'] = bestparam_df.index
+        # print(bestparam_df)
+        # bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[obsid].values})
 
         # Update the font before creating any plot objects
         plt.rc('font', **self.plot_params.text['font'])
@@ -764,7 +765,10 @@ class SpatialPlot():
         fullmask = fullmask.sel(lat=lons_sum.lat, lon=lats_sum.lon)
         return fullmask
         
-    def plot(self, path_out, maps_dir):
+    def plot(self, path_out, subcatch_dir):
+        maps_dir = os.path.join(subcatch_dir, 'maps')
+        inflow_dir = os.path.join(subcatch_dir, 'inflow')
+
         # domain's main data for the plots
         pixarea = self.get_da(f'{maps_dir}/pixarea.nc')
         elevation = self.get_da(f'{maps_dir}/elv.nc')
@@ -786,10 +790,13 @@ class SpatialPlot():
         outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
 
         # inflows in case of intercatchment
-        inflows = pcraster.readmap(f'{maps_dir}/../inflow/inflow_cut.map')
-        inflows = pcraster.pcr2numpy(inflows, 0)
-        inflows = pixarea.fillna(0)*0+inflows
-        inflows = inflows.where(inflows!=0).to_dataframe().dropna().reset_index()
+        if os.path.exists(f'{inflow_dir}/inflow_cut.map'):
+            inflows = pcraster.readmap(f'{inflow_dir}/inflow_cut.map')
+            inflows = pcraster.pcr2numpy(inflows, 0)
+            inflows = pixarea.fillna(0)*0+inflows
+            inflows = inflows.where(inflows!=0).to_dataframe().dropna().reset_index()
+        else:
+            inflows = []
 
         if len(inflows)>0:
             print('The domain refers to an interbasin. Generating the full basin up to the outlet for adding to the plot...')

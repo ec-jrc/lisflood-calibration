@@ -85,12 +85,12 @@ def create_products(cfg, subcatch, obj):
     
     # create best parameters table plot
     bestparmtrs = evaluation.BestParamPlot(cfg.plot_params)
-    bestparmtrs.plot(os.path.join(subcatch.path_out, 'bestparmtrs'), os.path.join(subcatch.path, 'pareto_front.csv'))
+    bestparmtrs.plot(os.path.join(subcatch.path_out, 'bestparmtrs'), os.path.join(subcatch.path, 'pareto_front.csv'), subcatch.obsid)
     os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'bestparmtrs')))
 
     # create (inter)catchment plot
     spatialplot = evaluation.SpatialPlot(cfg.plot_params)
-    spatialplot.plot(os.path.join(subcatch.path_out, 'spatial'), os.path.join(subcatch.path, 'maps'))
+    spatialplot.plot(os.path.join(subcatch.path_out, 'spatial'), subcatch.path)
     os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'spatial')))
     
     # compute contingency table and export
