@@ -283,7 +283,36 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss, inflow_tss_cal)
         os.rename(inflow_tss_last_run, inflow_tss)
 
+# utility function for merging tss files from dynamic reservoir warmstart routine
+# to be moved in a new file reservoir.py, together with all dynamic reservoir management code
+def merge_tss_files(tss_file_list, output_tss_file):
+    if not tss_file_list:
+        raise ValueError("The tss file list is empty.")
+    if output_tss_file is None:
+        raise ValueError("Output tss file is None.")
+    # number of metadata lines header in tss
+    metadata_lines = 4  
 
+    concatenated_data = []
+
+    for index, file_path in enumerate(tss_file_list):
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        if index == 0:
+            # Include all lines from the first file (metadata + data)
+            concatenated_data.extend(lines)
+        else:
+            # Skip metadata lines for subsequent files and add only data
+            concatenated_data.extend(lines[metadata_lines:])
+
+    # Write the concatenated data to the output file
+    with open(output_tss_file, 'w') as output_file:
+        output_file.writelines(concatenated_data)
+
+    print(f'Merged file created: {output_tss_file}')
+    
+    
 def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
     Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.
@@ -336,9 +365,13 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
         warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods, includeLakes, includeMCT)
         # run different periods with warm start
         idx=0
+        chanq_files = []
+        dis_files = []
+        original_chanq_tss_name = None
+        original_dis_tss_name = None
         for idx, warmstart_run_file in enumerate(warmstart_run_files):
+            settings = LisSettings(warmstart_run_file, "")
             if idx>0:
-                settings = LisSettings(warmstart_run_file, "")
                 rsfil_map_name = settings.binding['ReservoirFillEnd']
                 rsfil_map_name = rsfil_map_name[:-3] if rsfil_map_name.lower().endswith('.nc') else rsfil_map_name
                 # copy the ReservoirFill end map to a backup before editing it for the next run
@@ -348,7 +381,25 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
                 map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
                 stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
             lisf1.main(warmstart_run_file, '-q')
-            # in case there are no Lakes, remove the simulateLakes in the warmstart setting files
+            # rename chanq and dischage tss files for keep info for the final marge 
+            original_chanq_tss_name = settings.binding['ChanqTS']
+            chanq_tss_name = original_chanq_tss_name[:-4] if original_chanq_tss_name.lower().endswith('.tss') else original_chanq_tss_name
+            chanq_tss_name_dest = f'{chanq_tss_name}_ws_{idx}.tss'
+            original_dis_tss_name = settings.binding['DisTS']
+            dis_tss_name = original_dis_tss_name[:-4] if original_dis_tss_name.lower().endswith('.tss') else original_dis_tss_name  
+            dis_tss_name_dest = f'{dis_tss_name}_ws_{idx}.tss' 
+            cmd = f'mv {chanq_tss_name}.tss {chanq_tss_name_dest}'
+            utils.run_cmd(cmd)
+            chanq_files.append(chanq_tss_name_dest)
+            cmd = f'mv {dis_tss_name}.tss {dis_tss_name_dest}'
+            utils.run_cmd(cmd)
+            dis_files.append(dis_tss_name_dest)
+
+        # merge dis and chanq files
+        merge_tss_files(chanq_files, original_chanq_tss_name)
+        merge_tss_files(dis_files, original_dis_tss_name)
+            
+            
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
