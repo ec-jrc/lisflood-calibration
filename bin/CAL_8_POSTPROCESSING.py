@@ -3,6 +3,7 @@ import os
 import argparse
 import pandas as pd
 from datetime import datetime
+from configparser import NoOptionError
 
 from liscal import config, subcatchment, objective, products
 
@@ -31,30 +32,30 @@ class PlotParameters():
     }
 
 
-class ConfigPostProcessing(config.Config):
+class ConfigPostProcessing(config.ConfigCalibration):
 
     def __init__(self, settings_file):
         super().__init__(settings_file)
 
         # paths
-        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
         self.summary_path = self.parser.get('Path','summary_path')
 
-        # Date parameters
-        self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
-        self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
-        self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
-        if self.timestep != 360 and self.timestep != 1440:
-            raise Exception('Calibration timestep {} not supported'.format(self.timestep))
+        # # Date parameters
+        # self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
+        # self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
+        # self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        # if self.timestep != 360 and self.timestep != 1440:
+        #     raise Exception('Calibration timestep {} not supported'.format(self.timestep))
 
-        # we don't use it but required for objectives object
-        self.param_ranges = None
+        # # we don't use it but required for objectives object
+        # self.param_ranges = None
 
-        # stations
-        self.stations_data = self.parser.get('Stations', 'stations_data')
+        # # stations
+        # self.stations_data = self.parser.get('Stations', 'stations_data')
 
         # plot parameters
         self.plot_params = PlotParameters()
+
 
 
 if __name__ == '__main__':

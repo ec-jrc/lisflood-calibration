@@ -8,7 +8,7 @@ Scripts involved in this step:
     - [CAL_2_HYDRO_DEPENDENCIES.py](CAL_2_HYDRO_DEPENDENCIES.md): computes the hydrological dependencies between the stations.
 3. Cut all the static maps and forcings and create one folder per catchment, named using the station ID of the station corresponding to the catchment. Best practice is to save the cutmaps outputs in a different folder than the calibration to avoid having to recompute them.
 Scripts involved in this step:
-    - [CAL_3_MASK.py](CAL_3_MASK.md): extracts the mask of a specified stations.
+    - [CAL_3_MASK.py](CAL_3_MASK.md): extracts the mask of the stations.
     - [CAL_4_CUT_MAPS.py](CAL_4_CUT_MAPS.md): cuts all the static and forcing maps from the mask computed in the previous step.
 4. From these maps, calibrate the catchment with respect to the observations at the station outlet of the catchment.
 Scripts involved in this step:

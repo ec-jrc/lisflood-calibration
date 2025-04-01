@@ -27,11 +27,12 @@ parser = ConfigParser()  # python 3.8
 parser.read(iniFile)
 
 subcatchment_path = parser.get('Path','subcatchment_path')
-
-path_gauges = parser.get("Path", "gauges_path")
-interstation_regions = parser.get("Path", "interstation_regions")
-inlets =parser.get("Path", "inlets")
 stations_data_path = parser.get("Stations", "stations_data")
+
+path_result = os.path.dirname(stations_data_path)
+path_gauges = os.path.join(path_result,"gauges.map")
+interstation_regions = os.path.join(path_result,"interstation_regions.map")
+inlets = os.path.join(path_result,"inlets.map")
 
 config = {}
 for execname in ["pcrcalc","map2asc","asc2map","col2map","map2col","mapattr","resample"]:
@@ -60,7 +61,7 @@ for index, row in stationdata_sorted.iterrows():
 	#	catchment = str(catchment)
 	#	print "MEUH"
 	Series = CatchmentsToProcess[0]
-	if len(Series[Series==catchment]) == 0: # Only process catchments whose ObsID is in the CatchmentsToProcess.txt file
+	if not (catchment in Series.values): # Only process catchments whose ObsID is in the CatchmentsToProcess.txt file
 		continue
 	print("\n\n\n=================== "+str(catchment)+" ====================")
 	print(">> Starting map subsetting for catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")

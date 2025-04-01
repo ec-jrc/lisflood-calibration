@@ -18,8 +18,6 @@ class ConfigFilter(config.Config):
         if self.timestep != 360 and self.timestep != 1440:
             raise Exception('Calibration timestep {} not supported'.format(self.timestep))
         
-        self.stations_data = self.parser.get('Stations', 'stations_data')
-
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
         self.stations_data = self.parser.get('Stations', 'stations_data')
@@ -46,6 +44,23 @@ if __name__ == '__main__':
     print('Found {} calibration stations to check'.format(len(stations_meta)))
 
     observed_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+
+    # Convert the index to datetime
+    observed_data.index = pd.to_datetime(observed_data.index, format='%d/%m/%Y %H:%M')
+
+    if cfg.timestep==1440:
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='D')
+    else:
+        assert(cfg.timestep==360)
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='6H')
+
+    # Reindex the DataFrame to include the full date range
+    observed_data = observed_data.reindex(full_date_range)
+    observed_data.index = observed_data.index.strftime('%d/%m/%Y %H:%M')
 
     valid_stations = []
     unvalid_stations = []
@@ -78,5 +93,5 @@ if __name__ == '__main__':
     unvalid_stations = stations_meta.loc[unvalid_stations]
     print(valid_stations)
     valid_stations.to_csv(cfg.stations_data)
-    unvalid_stations.to_csv(cfg.stations_data+'_unvalid')
+    unvalid_stations.to_csv(cfg.stations_data[:-4]+'_invalid.csv')
     print("==================== END ====================")

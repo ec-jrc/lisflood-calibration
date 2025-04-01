@@ -35,11 +35,11 @@ class ObjectiveKGE():
         Reads simulated streamflow data for a given run.
     resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
         Resamples streamflow data to align simulated and observed streamflows.
-    compute_objectives(run_id, start, end, simulated_streamflow)
+    compute_objectives(run_id, start, end, simulated_streamflow, compute_additional_metrics=False)
         Computes the KGE and its components for a given simulation.
     compute_statistics(start, end, simulated_streamflow)
         Computes various statistics for a given simulation.
-    update_parameter_history(run_id, parameters, fKGEComponents, gen, run)
+    update_parameter_history(run_id, parameters, fKGEComponents, evap_objective, additional_metrics, gen, run)
         Updates the parameter history log.
     read_param_history()
         Reads the parameter history from a log file.
@@ -55,12 +55,25 @@ class ObjectiveKGE():
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
-        self.weights = [1, 0, 0, 0, 0]
+            
+        # Initialize weights, assuming 0 for not included, and +1/-1 based on maximization/minimization
+        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae), JSD, KGE_JSD]
+        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae, JSD, KGE_JSD]
+        # THUS: only KGE and KGE_JSD shoud be maximized, while other terms need to be minimized
+        self.weights = [
+            1 if 'KGE' in cfg.deap_param.objectives_list else 0,           # Maximize KGE
+            -1 if 'CORR' in cfg.deap_param.objectives_list else 0,         # Minimize corr
+            -1 if 'BIAS' in cfg.deap_param.objectives_list else 0,         # Minimize bias
+            -1 if 'Y' in cfg.deap_param.objectives_list else 0,            # Minimize y
+            -1 if 'SAE' in cfg.deap_param.objectives_list else 0,          # Minimize sae
+            -1 if 'JSD' in cfg.deap_param.objectives_list else 0,          # Minimize JSD
+            1 if 'KGE_JSD' in cfg.deap_param.objectives_list else 0        # Maximize KGE_JSD
+        ]
+    
 
         if read_observations:
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
-
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
@@ -103,15 +116,15 @@ class ObjectiveKGE():
 
         return simulated_streamflow
 
-    def read_simulated_streamflow(self, run_id, start, end):
+    def read_simulated_streamflow(self, run_id, start, end, Qsim_tss = None):
 
         timestep = self.cfg.timestep
-
-        Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
+        if Qsim_tss is None:
+            Qsim_tss = os.path.join(self.subcatch.path_out, run_id, 'dis.tss')
         if os.path.isfile(Qsim_tss)==False:
             print('run_id: {}'.format(str(run_id)))
             print('Discharge file path: {}'.format(Qsim_tss))
-            raise Exception("No simulated streamflow found. Probably LISFLOOD failed to start? Check the log files of the run!")
+            raise Exception(f"No simulated streamflow {Qsim_tss} found. Probably LISFLOOD failed to start? Check the log files of the run!")
 
         simulated_streamflow = utils.read_tss(Qsim_tss)[1]  # need to take [1] or we get 2d array
         simulated_streamflow[simulated_streamflow==1e31] = np.nan  # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
@@ -176,7 +189,7 @@ class ObjectiveKGE():
 
         return date_range, Qsim, Qobs
 
-    def compute_objectives(self, run_id, start, end, simulated_streamflow):
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
 
         date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
         if len(Qobs) != len(Qsim):
@@ -184,7 +197,31 @@ class ObjectiveKGE():
 
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
 
-        return kge_components
+        additional_metrics = {}
+        if compute_additional_metrics:
+            additional_metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
+            additional_metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
+            additional_metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
+            additional_metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
+            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs)            
+
+        return kge_components, additional_metrics
+
+    def compute_evap_index(self, run_id, precip_budyko, PET_budyko, etactBudyko_tss):
+        """
+        computing evaporative index and budyko compliance
+        """
+        # print(self.subcatch)        
+        if os.path.isfile(etactBudyko_tss)==False:
+            # print('run_id: {}'.format(str(run_id)))
+            # print('etactBUDYKO file path: {}'.format(etactBudyko_tss))
+            raise Exception(f"No simulated etactBudyko found {etactBudyko_tss}. Probably LISFLOOD failed to start? or you are not creating the correct output? check settings.xml file")
+
+        etactBudyko = utils.read_tss(etactBudyko_tss)[1]  # need to take [1] or we get 2d array
+        etactBudyko[etactBudyko==1e31] = np.nan
+        evap_index=hydro_stats.evap_index_BUDYKO(precip_budyko,etactBudyko.sum(),PET_budyko)
+        return evap_index
 
     def compute_statistics(self, start, end, simulated_streamflow):
 
@@ -206,7 +243,7 @@ class ObjectiveKGE():
 
         return Q, stats
 
-    def update_parameter_history(self, run_id, parameters, fKGEComponents, gen, run):
+    def update_parameter_history(self, run_id, parameters, fKGEComponents, EVAP_index, additional_metrics, gen, run):
 
         cfg = self.cfg
 
@@ -225,9 +262,15 @@ class ObjectiveKGE():
             paramsHistory = "randId,"
             for i in [str(ip) + "," for ip in self.param_ranges.index.values]:
                 paramsHistory += i
-            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae", "generation", "runNumber"]]:
+            # these columns should match the order of the updatePopulationFromHistory function
+            for i in [str(ip) + "," for ip in ["Kling Gupta Efficiency", "Correlation", "Signal ratio (s/o) (Bias)", "Noise ratio (s/o) (Spread)", "sae", "Evaporative Index", "Fractional Budyko Distance"]]:
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in additional_metrics]:
+                paramsHistory += i
+            for i in [str(ip) + "," for ip in ["generation", "runNumber"]]:
                 paramsHistory += i
             paramsHistory += "\n"
+            
             # Minimal values
             paramsHistory += str(self.param_ranges.head().columns.values[0]) + ","
             for i in [str(ip) + "," for ip in self.param_ranges[str(self.param_ranges.head().columns.values[0])].values]:
@@ -251,6 +294,10 @@ class ObjectiveKGE():
             paramsHistory += i
         for i in [str(ip) + "," for ip in fKGEComponents]:
             paramsHistory += i
+        for i in [str(ip) + "," for ip in EVAP_index]:
+            paramsHistory += i
+        for i in [str(additional_metrics[ip]) + "," for ip in additional_metrics]:
+            paramsHistory += i
         paramsHistory += str(gen) + ","
         paramsHistory += str(run)
         paramsHistory += "\n"
@@ -263,12 +310,18 @@ class ObjectiveKGE():
         return pHistory
 
     def write_ranked_solution(self, pHistory, path_out=None):
+        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+            KGEcolumn="KGE_JSD"
+            KGERankName="KGEJSDRank"
+        else:
+            KGEcolumn="Kling Gupta Efficiency"
+            KGERankName="KGERank"
         if path_out is None:
             path_subcatch = self.subcatch.path
         else:
             path_subcatch = path_out
         # Keep only the best 10% of the runs for the selection of the parameters for the next generation
-        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
+        pHistory = pHistory.sort_values(by=KGEcolumn, ascending=False)
         pHistory = pHistory.head(int(max(2, round(len(pHistory) * 0.1))))
         n = len(pHistory)
         minOffset = 0.1
@@ -280,16 +333,22 @@ class ObjectiveKGE():
         pHistory = pHistory.sort_values(by="sae", ascending=True)
         pHistory["saeRank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["sae"].values)]
         # Give ranking scores to KGE
-        pHistory = pHistory.sort_values(by="Kling Gupta Efficiency", ascending=False)
-        pHistory["KGERank"] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory["Kling Gupta Efficiency"].values)]
+        pHistory = pHistory.sort_values(by=KGEcolumn, ascending=False)
+        pHistory[KGERankName] = [minOffset + float(i + 1) * (maxOffset - minOffset) / n for i, ii in enumerate(pHistory[KGEcolumn].values)]
         # Give pareto score
-        pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory["KGERank"].values
+        pHistory["paretoRank"] = pHistory["corrRank"].values * pHistory["saeRank"].values * pHistory[KGERankName].values
         pHistory = pHistory.sort_values(by="paretoRank", ascending=True)
         pHistory.to_csv(os.path.join(path_subcatch, "pHistoryWRanks.csv"), ',', float_format='%g')
 
         return pHistory
 
-    def write_pareto_front(self, pHistory, path_out=None):
+    def write_pareto_front(self, pHistory, isKGE_JSD, path_out=None, pareto_front_filename = "pareto_front.csv"):
+        if isKGE_JSD: # we are using KGE_JSD objective
+            KGEcolumn="KGE_JSD"
+            KGERankName="(KGEJSD)"
+        else:
+            KGEcolumn="Kling Gupta Efficiency"
+            KGERankName="(KGE)"
         if path_out is None:
             path_subcatch = self.subcatch.path
         else:
@@ -302,19 +361,57 @@ class ObjectiveKGE():
         paramvals[:] = np.NaN
         for ipar, par in enumerate(param_ranges.index):
             paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
+
         pareto_front = pd.DataFrame(
             {
-                'effover': pHistory["Kling Gupta Efficiency"].loc[bestParetoIndex],
-                'R': pHistory["Kling Gupta Efficiency"].    loc[bestParetoIndex]
-            }, index=[0]
+                f'effover{KGERankName}': pHistory[KGEcolumn].loc[bestParetoIndex],
+                f'R{KGERankName}': pHistory[KGEcolumn].    loc[bestParetoIndex]
+            }
         )
         for ii in range(len(param_ranges)):
             pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
-        pareto_front.to_csv(os.path.join(path_subcatch, "pareto_front.csv"), ',', float_format='%g')
+        pareto_front.to_csv(os.path.join(path_subcatch, pareto_front_filename), ',', float_format='%g')
 
     def process_results(self):
 
         pHistory = self.read_param_history()
         pHistory_ranked = self.write_ranked_solution(pHistory)
 
-        self.write_pareto_front(pHistory_ranked)
+        isKGE_JSD=False
+        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
+            isKGE_JSD=True
+
+        if isKGE_JSD:   # in this case we perform the check on Correlation
+            # Select max correlation value of the whole param history csv file
+            maxCORRhistory = pHistory["Correlation"].max()  # store the maximum value of the correlation
+        
+            # get Correlation of the selected KGEJSD calibrated paramtere set
+            bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
+            CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]
+
+            # if maxCORRhistory - CORR_bestKGE-JSD > 0.15, stop here with a warning and a text file, avoiding to write the pareto_front file
+            if maxCORRhistory - CORR_bestKGEJSD > 0.15:
+                paretofront_filename = "CorrelationIssue_pareto_front.csv"
+                message = f"WARNING!\n" \
+                    f"Max correlation value in param history = {maxCORRhistory}\n" \
+                    f"Selected kge-jsd correlation value = {CORR_bestKGEJSD}\n" \
+                    f"Consider repeating the calibration with 'KGE objective function'\n" \
+                    f"(pareto_front written in {self.subcatch.path_out} -> {paretofront_filename})\n"
+                print(message)
+                file_path = os.path.join(self.subcatch.path_out,'CorrelationIssue_Warning_message.txt')
+                # Open the file in write mode
+                with open(file_path, 'w') as file:
+                    # Write the message to the file
+                    file.write(message)
+
+                self.write_pareto_front(pHistory_ranked, isKGE_JSD, self.subcatch.path_out, paretofront_filename)
+                return  # exit here, without writing the final pareto_front.csv file, thus stopping next linked catchments
+        
+        self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+
+        # 2) aggiungere check: confronto CORR dell'individuo scelto da KGE-JSD con tutti i valori di CORR della paramHistory (prima del ranking). 
+        # Se maxCORRhistory - CORR_bestKGE-JSD > 0.15 --> warning message scritto in .txt  generato ad hoc in out folder "Attention! 
+        # Max correlation value in param history = XXX
+        # kge-jsd correlation = XXX
+        # Consider repeating the calibration with 'KGE objective function"
+

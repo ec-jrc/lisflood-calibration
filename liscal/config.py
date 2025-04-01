@@ -1,9 +1,11 @@
 import os
+import numpy as np
 import pandas
 from datetime import datetime
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
 from liscal import pcr_utils, calibration
-
+from lisflood.global_modules.add1 import loadmap, compressArray
+from pcraster import boolean
 
 class Config():
     """
@@ -74,10 +76,36 @@ class DEAPParameters():
         self.pop = int(parser.get('DEAP','pop'))
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
+        self.elite = int(parser.get('DEAP','elite')) # usually take 10% of mu as elites to keep in new population
         self.cxpb = 0.6
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
+        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
+        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
+        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population')))
+
+        try:
+            objectives_str = parser.get('DEAP', 'objectives')
+            self.objectives_list = [obj.strip().upper() for obj in objectives_str.split(',')]
+        except NoOptionError:
+            self.objectives_list =['KGE']
+
+        # check for valid objectives
+        valid_objectives = {'KGE', 'CORR', 'BIAS', 'Y', 'SAE', 'JSD', 'KGE_JSD'}
+        
+        # Check for any unknown objectives
+        unknown_objectives = [obj for obj in self.objectives_list if obj not in valid_objectives]
+        if unknown_objectives:
+            raise ValueError(f"Unknown objectives found: {', '.join(unknown_objectives)}")
+
+        # Ensure at least "KGE" or "KGE_JSD" or all three ["CORR", "BIAS", "Y"] are present
+        has_kge = 'KGE' in self.objectives_list
+        has_kge_jsd = 'KGE_JSD' in self.objectives_list
+        has_kge_terms = all(obj in self.objectives_list for obj in ['CORR', 'BIAS', 'Y'])
+        
+        if not (has_kge or has_kge_jsd or has_kge_terms):
+            raise ValueError("At least 'KGE', 'KGE_JSD', or all of ['CORR', 'BIAS', 'Y'] must be included in objectives.")
 
 
 class ConfigCalibration(Config):
@@ -155,6 +183,8 @@ class ConfigCalibration(Config):
         self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))  # in minutes
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
+        
+        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years'))  # max calibration years, used to compute split date
 
         # deap
         self.deap_param = DEAPParameters(self.parser)
@@ -175,8 +205,77 @@ class ConfigCalibration(Config):
 
         # stations
         self.stations_links = self.parser.get('Stations', 'stations_links')
-        
+
+        # observations
+        self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
+        self.stations_data = self.parser.get('Stations', 'stations_data')
+
+        # Reservoir creation/demolition dates
+        self.reservoir_events = self.parser.get('Stations', 'reservoir_events', fallback=None)
+
+        # flag to enable aridity index check 
+        self.use_aridity_index_check = bool(self.parser.get('Main', 'use_aridity_index_check', fallback=0))
+
+
         # pcraster commands
         self.pcraster_cmd = {}
         for execname in ["pcrcalc", "map2asc", "asc2map", "col2map", "map2col", "mapattr", "resample", "readmap"]:
             self.pcraster_cmd[execname] = execname
+
+    def filter_param_ranges_after_init(self, model_initialized, split_lake_params):
+        # Adjust param_ranges list if lakes or reservoirs are not included into the current catchment
+        self.original_param_ranges = self.param_ranges.copy()
+        if model_initialized.lissettings.options['simulateLakes']==False:
+            if 'LakeMultiplier' in self.param_ranges.index:
+                self.param_ranges.drop("LakeMultiplier", inplace=True)
+        else:
+            if split_lake_params==True:
+                # check how many lakes are in the catchment
+                self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
+                IsChannelPcr = boolean(loadmap('Channels', pcr=True))
+                IsChannel = np.bool8(compressArray(IsChannelPcr))
+                self.LakeSitesC[self.LakeSitesC < 1] = 0
+                self.LakeSitesC[IsChannel == 0] = 0
+                # Get rid of any lakes that are not part of the channel network
+
+                # mask lakes sites when using sub-catchments mask
+                self.LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC).astype(int)
+
+                if self.LakeSitesCC.size > 1:
+                    # get one param for each lake
+                    if 'LakeMultiplier' in self.param_ranges.index:
+                        # Retrieve the original LakeMultiplier row values
+                        lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
+                        
+                        # Drop the original LakeMultiplier row
+                        self.param_ranges.drop('LakeMultiplier', inplace=True)
+                        
+                        # Add a new LakeMultiplier row for each lake
+                        for lake_id in self.LakeSitesCC:
+                            new_row_name = f'LakeMultiplier_{lake_id}'
+                            self.param_ranges.loc[new_row_name] = lake_multiplier_values
+
+        if model_initialized.lissettings.options['simulateReservoirs']==False:
+            if 'ReservoirFloodStorage' in self.param_ranges.index:
+                self.param_ranges.drop("ReservoirFloodStorage", inplace=True)
+            if 'ReservoirFloodOutflowFactor' in self.param_ranges.index:
+                self.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
+        if model_initialized.lissettings.options['MCTRouting']==False:
+            if 'CalChanMan3' in self.param_ranges.index:
+                self.param_ranges.drop("CalChanMan3", inplace=True)
+
+        # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
+        station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
+        StationDataFile=pandas.read_csv(station_data_file,index_col=0)
+        if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
+            if 'SnowMeltCoef' in self.param_ranges.index:
+                self.param_ranges.drop("SnowMeltCoef", inplace=True)
+
+        if self.use_aridity_index_check == True:
+            # Adjust param_ranges list if min Aridity Index > 0.5 so that TransLoss coefficient should not be calibrated for the current catchment
+            station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
+            StationDataFile=pandas.read_csv(station_data_file,index_col=0)
+            if float(StationDataFile.loc["min_AridIdx"]) >= 0.5:
+                if 'TransSub' in self.param_ranges.index:
+                    self.param_ranges.drop("TransSub", inplace=True)
+

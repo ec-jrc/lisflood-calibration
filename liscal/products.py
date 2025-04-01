@@ -97,7 +97,7 @@ def create_products(cfg, subcatch, obj, save=True):
 
     # create (inter)catchment plot
     spatialplot = evaluation.SpatialPlot(cfg.plot_params)
-    spatialplot_fig = spatialplot.plot(os.path.join(subcatch.path, 'maps'), os.path.join(subcatch.path_out, 'spatial') if save else None)
+    spatialplot_fig = spatialplot.plot(subcatch.path, os.path.join(subcatch.path_out, 'spatial') if save else None)
     if save:
         os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'spatial')))
     
