@@ -3,9 +3,6 @@ import numpy as np
 import pandas
 from datetime import datetime
 from configparser import ConfigParser, NoOptionError
-from liscal import pcr_utils, calibration
-from lisflood.global_modules.add1 import loadmap, compressArray
-from pcraster import boolean
 
 class Config():
     """
@@ -76,14 +73,14 @@ class DEAPParameters():
         self.pop = int(parser.get('DEAP','pop'))
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
-        self.elite = int(parser.get('DEAP','elite')) # usually take 10% of mu as elites to keep in new population
+        self.elite = int(parser.get('DEAP','elite', fallback=0)) # usually take 10% of mu as elites to keep in new population.
         self.cxpb = 0.6
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
-        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
-        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
-        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population')))
+        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params', fallback=0)))
+        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check', fallback=0)))
+        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population', fallback=0)))
 
         try:
             objectives_str = parser.get('DEAP', 'objectives')
@@ -184,7 +181,7 @@ class ConfigCalibration(Config):
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
         
-        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years'))  # max calibration years, used to compute split date
+        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years', fallback=20))  # max calibration years, used to compute split date
 
         # deap
         self.deap_param = DEAPParameters(self.parser)
@@ -230,6 +227,8 @@ class ConfigCalibration(Config):
                 self.param_ranges.drop("LakeMultiplier", inplace=True)
         else:
             if split_lake_params==True:
+                from lisflood.global_modules.add1 import loadmap, compressArray
+                from pcraster import boolean
                 # check how many lakes are in the catchment
                 self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
                 IsChannelPcr = boolean(loadmap('Channels', pcr=True))
