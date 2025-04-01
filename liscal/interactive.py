@@ -32,13 +32,18 @@ class CalibPlotWidget(Widget):
         self.config, obsid, initialise=False
         )
         
+        obj = objective.ObjectiveKGE(self.config, subcatch)
+
         try:
-            obj = objective.ObjectiveKGE(self.config, subcatch)
-
             figs = products.create_products(self.config, subcatch, obj, False)
+            html_content = None
+        except:
+            html_content = f"Error loading data for obsid {obsid}"
 
-            with self.output:
-                clear_output(wait=True)
+        with self.output:
+            clear_output(wait=True)
+            
+            if html_content is None:
                 html_content = """
                 <div style="max-height: 500px; overflow-y: scroll;">
                 """
@@ -58,9 +63,9 @@ class CalibPlotWidget(Widget):
 
                 html_content += "</div>"
 
-                display(HTML(html_content))
-        except:
-            print(f"Error generating plot for obsid {obsid}")
+            display(HTML(html_content))
+
+        
 
         return
 
