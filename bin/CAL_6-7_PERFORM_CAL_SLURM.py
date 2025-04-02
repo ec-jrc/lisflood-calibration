@@ -45,7 +45,7 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
                         # wait for all other lists updating their new_nmax value
                         print('Waiting 15 seconds before killing jobs')
                         print('Jobs to kill: ' + str(num_process_to_kill))
-                        time.sleep(1)
+                        time.sleep(15)
                         for i in range(1,num_process_to_kill+1):
                             if len(curr_jobs_list)>i:
                                 print('Killing job: ' + str(curr_jobs_list[len(curr_jobs_list)-i]))
@@ -120,7 +120,7 @@ for index, row in stationdata_sorted.iterrows():
     # Change inlet map by replacing the numeric ID's with 1, 2, ...
     print("Upstream station(s): ")
     stations_links = pandas.read_csv(stations_links_path,sep=",",index_col=0)
-    
+
     subcatchment_list = [int(i) for i in stations_links.loc[catchment].values if not np.isnan(i)]
 
     for subcatchment in subcatchment_list: 
@@ -140,8 +140,7 @@ for index, row in stationdata_sorted.iterrows():
         print('got it')
     print("\n")
     # Performing calibration with external call, to avoid multiprocessing problems
-    #try:
-    if True:
+    try:
         sbc=str(catchment)
         job_name=job_prefix+list_id+"_"+sbc
 
@@ -167,9 +166,9 @@ for index, row in stationdata_sorted.iterrows():
                 path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,str(int(random.random()*max_cache_subfolders)))
                 if not os.path.exists(path_current_numba_cache_dir):
                     os.mkdir(path_current_numba_cache_dir)
-            
+   
             script_name=os.path.join(path_scripts,'runLF_' +list_id+'_'+sbc+'.sh')
-            print(f'Writing {script_name}')
+
             current_time_str = datetime.now().strftime("%Y%m%d_%H%M%s")
             f=open(script_name,'w')
             f.write("#!/bin/bash\n")
@@ -226,8 +225,8 @@ for index, row in stationdata_sorted.iterrows():
             #wait random time to let other queues to access nodes
             rand_time = int(random.random()*5)
             time.sleep(rand_time)
-    #except:
-    #    print("Something went wrong with queue submission skipping...")
-    #    continue
+    except:
+       print("Something went wrong with queue submission skipping...")
+       continue
 
 print("==================== END ====================")
