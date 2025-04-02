@@ -341,6 +341,14 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
             if os.path.exists(cfg.reservoir_events):
                 reservoir_events_df = pd.read_csv(cfg.reservoir_events)
                 valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False)
+                # update observed_streamflow and obs_period_years after reservoir_events to compute correct split date
+                observed_streamflow = observed_streamflow[valid_start:valid_end]
+                obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+                obs_period_years = obs_period_days/365.25
+                if check_obs:
+                    if obs_period_days < float(station_data['Min_calib_days']):
+                        raise Exception('ERROR after process_reservoir_periods: Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, station_data['Min_calib_days']))
+                observations_filtered = observed_streamflow[observed_streamflow.notna()]
             else:
                 print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 
