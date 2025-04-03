@@ -30,7 +30,7 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
         if new_nmax<nmax:
             User_list_killing_nodes = parser.get('Main','User_list_killing_nodes')
             #first check how many jobs are running
-            curr_jobs = int(subprocess.Popen('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
+            curr_jobs = int(subprocess.Popen('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" --sort=t,-i | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
             if curr_jobs > new_nmax:
                 #N.B. only one list should care of killing processes
                 ID_list_killing_nodes = parser.get('Main','ID_list_killing_nodes')
