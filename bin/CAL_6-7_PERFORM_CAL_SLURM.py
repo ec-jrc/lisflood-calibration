@@ -48,8 +48,9 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
                         time.sleep(15)
                         for i in range(1,num_process_to_kill+1):
                             if len(curr_jobs_list)>i:
-                                print('Killing job: ' + str(curr_jobs_list[len(curr_jobs_list)-i]))
-                                job_to_kill = str(curr_jobs_list[len(curr_jobs_list)-i])[2:20]
+                                job_string = str(curr_jobs_list[i-1])      # on SLURM most recent job (that we want ot kill) is on top of the list
+                                print('Killing job: ' + job_string)
+                                job_to_kill = job_string[2:20]             # the line starts with b', so skip first 2 chars and take full 18 chars for job name
                                 cmd="scancel "+job_to_kill
                                 print(">> Calling \""+cmd+"\"")
                                 os.system(cmd)
