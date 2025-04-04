@@ -294,8 +294,11 @@ def merge_tss_files(tss_file_list, output_tss_file):
     metadata_lines = 4  
 
     concatenated_data = []
-
     for index, file_path in enumerate(tss_file_list):
+        if not os.path.exists(file_path):
+            print(f'Skipping {file_path}')
+            return
+        
         with open(file_path, 'r') as file:
             lines = file.readlines()
 
@@ -365,10 +368,9 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
         warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods, includeLakes, includeMCT)
         # run different periods with warm start
         idx=0
-        chanq_files = []
-        dis_files = []
-        original_chanq_tss_name = None
-        original_dis_tss_name = None
+        list_of_variable_to_merge = None
+        var_files = {}
+        original_var_tss_name = {}
         for idx, warmstart_run_file in enumerate(warmstart_run_files):
             settings = LisSettings(warmstart_run_file, "")
             if idx>0:
@@ -380,24 +382,24 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
                 sub_start, _ = subperiods[idx]
                 map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
                 stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
+            else:
+                list_of_variable_to_merge = [k for k in settings.report_timeseries.keys()]
+                for varName in list_of_variable_to_merge:
+                    var_files[varName] = []
+                    original_var_tss_name[varName] = None
             lisf1.main(warmstart_run_file, '-q')
-            # rename chanq and dischage tss files for keep info for the final marge 
-            original_chanq_tss_name = settings.binding['ChanqTS']
-            chanq_tss_name = original_chanq_tss_name[:-4] if original_chanq_tss_name.lower().endswith('.tss') else original_chanq_tss_name
-            chanq_tss_name_dest = f'{chanq_tss_name}_ws_{idx}.tss'
-            original_dis_tss_name = settings.binding['DisTS']
-            dis_tss_name = original_dis_tss_name[:-4] if original_dis_tss_name.lower().endswith('.tss') else original_dis_tss_name  
-            dis_tss_name_dest = f'{dis_tss_name}_ws_{idx}.tss' 
-            cmd = f'mv {chanq_tss_name}.tss {chanq_tss_name_dest}'
-            utils.run_cmd(cmd)
-            chanq_files.append(chanq_tss_name_dest)
-            cmd = f'mv {dis_tss_name}.tss {dis_tss_name_dest}'
-            utils.run_cmd(cmd)
-            dis_files.append(dis_tss_name_dest)
+            # rename chanq, dischage and other tss files to keep info for the final merge
+            for varName in list_of_variable_to_merge:
+                original_var_tss_name[varName] = settings.binding[varName]
+                var_tss_name = original_var_tss_name[varName][:-4] if original_var_tss_name[varName].lower().endswith('.tss') else original_var_tss_name[varName]
+                var_tss_name_dest = f'{var_tss_name}_ws_{idx}.tss'
+                cmd = f'mv {var_tss_name}.tss {var_tss_name_dest}'
+                utils.run_cmd(cmd)
+                var_files[varName].append(var_tss_name_dest)
 
         # merge dis and chanq files
-        merge_tss_files(chanq_files, original_chanq_tss_name)
-        merge_tss_files(dis_files, original_dis_tss_name)
+        for varName in list_of_variable_to_merge:
+            merge_tss_files(var_files[varName], original_var_tss_name[varName])
             
             
 
