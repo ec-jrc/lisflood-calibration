@@ -340,8 +340,8 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
     os.makedirs(out_dir, exist_ok=True)
 
     # use forcings start and end for prerun and run
-    prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-    prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+    prerun_start = cfg.longterm_prerun_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.longterm_prerun_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, 

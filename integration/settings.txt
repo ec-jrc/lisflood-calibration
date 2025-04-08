@@ -4,6 +4,9 @@ forcing_end = 31/12/2017 06:00
 timestep = 360
 prerun_start = 02/01/1990 06:00
 prerun_end = 31/12/2017 06:00
+# Optional: when to start/end the prerun in the long term run (by Default will take the forcing start/end date)
+longterm_prerun_start = 02/01/1990 06:00  
+longterm_prerun_end = 31/12/2017 06:00 
 prerun_timestep = 1440
 fast_debug = 0
 min_obs_years = 3.5

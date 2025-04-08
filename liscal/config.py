@@ -138,9 +138,13 @@ class ConfigCalibration(Config):
     timestep : int
         Time step in minutes.
     prerun_start : datetime
-        Start time of pre-run period.
+        Start time of pre-run period in calibration
     prerun_end : datetime
-        End time of pre-run period.
+        End time of pre-run period in calibration
+    longterm_prerun_start : datetime
+        Optional: Start time of pre-run period in the long term run (by Default will take the forcing start date)
+    longterm_prerun_end : datetime
+        Optional: End time of pre-run period in the long term run (by Default will take the forcing end date)
     prerun_timestep : int
         Pre-run time step in minutes.
     deap_param : DEAPParameters
@@ -178,8 +182,16 @@ class ConfigCalibration(Config):
         if self.timestep != 360 and self.timestep != 1440:
             raise Exception('Calibration timestep {} not supported'.format(self.timestep))
 
-        self.prerun_start = datetime.strptime(self.parser.get('Main','prerun_start'),"%d/%m/%Y %H:%M")  # Start of forcing
-        self.prerun_end = datetime.strptime(self.parser.get('Main','prerun_end'),"%d/%m/%Y %H:%M")  # end of forcing
+        self.prerun_start = datetime.strptime(self.parser.get('Main','prerun_start'),"%d/%m/%Y %H:%M")  # Start of prerun in calibration
+        self.prerun_end = datetime.strptime(self.parser.get('Main','prerun_end'),"%d/%m/%Y %H:%M")  # end of prerun in calibration
+        
+        # Optional: specify longterm run prerun start and end
+        # if not set, take the full forcing period
+        self.longterm_prerun_start = self.parser.get('Main','longterm_prerun_start',fallback=None)  # Start of prerun in calibration
+        self.longterm_prerun_end = self.parser.get('Main','longterm_prerun_end',fallback=None)  # end of prerun in calibration
+        self.longterm_prerun_start = (self.forcing_start if self.longterm_prerun_start is None else datetime.strptime(self.longterm_prerun_start,"%d/%m/%Y %H:%M"))
+        self.longterm_prerun_end = (self.forcing_end if self.longterm_prerun_end is None else datetime.strptime(self.longterm_prerun_end,"%d/%m/%Y %H:%M"))
+
         self.prerun_timestep = int(self.parser.get('Main', 'prerun_timestep'))  # in minutes
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
