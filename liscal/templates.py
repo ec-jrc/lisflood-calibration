@@ -263,6 +263,10 @@ class LisfloodSettingsTemplate():
                     step_start_element = lfuser_section.find(".//textvar[@name='StepStart']")
                     step_end_element = lfuser_section.find(".//textvar[@name='StepEnd']")
 
+                    # Find element MapsCaching: we want to disable it for the longrun warmstart
+                    maps_caching_element = lfuser_section.find(".//textvar[@name='MapsCaching']")
+
+
                     # Check if elements are found and update content
                     if (reservoir_sites_element is not None) and \
                             (dtsec_element is not None) and \
@@ -270,8 +274,12 @@ class LisfloodSettingsTemplate():
                             (timestepInit_element is not None) and \
                             (ColdStart_element is not None) and \
                             (repEndMaps_element is not None) and \
-                            (step_end_element is not None):
+                            (step_end_element is not None) and \
+                            (maps_caching_element is not None):
                         
+                        # disable MapsCaching for the longrun warmstart
+                        maps_caching_element.set("value", "False")
+
                         # we need end maps to run the Warm Start
                         repEndMaps_element.set("choice", "1")   
 
