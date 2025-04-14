@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import os
+import numpy as np
 import pandas as pd
 
 from liscal import config, stations
@@ -26,28 +28,49 @@ if __name__ == '__main__':
     print(">> Reading stations_data file...")
     stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
 
-    # Calibrate lisflood fo specified station
-    obsid = int(args.station)
+    # Try to convert the input to an integer
+    obsids = None
     try:
-        station_data = stations_meta.loc[obsid]
-    except KeyError as e:
-        raise Exception('Station {} not found in stations file'.format(obsid))
+        obsid = int(args.station)
+        obsids = [obsid]
+    except ValueError:
+        # If conversion fails, assume it's a file path and check if it exists
+        if os.path.isfile(args.station):
+            station_list = args.station
+        else:
+            print("Error: Input is neither a valid integer nor an existing file path.")
+            exit(1)
+        # read the list of station to process 
+        try:
+            CatchmentsToProcess = pd.read_csv(station_list,sep=",",header=None)
+            obsids = CatchmentsToProcess[0]
+            obsids = np.array(obsids)
+        except:
+            raise Exception('Error opening station txt: {} not found'.format(station_list))
 
-    # first run of exctraction_station_data, without checking the reservoir events
-    stations.extract_station_data(cfg, None, obsid, station_data, check_obs)
+    # cicle for all ids
+    for obsid in obsids:
+        print(f"==================== processing station {obsid} ====================")
+        try:
+            station_data = stations_meta.loc[obsid]
+        except KeyError as e:
+            raise Exception('Station {} not found in stations file'.format(obsid))
 
-    # if reservoir_events is None we can just skip the second execution of extract_station_data
-    if cfg.reservoir_events is not None:
-        subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data)
-        lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
-        lock_mgr = calibration.LockManager(cfg.num_cpus)
-        obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
-        model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
-        # load forcings and input maps in cache
-        # required to find reservoir
-        model.init_run()
+        # first run of exctraction_station_data, without checking the reservoir events
+        stations.extract_station_data(cfg, None, obsid, station_data, check_obs)
 
-        # second run of exctraction_station_data, checking the reservoir events to filter observations
-        stations.extract_station_data(cfg, model, obsid, station_data, check_obs)
+        # if reservoir_events is None we can just skip the second execution of extract_station_data
+        if cfg.reservoir_events is not None:
+            subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data, create_links=False)
+            lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+            lock_mgr = calibration.LockManager(cfg.num_cpus)
+            obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+            model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+            # load forcings and input maps in cache
+            # required to find reservoir
+            model.init_run()
+
+            # second run of exctraction_station_data, checking the reservoir events to filter observations
+            stations.extract_station_data(cfg, model, obsid, station_data, check_obs)
 
     print("==================== END ====================")
