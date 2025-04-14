@@ -89,9 +89,9 @@ def main(origin_base, calib_base, continent, basin):
     copy_and_modify_file(xml_src, xml_dest, xml_replacements)
 
     # Create shell script
-    script_1to3_src  = os.path.join(scripts_base, "arun_cal_1to5template.sh")
+    script_1to3_src  = os.path.join(scripts_base, "arun_cal_1to3template.sh")
     con_abbr = continent[:3].capitalize()
-    script_dest = os.path.join(scripts_base, f"arun_cal_1to5{con_abbr}{basin}.sh")
+    script_dest = os.path.join(scripts_base, f"arun_cal_1to3{con_abbr}{basin}.sh")
     script_replacements = {
         'CONTINENT="template"': f'CONTINENT="{continent}"',
         'BASIN="template"': f'BASIN="{basin}"'
@@ -112,6 +112,16 @@ def main(origin_base, calib_base, continent, basin):
             'N_FILE="template"': f'N_FILE="{n_file_value}"'
         }
         copy_and_modify_file(script_4_src, script_dest, script_replacements)
+
+    # Create shell script
+    script_5_src  = os.path.join(scripts_base, "arun_cal_5template.sh")
+    con_abbr = continent[:3].capitalize()
+    script_dest = os.path.join(scripts_base, f"arun_cal_5{con_abbr}{basin}.sh")
+    script_replacements = {
+        'CONTINENT="template"': f'CONTINENT="{continent}"',
+        'BASIN="template"': f'BASIN="{basin}"'
+    }
+    copy_and_modify_file(script_5_src , script_dest, script_replacements)
 
     print(f"Setup completed for continent: {continent}, basin: {basin}")
 
