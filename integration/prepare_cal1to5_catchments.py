@@ -72,10 +72,10 @@ def main(origin_base, calib_base, continent, basin):
         '<stations_links>': f"{stations_path}/stations_links.csv",
         '<observed_discharges>': f"{origin_base}/GloFASv5_stationsselection_{continent}_{basin}/observations_GloFASv5_{continent}_{basin}_corrected.csv",
         '<return_periods>': f"{stations_path}/return_levels.nc",
-        '<reservoir_events>': f"{calib_base}/GloFASv5_tables/reservoirs_glofas5_years_20250228.csv",
-        '<param_ranges>': f"{calib_base}/GloFASv5_templates/param_ranges_v1.csv",
+        '<reservoir_events>': f"{origin_base}/GloFASv5_tables/reservoirs_glofas5_years_20250228.csv",
+        '<param_ranges>': f"{origin_base}/GloFASv5_templates/param_ranges_v1.csv",
         '<subcatchment_path>': f"{catchments_path}",
-        '<LFSettings>': f"{templates_base}/OSLisfloodGloFASv5calibration_v1_{continent}_{basin}.xml"
+        '<LISFLOODSettings>': f"{templates_base}/OSLisfloodGloFASv5calibration_v1_{continent}_{basin}.xml"
     }
 
     copy_and_modify_file(calib_settings_template, calib_settings_file, replacements)
