@@ -106,16 +106,16 @@ def clip_netcdf(ds, fileouts, clip_boxes):
         else:
             current_time = datetime.now().strftime("%H:%M:%S")
             print(current_time, ': creating...',fileout)
-        x_min, x_max, y_min, y_max = clip_box
+            x_min, x_max, y_min, y_max = clip_box
 
-        if 'lon' in ds.coords and 'lat' in ds.coords:
-            ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
-        elif 'x' in ds.coords and 'y' in ds.coords:
-            ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
-        else:
-            raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
-        ds_outs.append(ds_out)
-        ds_outs_filenames.append(fileout)
+            if 'lon' in ds.coords and 'lat' in ds.coords:
+                ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
+            elif 'x' in ds.coords and 'y' in ds.coords:
+                ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
+            else:
+                raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
+            ds_outs.append(ds_out)
+            ds_outs_filenames.append(fileout)
 
     for ds_out,ds_outs_filename  in zip(ds_outs,ds_outs_filenames):
         ds_out.to_netcdf(ds_outs_filename)
