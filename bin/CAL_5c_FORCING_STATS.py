@@ -71,6 +71,9 @@ if __name__ == '__main__':
     for obsid in obsids:
         print(f"==================== processing station {obsid} ====================")    
 
+        # clear the cache for any previous used catchment in case of multi-catchments preprocessing
+        hydro_model.Cache.clear()
+
         subcatch = subcatchment.SubCatchment(cfg, obsid, create_links=False)
 
         maps_dir=os.path.join(os.path.join(subcatch.path,'maps'))

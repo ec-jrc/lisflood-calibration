@@ -61,6 +61,8 @@ if __name__ == '__main__':
 
         # if reservoir_events is None we can just skip the second execution of extract_station_data
         if cfg.reservoir_events is not None:
+            # clear the cache for any previous used catchment in case of multi-catchments preprocessing
+            hydro_model.Cache.clear()
             subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data, create_links=False)
             lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
             lock_mgr = calibration.LockManager(cfg.num_cpus)
