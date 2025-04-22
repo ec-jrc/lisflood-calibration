@@ -196,8 +196,10 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 return subperiods, reservoir_events_df
             else:
                 # Determine the most recent valid observation period
-                min_steps = int(min_years*365.25*24/dt)
+                min_steps = int(min_years*365.25*24/dt) - 1
                 last_valid_end = valid_end
+                best_period_start_dt = None
+                best_period_end_dt = None
                 for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
                     period_observations = observations_filtered.copy()
                     period_observations.index = pd.to_datetime(period_observations.index, format='%d/%m/%Y %H:%M')
@@ -208,6 +210,8 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                         break
                     last_valid_end = event - pd.Timedelta(days=1)
                 
+                if best_period_start_dt is None or best_period_end_dt is None:
+                    raise Exception('Error: unable to find best period with {} steps after reservoir events check.'.format(min_steps))
                 map_name = "FilteredReservoirMap"
                 create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, best_period_start_dt, best_period_end_dt)
 
