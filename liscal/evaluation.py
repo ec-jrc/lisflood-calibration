@@ -808,11 +808,12 @@ class SpatialPlot():
                 f.close()
 
             # get path of ldd.map which is available in the directories of the cutmaps-associated suite
-            original_ldd_path_aux = maps_dir.replace('maps', 'cutmaps.sh')
-            with open(original_ldd_path_aux) as f:
-                original_ldd_path = f.readline()
-            original_ldd_path = original_ldd_path.split(' ')[1]
-            original_ldd_path = original_ldd_path.replace('settings.txt', '../../inputs/maps/ldd.map')
+            # original_ldd_path_aux = maps_dir.replace('maps', 'cutmaps.sh')
+            # with open(original_ldd_path_aux) as f:
+            #     original_ldd_path = f.readline()
+            # original_ldd_path = original_ldd_path.split(' ')[1]
+            # original_ldd_path = original_ldd_path.replace('settings.txt', '../../inputs/maps/ldd.map')
+            original_ldd_path = maps_dir.replace('maps', '../../data/input_maps/staticMaps/pcraster/ldd.map')
             full_mask = self.get_fullmask(station_txt, original_ldd_path)
 
         inter_area = pixarea.where(maskmap==1).sum().values/10**6  # get outlet's (inter)catchment area in km2
