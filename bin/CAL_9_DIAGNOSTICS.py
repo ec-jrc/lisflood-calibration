@@ -58,18 +58,9 @@ def construct_UpsXtss(outputfilenames, fstring):
               dummy[aa]=CC[gg+1]
     UpsXtss[:,nv] = dummy
     return UpsXtss
-
-
-for obsID in catchments:
- path_subcatch = os.path.join(SubCatchmentPath,obsID)
- if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")):
-    print("streamflow_simulated_best.csv for subcatchment ID "+ obsID + " exists: we can plot the results!")  
-    
-    fstring = SubCatchmentPath+obsID+'/out/X/'+"{outfn}" + '.tss'
-
-    UpsXtss = construct_UpsXtss(outputfilenames, fstring)
-    
-    # measurements, split date, area LDD
+  
+def generate_diagnostic_products(SubCatchmentPath, obsID, UpsXtss, save=True):
+  # measurements, split date, area LDD
     observed_streamflow = pandas.read_csv(SubCatchmentPath+obsID+'/station/observations.csv', sep=",", index_col=0)[obsID]       
     stationfile=SubCatchmentPath+obsID+'/station/station_data.csv'
     stationdata = pandas.read_csv(stationfile, sep=",", index_col=0)
@@ -131,8 +122,9 @@ for obsID in catchments:
     plt.xlabel('observations', axes=ax2)
     plt.ylabel('model', axes=ax2)
     savefig1 = plots_storage_folder + obsID + '_DischargeObsPeriod_' + suffix_fig_filename + '.png' 
-    fig1.savefig(savefig1)
-    plt.close(fig1)
+    if save:
+      fig1.savefig(savefig1)
+      plt.close(fig1)
 
     
     # figure 2: modelled vs observed discharge, same time interval of the forcings
@@ -157,8 +149,9 @@ for obsID in catchments:
     plt.xlabel('time', axes=ax2)
     plt.ylabel('discharge [m3/sec]', axes=ax2)
     savefig2=plots_storage_folder + obsID + '_Discharge41years_' + suffix_fig_filename + '.png' 
-    fig2.savefig(savefig2)
-    plt.close(fig2)
+    if save:
+      fig2.savefig(savefig2)
+      plt.close(fig2)
     
     
     # figure 3: meteo inputs and variables -->  1'rainUpsX', 2'snowUpsX', 3'snowMeltUpsX', 4'frostUps', 5'actEvapo',
@@ -180,9 +173,10 @@ for obsID in catchments:
     ax4.legend()
     titleFig3='Country: '+countryname+', Basin: '+basin+' \n ObsID '+obsID+', areaLDDkm2='+areaLDD+', CAL KGE='+str(round(KGE,4))+'\n cpref='+str(round(cpref_cal,3))+'; b_X='+str(round(bX_cal,3))+'; GwPerc='+str(round(gwperc_cal,3))+'; GwLoss='+str(round(gwloss_cal,3))+'; LZTC='+str(round(lztc_cal,1))
     plt.suptitle( titleFig3) 
-    savefig3= plots_storage_folder + obsID + '_meteo_' + suffix_fig_filename + '.png' 
-    fig3.savefig(savefig3)
-    plt.close(fig3)  
+    savefig3= plots_storage_folder + obsID + '_meteo_' + suffix_fig_filename + '.png'
+    if save:
+      fig3.savefig(savefig3)
+      plt.close(fig3)  
     
     # figure 4: soil and groundwater fluxes  --> 9'dTopToSubUpsX', 10'qUzUpsX', 11'qLzUpsX', 12'percUZLZUpsX', 13'dSubToUzUpsX'
     fig4, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(nrows=5,ncols=1,tight_layout=True) 
@@ -204,8 +198,9 @@ for obsID in catchments:
     titleFig4='Country: '+countryname+', Basin: '+basin+' \n ObsID '+obsID+', areaLDDkm2='+areaLDD+', CAL KGE='+str(round(KGE,4))+'\n cpref='+str(round(cpref_cal,3))+'; b_X='+str(round(bX_cal,3))+'; GwPerc='+str(round(gwperc_cal,3))+'; GwLoss='+str(round(gwloss_cal,3))+'; LZTC='+str(round(lztc_cal,1))
     plt.suptitle( titleFig4) 
     savefig4= plots_storage_folder + obsID + '_soilgroundwatefluxes_' + suffix_fig_filename + '.png' 
-    fig4.savefig(savefig4)
-    plt.close(fig4)     
+    if save:
+      fig4.savefig(savefig4)
+      plt.close(fig4)     
        
     # figure 5: runoff, infiltration, preferential flow, gwloss, lz  -->  14'prefFlowUpsX', 15'infUpsX', 16'surfaceRunoffUpsX' , 17'gwLossUpsX', 18'lzUpsX' 
     fig5, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(nrows=5,ncols=1,tight_layout=True) 
@@ -227,8 +222,9 @@ for obsID in catchments:
     titleFig5='Country: '+countryname+', Basin: '+basin+' \n ObsID '+obsID+', areaLDDkm2='+areaLDD+', CAL KGE='+str(round(KGE,4))+'\n cpref='+str(round(cpref_cal,3))+'; b_X='+str(round(bX_cal,3))+'; GwPerc='+str(round(gwperc_cal,3))+'; GwLoss='+str(round(gwloss_cal,3))+'; LZTC='+str(round(lztc_cal,1))
     plt.suptitle( titleFig5) 
     savefig5 = plots_storage_folder + obsID + '_PrefInfRunoffGWstorage_' + suffix_fig_filename + '.png' 
-    fig5.savefig(savefig5)
-    plt.close(fig5)                          
+    if save:
+      fig5.savefig(savefig5)
+      plt.close(fig5)                          
     
     # figure 6: theta --> 6'theta1totalX', 7'theta2totalX', 8'theta3totalX'
     fig6, (ax1,ax2,ax3) = plt.subplots(nrows=3,ncols=1,tight_layout=True) 
@@ -240,6 +236,19 @@ for obsID in catchments:
     ax3.legend()
     titleFig6='Country: '+countryname+', Basin: '+basin+' \n ObsID '+obsID+', areaLDDkm2='+areaLDD+', CAL KGE='+str(round(KGE,4))+'\n cpref='+str(round(cpref_cal,3))+'; b_X='+str(round(bX_cal,3))+'; Theta RES. value 0.179(S<2) or 0.041(S>=2)'
     plt.suptitle(titleFig6) 
-    savefig6 = plots_storage_folder + obsID + '_theta_' + suffix_fig_filename + '.png' 
-    fig6.savefig(savefig6)
-    plt.close(fig6)
+    savefig6 = plots_storage_folder + obsID + '_theta_' + suffix_fig_filename + '.png'
+    if save:
+      fig6.savefig(savefig6)
+      plt.close(fig6)
+
+
+for obsID in catchments:
+ path_subcatch = os.path.join(SubCatchmentPath,obsID)
+ if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")):
+    print("streamflow_simulated_best.csv for subcatchment ID "+ obsID + " exists: we can plot the results!")  
+    
+    fstring = SubCatchmentPath+obsID+'/out/X/'+"{outfn}" + '.tss'
+
+    UpsXtss = construct_UpsXtss(outputfilenames, fstring)
+    
+    fig1, fig2, fig3, fig4, fig5, fig6 = generate_diagnostic_products(SubCatchmentPath, obsID, UpsXtss)
