@@ -2,13 +2,11 @@
 import os
 import argparse
 import pandas as pd
-from datetime import datetime
 
 import rasterio.features
 import xarray as xr
 import pcraster as pcr
 import geopandas as gpd
-import rioxarray
 
 
 def pcr_setclone_aux(input_nc):

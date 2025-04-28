@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 import os
 import argparse
-import pandas as pd
-from datetime import datetime
-from configparser import NoOptionError
 
 from liscal import config, subcatchment, objective, products
 

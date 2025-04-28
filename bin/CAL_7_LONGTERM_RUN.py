@@ -2,14 +2,8 @@
 # -*- coding: utf-8 -*-
 """Please refer to quick_guide.pdf for usage instructions"""
 import os
-import sys
 import argparse
-import numpy as np
 import pandas as pd
-from configparser import ConfigParser # Python 3.8
-import glob
-import subprocess
-import traceback
 
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model, stations
 

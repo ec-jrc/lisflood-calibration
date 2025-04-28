@@ -1,30 +1,21 @@
 import numpy as np
 import os
 import sys
-from netCDF4 import Dataset
 from matplotlib import pyplot as plt
-from hydroeval import *
 import pandas
-from pandas import ExcelFile
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 import datetime as dt
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
 ver = sys.version
 ver = ver[:ver.find('(')-1]
 if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
+  from configparser import ConfigParser as Parser # Python 3.8
 else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
+  from ConfigParser import SafeConfigParser as Parser # Python 2.7-15
 
 iniFile = os.path.normpath(sys.argv[1])
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
-if ver.find('3.') > -1:
-    parser = ConfigParser()  # python 3.8
-else:
-    parser = SafeConfigParser()  # python 2.7-15
+parser = Parser()
 parser.read(iniFile)
 
 # USAGE python CAL_9_optional_diagnostic_plots.py settings_plots.txt CatchmentsToProcess_XX.txt

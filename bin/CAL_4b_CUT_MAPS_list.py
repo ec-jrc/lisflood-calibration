@@ -5,7 +5,7 @@ import os
 import sys
 import numpy as np
 
-from liscal import config, cutmaps
+from liscal import config
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[3])
 print(file_CatchmentsToProcess)
