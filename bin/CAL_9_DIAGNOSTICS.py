@@ -29,7 +29,7 @@ suffix_fig_filename = parser.get('Main', 'suffix_fig_filename') # optional deati
 
 #catchments list is loaded from the txt file 'CatchmentsToProcess_XX.txt' added as an argument of the script
 CatchmentsToProcess = pandas.read_csv(file_CatchmentsToProcess,sep=",",header=None)
-catchments=CatchmentsToProcess[0]
+catchments=CatchmentsToProcess[0].astype('str')
 
 
 outputfilenames = ['rainUps', 'snowUps', 'snowMeltUps', 'frostUps', 'actEvapo', 'theta1total', 'theta2total', 'theta3total', 'dTopToSubUps', 'qUzUps', 'qLzUps', 'percUZLZUps', 'dSubToUzUps', 'prefFlowUps', 'infUps', 'surfaceRunoffUps' , 'lossUps', 'lzUps']
@@ -37,38 +37,40 @@ outputfilenames = ['rainUps', 'snowUps', 'snowMeltUps', 'frostUps', 'actEvapo', 
 num_var = len(outputfilenames)
 UpsXtss=np.zeros((total_num_steps,num_var))
 
-for index in np.arange(len(catchments)):
- obsID = str(catchments[index])
+def construct_UpsXtss(outputfilenames, fstring):
+  nv = - 1
+  for outfn in outputfilenames:
+    nv = nv + 1 
+    tssfile=fstring.format(outfn=outfn)
+    tssfile_data = pandas.read_csv(tssfile, index_col=0, sep=",", skiprows=3, header=None, skipinitialspace=True, engine='python')
+    aa=-1           
+    index_gauge=[]
+    index_time=[]    
+    dummy =  np.zeros((total_num_steps,))
+    for AA in tssfile_data.index:
+        CC=AA.split()
+        if len(CC)==1:
+          index_gauge.append(CC)
+        else:
+          index_time.append(CC[0])
+          aa=aa+1
+          for gg in np.arange(len(index_gauge)): 
+              dummy[aa]=CC[gg+1]
+    UpsXtss[:,nv] = dummy
+    return UpsXtss
+
+
+for obsID in catchments:
  path_subcatch = os.path.join(SubCatchmentPath,obsID)
  if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")):
     print("streamflow_simulated_best.csv for subcatchment ID "+ obsID + " exists: we can plot the results!")  
-    nv = - 1
-    for outfn in outputfilenames:    
-     nv = nv + 1        
-     tssfile=SubCatchmentPath+obsID+'/out/X/'+ outfn + '.tss'
-     tssfile_data = pandas.read_csv(tssfile, index_col=0, sep=",", skiprows=3, header=None, skipinitialspace=True, engine='python')
-     aa=-1           
-     index_gauge=[]
-     index_time=[]    
-     dummy =  np.zeros((total_num_steps,))
-     for ii in np.arange(len(tssfile_data.index)):
-        spdtw=[]
-        CC=[]
-        AA=tssfile_data.index[ii]
-        CC=AA.split()
-        if len(CC)==1:
-           index_gauge.append(CC)
-        else:
-           index_time.append(CC[0])
-           aa=aa+1
-           for gg in np.arange(len(index_gauge)): 
-               dummy[aa]=CC[gg+1]
-     UpsXtss[:,nv] = dummy
     
+    fstring = SubCatchmentPath+obsID+'/out/X/'+"{outfn}" + '.tss'
 
+    UpsXtss = construct_UpsXtss(outputfilenames, fstring)
+    
     # measurements, split date, area LDD
-    observedstreamflow = pandas.read_csv(SubCatchmentPath+obsID+'/station/observations.csv', sep=",", index_col=0)         
-    observed_streamflow = observedstreamflow[obsID]
+    observed_streamflow = pandas.read_csv(SubCatchmentPath+obsID+'/station/observations.csv', sep=",", index_col=0)[obsID]       
     stationfile=SubCatchmentPath+obsID+'/station/station_data.csv'
     stationdata = pandas.read_csv(stationfile, sep=",", index_col=0)
     data=stationdata[obsID]
@@ -240,4 +242,4 @@ for index in np.arange(len(catchments)):
     plt.suptitle(titleFig6) 
     savefig6 = plots_storage_folder + obsID + '_theta_' + suffix_fig_filename + '.png' 
     fig6.savefig(savefig6)
-    plt.close(fig6) 
+    plt.close(fig6)
