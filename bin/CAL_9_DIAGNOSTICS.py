@@ -34,10 +34,10 @@ catchments=CatchmentsToProcess[0].astype('str')
 
 outputfilenames = ['rainUps', 'snowUps', 'snowMeltUps', 'frostUps', 'actEvapo', 'theta1total', 'theta2total', 'theta3total', 'dTopToSubUps', 'qUzUps', 'qLzUps', 'percUZLZUps', 'dSubToUzUps', 'prefFlowUps', 'infUps', 'surfaceRunoffUps' , 'lossUps', 'lzUps']
 # plots: 1'rainUpsX', 2'snowUpsX', 3'snowMeltUpsX', 4'frostUps', 5'actEvapo', 6'theta1totalX', 7'theta2totalX', 8'theta3totalX', 9'dTopToSubUpsX', 10'qUzUpsX', 11'qLzUpsX', 12'percUZLZUpsX', 13'dSubToUzUpsX', 14'prefFlowUpsX', 15'infUpsX', 16'surfaceRunoffUpsX' , 17'gwLossUpsX', 18'lzUpsX']
-num_var = len(outputfilenames)
-UpsXtss=np.zeros((total_num_steps,num_var))
 
 def construct_UpsXtss(outputfilenames, fstring):
+  num_var = len(outputfilenames)
+  UpsXtss=np.zeros((total_num_steps,num_var))
   nv = - 1
   for outfn in outputfilenames:
     nv = nv + 1 
@@ -45,8 +45,8 @@ def construct_UpsXtss(outputfilenames, fstring):
     tssfile_data = pandas.read_csv(tssfile, index_col=0, sep=",", skiprows=3, header=None, skipinitialspace=True, engine='python')
     aa=-1           
     index_gauge=[]
-    index_time=[]    
-    dummy =  np.zeros((total_num_steps,))
+    index_time=[]
+    dummy = np.zeros((total_num_steps,))
     for AA in tssfile_data.index:
         CC=AA.split()
         if len(CC)==1:
@@ -54,7 +54,7 @@ def construct_UpsXtss(outputfilenames, fstring):
         else:
           index_time.append(CC[0])
           aa=aa+1
-          for gg in np.arange(len(index_gauge)): 
+          for gg in range(len(index_gauge)):
               dummy[aa]=CC[gg+1]
     UpsXtss[:,nv] = dummy
     return UpsXtss
