@@ -40,11 +40,42 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         model.init_run()
 
         cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)
+        
+        # additional check on the calibration status
+        rerun_with_KGE = False
+        calibstatus_file_path = os.path.join(subcatch.path,'CalibrationStatus_2nd_run_KGE.txt')
+        if os.path.exists(calibstatus_file_path)==True:
+            rerun_with_KGE = True
+        else:
+            calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
+            calib_deap.run(subcatch.path, lock_mgr)
+            calib_status, reason = obj.process_results()
+            if calib_status is False:
+                # in case of failed calibration, check the reason and restart 
+                if reason == "KGEJSD_Failed":
+                    message = "KGEJSD calibration failed, restarting calibration with KGE..."
+                    print(message)
+                    
+                    # Open the file in write mode
+                    with open(calibstatus_file_path, 'w') as file:
+                        # Write the message to the file
+                        file.write(message)
 
-        calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
-        calib_deap.run(subcatch.path, lock_mgr)
+                    rerun_with_KGE = True
+                else:
+                    raise Exception(f'Error on first calibration run: calib_status is {calib_status}, reason is {reason}\n')
 
-        obj.process_results()
+        if rerun_with_KGE is True:
+            cfg.deap_param.objectives_list = ['KGE']
+            obj = objective.ObjectiveKGE(cfg, subcatch)
+            calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
+            calib_deap.run(subcatch.path, lock_mgr)
+
+            calib_status, reason = obj.process_results(compare_KGSJSD=True)
+            if calib_status is False:
+                raise Exception(f'Error on second calibration run: calib_status is {calib_status}, reason is {reason}\n')
+        
+
     else:
         print("pareto_front.csv already exists! Moving on...")
 
