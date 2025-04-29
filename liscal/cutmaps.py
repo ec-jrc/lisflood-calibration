@@ -101,21 +101,25 @@ def clip_netcdf(ds, fileouts, clip_boxes):
     ds_outs = []
     ds_outs_filenames = []
     for clip_box, fileout in zip(clip_boxes,fileouts):
-        if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
-            print("skipping already existing %s" % fileout)
+        if clip_box is None:
+            print("skipping %s for invalid mask map" % fileout)
         else:
-            current_time = datetime.now().strftime("%H:%M:%S")
-            print(current_time, ': creating...',fileout)
-            x_min, x_max, y_min, y_max = clip_box
-
-            if 'lon' in ds.coords and 'lat' in ds.coords:
-                ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
-            elif 'x' in ds.coords and 'y' in ds.coords:
-                ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
             else:
-                raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
-            ds_outs.append(ds_out)
-            ds_outs_filenames.append(fileout)
+                current_time = datetime.now().strftime("%H:%M:%S")
+                print(current_time, ': creating...',fileout)
+                x_min, x_max, y_min, y_max = clip_box
+
+                if 'lon' in ds.coords and 'lat' in ds.coords:
+                    ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
+                elif 'x' in ds.coords and 'y' in ds.coords:
+                    ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
+                else:
+                    raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
+                ds_outs.append(ds_out)
+                ds_outs_filenames.append(fileout)
+        
 
     for ds_out,ds_outs_filename  in zip(ds_outs,ds_outs_filenames):
         ds_out.to_netcdf(ds_outs_filename)
@@ -153,12 +157,15 @@ def cut_map(maskpcrs, filein, fileouts, clip_boxes):
                 print(current_time, ': creating...',fileout)
                 clip_pcr(filein, fileout, mask)
     elif ext == ".nc":
-        ds = xr.open_dataset(filein)
-        if 'time' in ds.coords:
-            chunks = {coord: 'auto' for coord in ds.coords}
-            ds = ds.chunk(chunks)        
-        clip_netcdf(ds, fileouts, clip_boxes)
-        ds.close()
+        if len(fileouts)==1 and os.path.isfile(fileouts[0]) and os.path.getsize(fileouts[0]) > 0:
+            print("skipping already existing %s" % fileouts[0])
+        else:
+            ds = xr.open_dataset(filein)
+            if 'time' in ds.coords:
+                chunks = {coord: 'auto' for coord in ds.coords}
+                ds = ds.chunk(chunks)        
+            clip_netcdf(ds, fileouts, clip_boxes)
+            ds.close()
     else:
         for fileout in fileouts:
             if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
@@ -221,8 +228,7 @@ def _cut_maps_stations(cfg, path_maps, obsids):
         maskpcr = os.path.join(cfg.subcatchment_path, str(obsid), 'maps', 'mask.map')
         maskpcrs.append(maskpcr)
         clip_box = load_mask(maskpcr)
-        if clip_box:
-            clip_boxes.append(clip_box)
+        clip_boxes.append(clip_box)
 
     if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
         afile = os.path.basename(path_maps)
