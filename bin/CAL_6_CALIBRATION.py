@@ -72,16 +72,13 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
             # change objective
             cfg.deap_param.objectives_list = ['KGE']
 
-            model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+            obj = objective.ObjectiveKGE(cfg, subcatch)            
 
             # load forcings and input maps in cache
             # required in front of processing pool
             # otherwise each child will reload the maps
             model.init_run()
 
-            cfg.filter_param_ranges_after_init(model_initialized=model, split_lake_params=cfg.deap_param.split_lake_params)
-
-            obj = objective.ObjectiveKGE(cfg, subcatch)
             calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
             calib_deap.run(subcatch.path, lock_mgr)
 
