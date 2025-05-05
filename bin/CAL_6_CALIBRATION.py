@@ -62,6 +62,8 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
                         file.write(message)
 
                     rerun_with_KGE = True
+                    del calib_deap
+                    del model
                 else:
                     raise Exception(f'Error on first calibration run: calib_status is {calib_status}, reason is {reason}\n')
 
@@ -72,7 +74,9 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
             # change objective
             cfg.deap_param.objectives_list = ['KGE']
 
-            obj = objective.ObjectiveKGE(cfg, subcatch)            
+            obj = objective.ObjectiveKGE(cfg, subcatch)
+
+            model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
             # load forcings and input maps in cache
             # required in front of processing pool
