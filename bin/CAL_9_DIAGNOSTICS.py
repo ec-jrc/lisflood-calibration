@@ -56,8 +56,9 @@ def discharge_plot(observations_df, simulations_df, stations_info_df, save=True)
       mode='lines',
       name='obs'
   ))
+  station_name = stations_info_df['StationName'].values[0]
   fig.update_layout(
-      title="{}, {}".format(stations_info_df['StationName'].values[0], stations_info_df['Country code'].values[0]),
+      title="{}, {}".format(station_name, stations_info_df['Country code'].values[0]),
       xaxis_title='Time',
       yaxis_title='Discharge',
       legend=dict(title='Datasets'),
@@ -65,7 +66,7 @@ def discharge_plot(observations_df, simulations_df, stations_info_df, save=True)
       height=500
   )
   if save:
-    fig.write_html(f"catchment{catchment_id}_dis.html")
+    fig.write_html(f"{station_name}_dis.html")
   return fig
 
 def other_var_plots(simulations_df, stations_info_df, plot_groupings, save=True):
@@ -82,8 +83,9 @@ def other_var_plots(simulations_df, stations_info_df, plot_groupings, save=True)
         fig.update_layout(
             **{f'yaxis{i}': dict(title=",".join(subplot_vars))}
         )
+    station_name = stations_info_df['StationName'].values[0]
     fig.update_layout(
-        title="{}, {}".format(stations_info_df['StationName'].values[0], stations_info_df['Country code'].values[0]),
+        title="{}, {}".format(station_name, stations_info_df['Country code'].values[0]),
         legend=dict(title='Variables'),
         width=1000,
         height=800,
@@ -95,7 +97,7 @@ def other_var_plots(simulations_df, stations_info_df, plot_groupings, save=True)
         for var in subplot_vars
     ]) + ".html"
     if save:
-      fig.write_html(f"catchment{catchment_id}_{figure_name}")
+      fig.write_html(f"{station_name}_{figure_name}")
     figs.append(fig)
   return figs
 
