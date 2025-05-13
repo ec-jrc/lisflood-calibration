@@ -49,7 +49,7 @@ def get_mask(catch_id):
     'get the shapefile mask of the intercatchment used for the calibration'
 
     # get ldd as auxiliary for getting the xarray info
-    ldd = os.path.join(main_dir, 'catchments', str(catch_id), 'maps/ldd.nc')
+    ldd = os.path.join(main_dir, 'calibration', str(catch_id), 'maps/ldd.nc')
     ldd = xr.open_dataset(ldd)
     projection = ldd['crs'].spatial_ref
     ldd = ldd['Band1']
@@ -59,7 +59,7 @@ def get_mask(catch_id):
     pcr.setclone(rows, cols, 1, 0, 0)
 
     # get the mask map and derive the mask xarray
-    maskmap = os.path.join(main_dir, 'catchments', str(catch_id), 'maps/masksmall.map')
+    maskmap = os.path.join(main_dir, 'calibration', str(catch_id), 'maps/masksmall.map')
     maskmap = pcr.readmap(maskmap)
     maskmap = pcr.pcr2numpy(maskmap, 0)
     maskmap = ldd.fillna(0)*0+maskmap
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     settings_file = args.settings_file
     
     # get the main directory from where inputs and outputs will be read/saved
-    main_dir = settings_file.replace('/catchments/settings.txt', '')
+    main_dir = settings_file.replace('/calibration/settings.txt', '')
     
     # read stations metadata and keep columns of interest
     metadata_stations = os.path.join(main_dir, 'data/stations/stations_data.csv')
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     calibration_data = []
     for i_catch in metadata_stations.ObsID:
         try:
-            i_data = pd.read_csv(os.path.join(main_dir, 'catchments', str(i_catch), 'pHistoryWRanks.csv')).iloc[[0]]
+            i_data = pd.read_csv(os.path.join(main_dir, 'calibration', str(i_catch), 'pHistoryWRanks.csv')).iloc[[0]]
             i_data.index = [i_catch]
             calibration_data.append(i_data)
         except:
