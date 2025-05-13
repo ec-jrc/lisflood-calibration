@@ -43,21 +43,79 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         
         # additional check on the calibration status
         rerun_with_KGE = False
-        calibstatus_file_path = os.path.join(subcatch.path,'CalibrationStatus_2nd_run_KGE.txt')
-        if os.path.exists(calibstatus_file_path)==True:
-            rerun_with_KGE = True
+        rerun_with_KGEJSD = False
+        original_seed = cfg.seed
+        calibstatus_file_path_KGEJSD = os.path.join(subcatch.path,'CalibrationStatus_2nd_run_KGEJSD.txt')
+        calibstatus_file_path_KGE = os.path.join(subcatch.path,'CalibrationStatus_3rd_run_KGE.txt')
+        if os.path.exists(calibstatus_file_path_KGEJSD)==True and os.path.exists(calibstatus_file_path_KGE)==False:
+            rerun_with_KGEJSD = True
         else:
+            if os.path.exists(calibstatus_file_path_KGE)==True:
+                rerun_with_KGE = True
+            else:
+                calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
+                calib_deap.run(subcatch.path, lock_mgr)
+                calib_status, reason = obj.process_results()
+                if calib_status is False:
+                    # in case of failed calibration, check the reason and restart 
+                    if reason == "KGEJSD_Failed":
+                        message = "KGEJSD 1st calibration failed, restarting calibration with KGEJSD new seed..."
+                        print(message)
+                        
+                        # Open the file in write mode
+                        with open(calibstatus_file_path_KGEJSD, 'w') as file:
+                            # Write the message to the file
+                            file.write(message)
+
+                        rerun_with_KGEJSD = True
+                        del calib_deap
+                        del model
+                    else:
+                        if reason == "KGEJSD_Low":
+                            # Execute longterm run and stop
+                            calibstatus_file_path_KGEJSDLow = os.path.join(subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
+                            message = "KGEJSD 1st calibration failed, low KGE, running longterm run and STOP here..."
+                            print(message)
+                            
+                            # Open the file in write mode
+                            with open(calibstatus_file_path_KGEJSDLow, 'w') as file:
+                                # Write the message to the file
+                                file.write(message)
+
+                            rerun_with_KGEJSD = False
+                            del calib_deap
+                            del model
+                        else:
+                            raise Exception(f'Error on first calibration run: calib_status is {calib_status}, reason is {reason}\n')
+                        
+        if rerun_with_KGEJSD is True:
+            # recreate settings folder and xml files if not created yet in second run
+            lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
+            
+            # change seed, keep KGEJSD
+            cfg.seed = 233
+
+            obj = objective.ObjectiveKGE(cfg, subcatch)
+
+            model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
+
+            # load forcings and input maps in cache
+            # required in front of processing pool
+            # otherwise each child will reload the maps
+            model.init_run()
+
             calib_deap = calibration.CalibrationDeap(cfg, model.run, obj.weights, cfg.seed)
             calib_deap.run(subcatch.path, lock_mgr)
-            calib_status, reason = obj.process_results()
+
+            calib_status, reason = obj.process_results(runType = "KGEJSD_2nd")
             if calib_status is False:
                 # in case of failed calibration, check the reason and restart 
                 if reason == "KGEJSD_Failed":
-                    message = "KGEJSD calibration failed, restarting calibration with KGE..."
+                    message = "KGEJSD 2nd calibration failed, restarting calibration with KGE..."
                     print(message)
                     
                     # Open the file in write mode
-                    with open(calibstatus_file_path, 'w') as file:
+                    with open(calibstatus_file_path_KGE, 'w') as file:
                         # Write the message to the file
                         file.write(message)
 
@@ -71,8 +129,9 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
             # recreate settings folder and xml files if not created yet in second run
             lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
             
-            # change objective
+            # change objective, keep original seed
             cfg.deap_param.objectives_list = ['KGE']
+            cfg.seed = original_seed
 
             obj = objective.ObjectiveKGE(cfg, subcatch)
 
@@ -88,7 +147,7 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
 
             calib_status, reason = obj.process_results(compare_KGSJSD=True)
             if calib_status is False:
-                raise Exception(f'Error on second calibration run: calib_status is {calib_status}, reason is {reason}\n')
+                raise Exception(f'Error on third calibration run: calib_status is {calib_status}, reason is {reason}\n')
         
 
     else:
