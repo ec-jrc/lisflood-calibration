@@ -372,7 +372,7 @@ class ObjectiveKGE():
             pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
         pareto_front.to_csv(os.path.join(path_subcatch, pareto_front_filename), ',', float_format='%g')
 
-    def process_results(self, compare_KGSJSD = False):
+    def process_results(self, runType = "KGEJSD_1st", compare_KGSJSD = False):
 
         pHistory = self.read_param_history()
         pHistory_ranked = self.write_ranked_solution(pHistory)
@@ -392,53 +392,74 @@ class ObjectiveKGE():
             CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
             KGE_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
 
-            # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095, stop here with a warning and a text file, avoiding to write the pareto_front file
-            if (maxCORRhistory - CORR_bestKGEJSD > 0.095) or (maxKGEhistory - KGE_bestKGEJSD > 0.095):
-                # the check has failed here, thus rename the files and folder to prepare restarting the calibration with KGE
-                renamed_pathout = self.subcatch.path_out + "_KGEJSD"
-                os.rename(self.subcatch.path_out, renamed_pathout)
-                settings_dir = os.path.join(self.subcatch.path, 'settings')
-                renamed_settings_dir = settings_dir + "_KGEJSD"
-                os.rename(settings_dir, renamed_settings_dir)
+            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st":
+                self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+                return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)
+            else:
+                # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095, stop here with a warning and a text file, avoiding to write the pareto_front file
+                if (maxCORRhistory - CORR_bestKGEJSD > 0.095) or (maxKGEhistory - KGE_bestKGEJSD > 0.095):
+                    # the check has failed here, thus rename the files and folder to prepare restarting the calibration with KGE
+                    renamed_pathout = self.subcatch.path_out + "_" + runType
+                    os.rename(self.subcatch.path_out, renamed_pathout)
+                    settings_dir = os.path.join(self.subcatch.path, 'settings')
+                    renamed_settings_dir = settings_dir + "_" + runType
+                    os.rename(settings_dir, renamed_settings_dir)
 
-                os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks.csv"), os.path.join(self.subcatch.path,"pHistoryWRanks_KGEJSD.csv"))
-                os.rename(os.path.join(self.subcatch.path,"paramsHistory.csv"), os.path.join(self.subcatch.path,"paramsHistory_KGEJSD.csv"))
-                os.rename(os.path.join(self.subcatch.path,"front_history.csv"), os.path.join(self.subcatch.path,"front_history_KGEJSD.csv"))
-                os.rename(os.path.join(self.subcatch.path,"runs_log.csv"), os.path.join(self.subcatch.path,"runs_log_KGEJSD.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks.csv"), os.path.join(self.subcatch.path,"pHistoryWRanks_" + runType + ".csv"))
+                    os.rename(os.path.join(self.subcatch.path,"paramsHistory.csv"), os.path.join(self.subcatch.path,"paramsHistory_" + runType + ".csv"))
+                    os.rename(os.path.join(self.subcatch.path,"front_history.csv"), os.path.join(self.subcatch.path,"front_history_" + runType + ".csv"))
+                    os.rename(os.path.join(self.subcatch.path,"runs_log.csv"), os.path.join(self.subcatch.path,"runs_log_" + runType + ".csv"))
 
-                paretofront_filename = "pareto_front_KGEJSD.csv"
-                message = f"WARNING!\n" \
-                    f"Max correlation value in param history = {maxCORRhistory}\n" \
-                    f"Selected kge-jsd calibrated item correlation value = {CORR_bestKGEJSD}\n" \
-                    f"Max KGE value in param history = {maxKGEhistory}\n" \
-                    f"Selected kge-jsd calibrated item  KGE value = {KGE_bestKGEJSD}\n" \
-                    f"Repeating the calibration with 'KGE objective function'\n" \
-                    f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
-                print(message)
-                file_path = os.path.join(renamed_pathout,'CorrelationIssue_Warning_message.txt')
-                # Open the file in write mode
-                with open(file_path, 'w') as file:
-                    # Write the message to the file
-                    file.write(message)
+                    paretofront_filename = "pareto_front_" + runType + ".csv"
+                    message = f"WARNING!\n" \
+                        f"Max correlation value in param history = {maxCORRhistory}\n" \
+                        f"Selected kge-jsd calibrated item correlation value = {CORR_bestKGEJSD}\n" \
+                        f"Max KGE value in param history = {maxKGEhistory}\n" \
+                        f"Selected kge-jsd calibrated item KGE value = {KGE_bestKGEJSD}\n" \
+                        f"Repeating the calibration with 'KGE objective function'\n" \
+                        f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
+                    print(message)
+                    file_path = os.path.join(renamed_pathout,"CorrelationIssue_Warning_message" + runType + ".txt")
+                    # Open the file in write mode
+                    with open(file_path, 'w') as file:
+                        # Write the message to the file
+                        file.write(message)
 
-                self.write_pareto_front(pHistory_ranked, isKGE_JSD, None, paretofront_filename)
-                return False, "KGEJSD_Failed" # exit here, without writing the final pareto_front.csv file, thus stopping next linked catchments
+                    self.write_pareto_front(pHistory_ranked, isKGE_JSD, None, paretofront_filename)
+                    return False, "KGEJSD_Failed" # exit here, without writing the final pareto_front.csv file, thus stopping next linked catchments
         else:
             if compare_KGSJSD:
-                # this is the new calibration run using KGE, and we should compare the results with KDEJSD:
+                # this is the new calibration run using KGE, and we should compare the results with KDEJSD_1st and KGEJSD_2nd:
                 
-                pHistory_ranked_KGSJSD = pd.read_csv(os.path.join(self.subcatch.path, "pHistoryWRanks_KGEJSD.csv"), sep=",")
+                pHistory_ranked_KGSJSD_1st = pd.read_csv(os.path.join(self.subcatch.path, "pHistoryWRanks_KGEJSD_1st.csv"), sep=",")
+                pHistory_ranked_KGSJSD_2nd = pd.read_csv(os.path.join(self.subcatch.path, "pHistoryWRanks_KGEJSD_2nd.csv"), sep=",")
 
                 # get Correlation and KGE of the selected KGE calibrated parameter set
                 bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
                 CORR_bestKGE = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
                 KGE_bestKGE = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
 
-                # get Correlation and KGE of the selected KGEJSD calibrated parameter set
-                bestParetoIndex_KGSJSD = pHistory_ranked_KGSJSD["paretoRank"].nsmallest(1).index
-                CORR_bestKGEJSD = pHistory_ranked_KGSJSD.loc[bestParetoIndex_KGSJSD]["Correlation"].values[0]            
-                KGE_bestKGEJSD = pHistory_ranked_KGSJSD.loc[bestParetoIndex_KGSJSD]["Kling Gupta Efficiency"].values[0]
+                # get Correlation and KGE of the selected KGEJSD_1st calibrated parameter set
+                bestParetoIndex_KGSJSD_1st = pHistory_ranked_KGSJSD_1st["paretoRank"].nsmallest(1).index
+                CORR_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Correlation"].values[0]            
+                KGE_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Kling Gupta Efficiency"].values[0]
 
+                # get Correlation and KGE of the selected KGEJSD_2nd calibrated parameter set
+                bestParetoIndex_KGSJSD_2nd = pHistory_ranked_KGSJSD_2nd["paretoRank"].nsmallest(1).index
+                CORR_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_2nd]["Correlation"].values[0]            
+                KGE_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_2nd]["Kling Gupta Efficiency"].values[0]
+                
+                # select best KGEJSD run (main condition: best correlation, otherwise best KGE)
+                if (CORR_bestKGEJSD_1st - CORR_bestKGEJSD_2nd > 0.05) or \
+                    ((CORR_bestKGEJSD_1st - CORR_bestKGEJSD_2nd <= 0.05) and (KGE_bestKGEJSD_1st > KGE_bestKGEJSD_2nd)):
+                    KGE_bestKGEJSD = KGE_bestKGEJSD_1st
+                    CORR_bestKGEJSD = CORR_bestKGEJSD_1st
+                    bestKGEJSDtoResume="1st"
+                else:
+                    KGE_bestKGEJSD = KGE_bestKGEJSD_2nd
+                    CORR_bestKGEJSD = CORR_bestKGEJSD_2nd
+                    bestKGEJSDtoResume="2nd"
+                
                 # execute the long run using the KGE if delta_corr>0.05 or delta_KGE>0.05, otherwise resume KGEJSD calibration folders
                 if (CORR_bestKGE - CORR_bestKGEJSD > 0.05) or (KGE_bestKGE - KGE_bestKGEJSD > 0.05):
                     # All good, continue using the current folders and running the long run with the KGE calibration
@@ -458,22 +479,25 @@ class ObjectiveKGE():
                     os.rename(os.path.join(self.subcatch.path,"runs_log.csv"), os.path.join(self.subcatch.path,"runs_log_KGE.csv"))
                     
                     # resume KGEJSD calibration folders
-                    resumed_pathout = self.subcatch.path_out + "_KGEJSD"
+                    
+                    resumed_pathout = self.subcatch.path_out + "_KGEJSD_" + bestKGEJSDtoResume
                     os.rename(resumed_pathout, self.subcatch.path_out)
                     settings_dir = os.path.join(self.subcatch.path, 'settings')
-                    resumed_settings_dir = settings_dir + "_KGEJSD"
+                    resumed_settings_dir = settings_dir + "_KGEJSD_" + bestKGEJSDtoResume
                     os.rename(resumed_settings_dir, settings_dir)
 
                     paretofront_filename = "pareto_front_KGE.csv"
                     message = f"WARNING!\n" \
                         f"Selected kge calibrated item correlation value = {CORR_bestKGE}\n" \
                         f"Selected kge calibrated item  KGE value = {KGE_bestKGE}\n" \
-                        f"Selected kge-jsd calibrated item correlation value = {CORR_bestKGEJSD}\n" \
-                        f"Selected kge-jsd calibrated item  KGE value = {KGE_bestKGEJSD}\n" \
-                        f"Resuming the calibration with 'KGEJSD objective function'\n" \
+                        f"Selected kge-jsd 1st calibrated item correlation value = {CORR_bestKGEJSD_1st}\n" \
+                        f"Selected kge-jsd 1st calibrated item KGE value = {KGE_bestKGEJSD_1st}\n" \
+                        f"Selected kge-jsd 2nd calibrated item correlation value = {CORR_bestKGEJSD_2nd}\n" \
+                        f"Selected kge-jsd 2nd calibrated item KGE value = {KGE_bestKGEJSD_2nd}\n" \
+                        f"Resuming the calibration with 'KGEJSD objective function', {bestKGEJSDtoResume} attempt\n" \
                         f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
                     print(message)
-                    file_path = os.path.join(renamed_pathout,'ResumedKGEJSD_Warning_message.txt')
+                    file_path = os.path.join(renamed_pathout,"ResumedKGEJSD_Warning_message_" + bestKGEJSDtoResume + ".txt")
                     # Open the file in write mode
                     with open(file_path, 'w') as file:
                         # Write the message to the file
@@ -482,11 +506,11 @@ class ObjectiveKGE():
                     self.write_pareto_front(pHistory_ranked, isKGE_JSD, None, paretofront_filename)
 
                     # resume KGEJSD calibration files
-                    os.rename(os.path.join(self.subcatch.path,"pareto_front_KGEJSD.csv"), os.path.join(self.subcatch.path,"pareto_front.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks_KGEJSD.csv"), os.path.join(self.subcatch.path,"pHistoryWRanks.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"paramsHistory_KGEJSD.csv"), os.path.join(self.subcatch.path,"paramsHistory.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"front_history_KGEJSD.csv"), os.path.join(self.subcatch.path,"front_history.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"runs_log_KGEJSD.csv"), os.path.join(self.subcatch.path,"runs_log.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"pareto_front_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"pareto_front.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"pHistoryWRanks.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"paramsHistory_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"paramsHistory.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"front_history_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"front_history.csv"))
+                    os.rename(os.path.join(self.subcatch.path,"runs_log_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"runs_log.csv"))
 
                     return True, "" 
 
