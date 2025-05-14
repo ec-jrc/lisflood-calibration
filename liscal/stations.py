@@ -183,7 +183,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 # Define subperiods from valid_start to valid_end interrupted by events
                 start_date = valid_start
                 subperiods = []
-                for event in sorted(set(reservoir_events + [valid_end])):
+                for event in reservoir_events + [valid_end]:
                     if start_date < event:
                         if start_date != valid_start:
                             start_date += datetime.timedelta(hours=dt)
@@ -201,7 +201,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 last_valid_end = valid_end
                 best_period_start_dt = None
                 best_period_end_dt = None
-                for event in reversed(list(set([valid_start - datetime.timedelta(hours=dt)] + reservoir_events))):
+                for event in reversed([valid_start - datetime.timedelta(hours=dt)] + reservoir_events):
                     period_observations = observations_filtered.copy()
                     period_observations.index = pd.to_datetime(period_observations.index, format='%d/%m/%Y %H:%M')
                     period_observations = period_observations[event:last_valid_end]
