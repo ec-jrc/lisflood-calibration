@@ -172,17 +172,18 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
             reservoir_events_df['DEMOL_YEAR'] = pd.to_datetime(reservoir_events_df['DEMOL_YEAR'], format='%Y', errors='coerce')
 
             # Gather potentially impacting events
-            reservoir_events = sorted(
+            reservoir_events = set(
                 [date for date in reservoir_events_df['CONSTR_YEAR'].dropna().tolist() +
                  reservoir_events_df['DEMOL_YEAR'].dropna().tolist()
                  if valid_start < date < valid_end]
             )
+            reservoir_events = sorted(reservoir_events)
 
             if isLongRun:
                 # Define subperiods from valid_start to valid_end interrupted by events
                 start_date = valid_start
                 subperiods = []
-                for event in reservoir_events + [valid_end]:
+                for event in sorted(set(reservoir_events + [valid_end])):
                     if start_date < event:
                         if start_date != valid_start:
                             start_date += datetime.timedelta(hours=dt)
@@ -200,7 +201,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 last_valid_end = valid_end
                 best_period_start_dt = None
                 best_period_end_dt = None
-                for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
+                for event in reversed(list(set([valid_start - datetime.timedelta(hours=dt)] + reservoir_events))):
                     period_observations = observations_filtered.copy()
                     period_observations.index = pd.to_datetime(period_observations.index, format='%d/%m/%Y %H:%M')
                     period_observations = period_observations[event:last_valid_end]
@@ -208,7 +209,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                         best_period_start_dt, best_period_end_dt = period_observations.index[0], period_observations.index[-1]
                         best_period_start, best_period_end = best_period_start_dt.strftime('%d/%m/%Y %H:%M'), best_period_end_dt.strftime('%d/%m/%Y %H:%M')
                         break
-                    last_valid_end = event - pd.Timedelta(days=1)
+                    last_valid_end = event - datetime.timedelta(hours=dt)
                 
                 if best_period_start_dt is None or best_period_end_dt is None:
                     raise Exception('Error: unable to find best period with {} steps after reservoir events check.'.format(min_steps))
