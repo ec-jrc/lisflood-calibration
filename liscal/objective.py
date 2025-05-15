@@ -446,8 +446,8 @@ class ObjectiveKGE():
 
                 # get Correlation and KGE of the selected KGEJSD_2nd calibrated parameter set
                 bestParetoIndex_KGSJSD_2nd = pHistory_ranked_KGSJSD_2nd["paretoRank"].nsmallest(1).index
-                CORR_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_2nd]["Correlation"].values[0]            
-                KGE_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_2nd]["Kling Gupta Efficiency"].values[0]
+                CORR_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Correlation"].values[0]            
+                KGE_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Kling Gupta Efficiency"].values[0]
                 
                 # select best KGEJSD run (main condition: best correlation, otherwise best KGE)
                 if (CORR_bestKGEJSD_1st - CORR_bestKGEJSD_2nd > 0.05) or \
