@@ -56,8 +56,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
             hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events)
             calibstatus_file_path_KGEJSDLow = os.path.join(subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
             if os.path.exists(calibstatus_file_path_KGEJSDLow)==True:
-                run_id = 'long_term_run'
-                out_dir = os.path.join(subcatch.path_out, run_id)
+                out_dir = subcatch.path_out
                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.csv"))
                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.tss"))
                 os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.csv"))
