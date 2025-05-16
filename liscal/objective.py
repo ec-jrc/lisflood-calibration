@@ -392,7 +392,7 @@ class ObjectiveKGE():
             CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
             KGE_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
 
-            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st":
+            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == True:
                 self.write_pareto_front(pHistory_ranked, isKGE_JSD)
                 return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)
             else:

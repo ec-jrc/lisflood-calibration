@@ -67,6 +67,8 @@ split_lake_params = 1
 apply_statistical_stall_check = 1
 # filter out outliers when computing t_test in statistical stop condition
 use_filtered_population = 1
+# stop calibration workflow when KGEJSD is low (<-0.41). This flag is used in recalibration workflow process. (default 0=False)
+stop_on_low_kgejsd = 0
 
 # Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"
 # Possible values are: KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD.
