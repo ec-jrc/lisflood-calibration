@@ -372,6 +372,32 @@ class ObjectiveKGE():
             pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]] = paramvals[0,ii]
         pareto_front.to_csv(os.path.join(path_subcatch, pareto_front_filename), ',', float_format='%g')
 
+    def write_summary_file(self, selObjFun):
+        # use station_data.csv info, as they are consistent with StepStart and StepEnd dates used in calibration xml files
+        spinup = int(float(self.subcatch.data['Spinup_days']))
+        obs_start = datetime.strptime(self.subcatch.data['Split_date'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+        obs_end = datetime.strptime(self.subcatch.data['Obs_end'],"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+        cal_start = (datetime.strptime(obs_start,"%d/%m/%Y %H:%M") - timedelta(days=spinup)).strftime('%d/%m/%Y %H:%M')
+        cal_end = datetime.strptime(obs_end,"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
+        # Check if reservoir dynamic event affected calibration:
+        resDyn = "OFF"
+        if self.cfg.reservoir_events is not None:
+            strFilteredReservoirMap=os.path.join(self.subcatch.path_station, 'FilteredReservoirMap.nc')
+            if os.path.exists(strFilteredReservoirMap):     
+                resDyn = "ON"   
+        message = f"Calibration summary for catchment {self.subcatch.obsid}\n" \
+            f"Selected objective function = {selObjFun}\n" \
+            f"Calibration start date = {cal_start}\n" \
+            f"Calibration end date = {cal_end}\n" \
+            f"Reservoir dynamic events = {resDyn}\n"
+        print(message)
+        summary_filename = f"calibration_summary_{selObjFun}_{datetime.strptime(cal_start, '%d/%m/%Y %H:%M').strftime('%d%m%Y')}_{datetime.strptime(cal_end, '%d/%m/%Y %H:%M').strftime('%d%m%Y')}_res{resDyn}.txt"
+        file_path = os.path.join(self.subcatch.path,summary_filename)
+        # Open the file in write mode
+        with open(file_path, 'w') as file:
+            # Write the message to the file
+            file.write(message)
+
     def process_results(self, runType = "KGEJSD_1st", compare_KGSJSD = False):
 
         pHistory = self.read_param_history()
@@ -394,6 +420,7 @@ class ObjectiveKGE():
 
             if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == True:
                 self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+                self.write_summary_file(selObjFun = runType)
                 return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)
             else:
                 # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095, stop here with a warning and a text file, avoiding to write the pareto_front file
@@ -464,6 +491,7 @@ class ObjectiveKGE():
                 if (CORR_bestKGE - CORR_bestKGEJSD > 0.05) or (KGE_bestKGE - KGE_bestKGEJSD > 0.05):
                     # All good, continue using the current folders and running the long run with the KGE calibration
                     self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+                    self.write_summary_file(selObjFun = "KGE")
                     return True, ""
                 else:
                     # rename current folders and files to _KGE
@@ -512,8 +540,10 @@ class ObjectiveKGE():
                     os.rename(os.path.join(self.subcatch.path,"front_history_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"front_history.csv"))
                     os.rename(os.path.join(self.subcatch.path,"runs_log_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"runs_log.csv"))
 
+                    self.write_summary_file(selObjFun = "KGEJSD_" + bestKGEJSDtoResume)
                     return True, "" 
 
         self.write_pareto_front(pHistory_ranked, isKGE_JSD)
+        self.write_summary_file(selObjFun = "KGE" if isKGE_JSD==False else "KGEJSD")
         return True, ""
 
