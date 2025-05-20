@@ -49,7 +49,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     reservoir_events_df = pd.read_csv(cfg.reservoir_events)
                     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
                     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-                    subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, min_years=None, isLongRun=True)
+                    subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, Min_calib_days=None, isLongRun=True)
                 else:
                     print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 
