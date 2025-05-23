@@ -30,7 +30,8 @@ dependencies = [
     "xarray",
     "deap",
     "matplotlib",
-    "scipy"
+    "scipy",
+    "hydro_analysis_toolkit @ git+https://github.com/ecmwf/hat.git@develop"
 ]
 
 [project.optional-dependencies]

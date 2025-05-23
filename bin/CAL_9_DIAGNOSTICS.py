@@ -42,7 +42,7 @@ def construct_dfs(base_path, catchment_id, plot_groupings):
   
   return observations_df, simulations_df, stations_info_df, stats_df # decide if we use stats_df or not
 
-def discharge_plot(observations_df, simulations_df, stations_info_df, save=True):
+def discharge_plot(observations_df, simulations_df, stations_info_df, savepath="", save=True):
   fig = go.Figure()
   fig.add_trace(go.Scatter(
       x=simulations_df['time'],
@@ -66,10 +66,10 @@ def discharge_plot(observations_df, simulations_df, stations_info_df, save=True)
       height=500
   )
   if save:
-    fig.write_html(f"{station_name}_dis.html")
+    fig.write_html(f"{savepath}{station_name}_dis.html")
   return fig
 
-def other_var_plots(simulations_df, stations_info_df, plot_groupings, save=True):
+def other_var_plots(simulations_df, stations_info_df, plot_groupings, savepath="", save=True):
   figs = []
   for plot_vars in plot_groupings:
     num_plots = len(plot_vars)
@@ -97,7 +97,7 @@ def other_var_plots(simulations_df, stations_info_df, plot_groupings, save=True)
         for var in subplot_vars
     ]) + ".html"
     if save:
-      fig.write_html(f"{station_name}_{figure_name}")
+      fig.write_html(f"{savepath}{station_name}_{figure_name}")
     figs.append(fig)
   return figs
 
@@ -105,6 +105,7 @@ if __name__ == "__main__":
   parser = Parser()
   settings_file = os.path.normpath(sys.argv[1])
   catchments_to_process_file = os.path.normpath(sys.argv[2])
+  savepath = sys.argv[2] if len(sys.argv) > 2 else ""
 
   parser.read(settings_file)
   base_path = parser.get('Path', 'subcatchment_path')
@@ -114,5 +115,5 @@ if __name__ == "__main__":
 
   for catchment_id in catchment_ids:
     obs_df, sim_df, stn_df, _ = construct_dfs(base_path, catchment_id, plot_groupings)
-    dis_fig = discharge_plot(obs_df, sim_df, stn_df)
-    other_figs = other_var_plots(sim_df, stn_df, plot_groupings)
+    dis_fig = discharge_plot(obs_df, sim_df, stn_df, savepath)
+    other_figs = other_var_plots(sim_df, stn_df, plot_groupings, savepath)
