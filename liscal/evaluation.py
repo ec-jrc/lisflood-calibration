@@ -746,7 +746,7 @@ class SpatialPlot():
         pcrasterCommand(f"col2map {outlet_txt} {outlet_map} -N --clone {ldd_map}")
         full_mask_map = outlet_map.replace('.map', '_fullmask.map')
         pcrasterCommand("pcrcalc 'F0 = boolean(catchment(F1,F2))'", {"F0": full_mask_map, "F1":ldd_map, "F2":outlet_map})
-        ldd_xr = ldd_map.replace('ldd.map', 'static/ldd.nc')
+        ldd_xr = ldd_map.replace('ldd.map', '../ldd.nc')
         ldd_xr = self.get_da(ldd_xr)
 
         # define clone for pcraster, otherwise it gets any clone available which can be wrong
