@@ -84,7 +84,7 @@ def main(origin_base, calib_base, continent, basin):
     xml_src = os.path.join(templates_base, "OSLisfloodGloFASv5calibration_v1.xml")
     xml_dest = os.path.join(templates_base, f"OSLisfloodGloFASv5calibration_v1_{continent}_{basin}.xml")
     xml_replacements = {
-        '$(PathRoot)/maps/waterregions__only.nc': f'$(PathRoot)/maps/waterregions_{continent}_{basin}_only.nc'
+        '$(PathRoot)/maps/waterregions__only.nc': f'$(PathRoot)/maps/waterregions_{continent}_{basin}.nc'
     }
     copy_and_modify_file(xml_src, xml_dest, xml_replacements)
 
