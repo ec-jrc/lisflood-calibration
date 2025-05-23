@@ -4,7 +4,7 @@ from hat.interactive.widgets import Widget, WidgetsManager
 from liscal import evaluation, subcatchment, objective, products
 import xarray as xr
 from IPython.display import clear_output, display
-from ipywidgets import Layout, Output, VBox
+from ipywidgets import Output
 import ipywidgets
 
 from IPython.display import display, HTML
@@ -86,7 +86,7 @@ class CalibrationExplorer(StationsExplorer):
             justify_content="space-around",
             align_items="center",
             spacing="20px",
-            width="1500px",
+            width="1000px",
         )
         top_layout = ipywidgets.Layout(
             justify_content="space-around",

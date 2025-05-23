@@ -4,10 +4,10 @@ from glob import glob
 import os
 import pandas as pd
 from lisflood.global_modules.settings import LisSettings
-from lisflood.global_modules.add1 import * # TODO: avoid start imports
+from lisflood.global_modules.add1 import * # TODO: avoid star imports
 from pcraster import setclone, pcr2numpy
 from datetime import datetime, timedelta
-from pcraster import * # TODO: avoid start imports
+from pcraster import * # TODO: avoid star imports
 
 from liscal import config
 from liscal import templates, calibration, config, subcatchment, objective, hydro_model
