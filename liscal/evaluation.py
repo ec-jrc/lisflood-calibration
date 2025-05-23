@@ -679,6 +679,8 @@ class BestParamPlot():
         bestparam_df = pd.read_csv(infile_path)
         bestparam_df = bestparam_df.T.dropna()
         bestparam_df['Param'] = bestparam_df.index
+        kept_rows = [i for i in bestparam_df.index if 'param_' in i]
+        bestparam_df = bestparam_df.loc[kept_rows]
         # print(bestparam_df)
         # bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[obsid].values})
 
