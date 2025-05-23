@@ -789,7 +789,12 @@ class SpatialPlot():
         outlet = pcraster.readmap(f'{maps_dir}/outletsmall.map')
         outlet = pcraster.pcr2numpy(outlet, 0)
         outlet = pixarea.fillna(0)*0+outlet
-        outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
+        
+        # outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
+
+        # for some reasons, rarely, outlets can be more than 1 so we keep the one with max uparea (this is normally not expected!)
+        outlet = uparea.where(outlet).to_dataframe().reset_index().dropna()
+        outlet = outlet.sort_values('Band1', ascending=False).iloc[[0],]  
 
         # inflows in case of intercatchment
         if os.path.exists(f'{inflow_dir}/inflow_cut.map'):
