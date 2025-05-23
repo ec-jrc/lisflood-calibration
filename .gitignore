@@ -70,3 +70,4 @@ temp/
 Gemfile.lock
 _site/
 .vscode/launch.json
+_version.py
