@@ -129,30 +129,30 @@ class Criteria():
         self.effmax_tol = deap_param.effmax_tol  # 0.003
 
         # Initialise statistics arrays
-        self.effmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.effmin = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.effavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.effstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.effmax = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.effmin = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.effavg = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.effstd = np.full((self.max_gen + 1, self.n_obj), np.nan)
 
         # Initialise population statistics arrays
-        self.popmax = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.popmin = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.popavg = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
-        self.popstd = np.zeros(shape=(self.max_gen + 1, self.n_obj)) * np.NaN
+        self.popmax = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.popmin = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.popavg = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        self.popstd = np.full((self.max_gen + 1, self.n_obj), np.nan)
 
         # Initialise KGE statistics arrays
-        self.effmax_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.effmin_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.effavg_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.effstd_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popmax_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popmin_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popavg_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popstd_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popnum_KGE = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popavg_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popstd_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
-        self.popnum_KGE_filtered = np.zeros(shape=(self.max_gen + 1)) * np.NaN
+        self.effmax_KGE = np.full((self.max_gen + 1), np.nan)
+        self.effmin_KGE = np.full((self.max_gen + 1), np.nan)
+        self.effavg_KGE = np.full((self.max_gen + 1), np.nan)
+        self.effstd_KGE = np.full((self.max_gen + 1), np.nan)
+        self.popmax_KGE = np.full((self.max_gen + 1), np.nan)
+        self.popmin_KGE = np.full((self.max_gen + 1), np.nan)
+        self.popavg_KGE = np.full((self.max_gen + 1),  np.nan)
+        self.popstd_KGE = np.full((self.max_gen + 1), np.nan)
+        self.popnum_KGE = np.full((self.max_gen + 1), np.nan)
+        self.popavg_KGE_filtered = np.full((self.max_gen + 1), np.nan)
+        self.popstd_KGE_filtered = np.full((self.max_gen + 1), np.nan)
+        self.popnum_KGE_filtered = np.full((self.max_gen + 1), np.nan)
 
         self.conditions = {"maxGen": False, "StallFit": False, "StatisticalStallFit": False}
 
@@ -538,8 +538,6 @@ class CalibrationDeap():
         return invalid_ind
 
     def restore_calibration(self, halloffame, history_file):
-
-        param_ranges = self.param_ranges
 
         # Open the paramsHistory file from previous runs
         paramsHistory = pandas.read_csv(history_file, sep=",")[3:]
