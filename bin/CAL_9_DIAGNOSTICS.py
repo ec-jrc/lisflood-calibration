@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -105,7 +106,7 @@ if __name__ == "__main__":
   parser = Parser()
   settings_file = os.path.normpath(sys.argv[1])
   catchments_to_process_file = os.path.normpath(sys.argv[2])
-  savepath = sys.argv[2] if len(sys.argv) > 2 else ""
+  savepath = sys.argv[3] if len(sys.argv) > 3 else ""
 
   parser.read(settings_file)
   base_path = parser.get('Path', 'subcatchment_path')
