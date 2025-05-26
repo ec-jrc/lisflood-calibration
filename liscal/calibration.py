@@ -7,10 +7,7 @@ import time
 # deap related packages
 import array
 import random
-from deap import algorithms
-from deap import base
-from deap import creator
-from deap import tools
+from deap import algorithms, base, creator, tools
 
 from scipy.stats import ttest_ind_from_stats
 

@@ -7,7 +7,6 @@ import os
 import calendar
 from datetime import datetime
 import matplotlib.pyplot as plt
-# import cartopy.crs as ccrs
 from matplotlib import gridspec, patches, transforms, ticker, cm
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
