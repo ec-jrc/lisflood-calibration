@@ -67,37 +67,37 @@ def create_products(cfg, subcatch, obj, save=True):
 
     # create speedometer plots
     speedo = evaluation.SpeedometerPlot(cfg.plot_params)
-    speedo_fig = speedo.plot(stats, os.path.join(subcatch.path_out, 'speedo') if save else None)
+    speedo_fig = speedo.plot(os.path.join(subcatch.path_out, 'speedo')  if save else None, stats)
     if save:
         os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'speedo')))
 
     # create box plot
     box = evaluation.MonthlyBoxPlot(cfg.plot_params)
-    box_fig = box.plot(sim_monthly, obs_monthly, os.path.join(subcatch.path_out, 'boxy') if save else None)
+    box_fig = box.plot(os.path.join(subcatch.path_out, 'boxy') if save else None, sim_monthly, obs_monthly)
     if save:
         os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'boxy')))
 
     # create time series plot
     ts = evaluation.TimeSeriesPlot(cfg.plot_params)
-    ts_fig = ts.plot(Q.index, Q['Sim'].values, Q['Obs'].values, return_periods, os.path.join(subcatch.path_out, 'timmy') if save else None)
+    ts_fig = ts.plot(os.path.join(subcatch.path_out, 'timmy') if save else None, Q.index, Q['Sim'].values, Q['Obs'].values, return_periods)
     if save:
         os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'timmy')))
 
     # create Q-Q plot
     qq = evaluation.QQPlot(cfg.plot_params)
-    qq_fig = qq.plot(Q.index, Q['Sim'].values, Q['Obs'].values, os.path.join(subcatch.path_out, 'qqy') if save else None)
+    qq_fig = qq.plot(os.path.join(subcatch.path_out, 'qqy') if save else None, Q.index, Q['Sim'].values, Q['Obs'].values)
     if save:
         os.system('convert {0}.svg {0}.pdf'.format(os.path.join(subcatch.path_out, 'qqy')))
     
     # create best parameters table plot
     bestparmtrs = evaluation.BestParamPlot(cfg.plot_params)
-    bestparmtrs_fig = bestparmtrs.plot(os.path.join(subcatch.path, 'pareto_front.csv'), os.path.join(subcatch.path_out, 'bestparmtrs') if save else None)
+    bestparmtrs_fig = bestparmtrs.plot(os.path.join(subcatch.path_out, 'bestparmtrs') if save else None, os.path.join(subcatch.path, 'pareto_front.csv'), subcatch.obsid)
     if save:
         os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'bestparmtrs')))
 
     # create (inter)catchment plot
     spatialplot = evaluation.SpatialPlot(cfg.plot_params)
-    spatialplot_fig = spatialplot.plot(subcatch.path, os.path.join(subcatch.path_out, 'spatial') if save else None)
+    spatialplot_fig = spatialplot.plot(os.path.join(subcatch.path_out, 'spatial') if save else None, subcatch.path)
     if save:
         os.system('convert {0}.png {0}.pdf'.format(os.path.join(subcatch.path_out, 'spatial')))
     

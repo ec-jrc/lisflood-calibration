@@ -8,10 +8,7 @@ import calendar
 from datetime import datetime
 import matplotlib.pyplot as plt
 # import cartopy.crs as ccrs
-from matplotlib import gridspec
-from matplotlib import patches
-from matplotlib import transforms
-from matplotlib import ticker
+from matplotlib import gridspec, patches, transforms, ticker, cm
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 
@@ -184,8 +181,10 @@ class SpeedometerPlot():
         fig.set_size_inches(16.5, 11.7) # A3 size
         fig.subplots_adjust(left=0.1, bottom=0, right=1, top=1, wspace=-0.2, hspace=0.0)
 
-        # Save the figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+
+        return fig
 
 
 class MonthlyBoxPlot():
@@ -516,8 +515,11 @@ class MonthlyBoxPlot():
           plt.yscale(r'linear')
           plt.ylim([1, 1.05 * max_value])
         
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        
+        return fig
 
 
 class TimeSeriesPlot():
@@ -632,8 +634,11 @@ class TimeSeriesPlot():
           plt.yscale(r'linear')
           plt.ylim([1, 1.05 * max_value])
 
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        
+        return fig
 
 
 class QQPlot():
@@ -666,8 +671,11 @@ class QQPlot():
         plt.xlabel(r'Simulated Discharge [m3/s]')#, fontsize=self.label_size)  # ³
         plt.ylabel(r'Observed Discharge [m3/s]')#, fontsize=self.label_size)  # ³
         
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+
+        return fig
 
 
 class BestParamPlot():
@@ -706,8 +714,11 @@ class BestParamPlot():
         
         fig.tight_layout()
         
-        # Save the table with the set of the best parameters' values
-        plt.savefig(path_out+'.'+'png', format='png', dpi=300)
+        if path_out is not None:
+            # Save the table with the set of the best parameters' values
+            plt.savefig(path_out+'.'+'png', format='png', dpi=300)
+
+        return fig
 
 
 class SpatialPlot():
@@ -852,5 +863,8 @@ class SpatialPlot():
 
         cb = fig.colorbar(elv_plot, cax=cax, label=r"Elevation [m]", orientation="vertical")
         
-        # Save the spatial plot
-        plt.savefig(path_out+'.png', format='png', dpi=300)
+        if path_out is not None:
+            # Save the spatial plot
+            plt.savefig(path_out+'.png', format='png', dpi=300)
+
+        return fig

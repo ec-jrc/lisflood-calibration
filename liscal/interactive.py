@@ -37,8 +37,12 @@ class CalibPlotWidget(Widget):
         try:
             figs = products.create_products(self.config, subcatch, obj, False)
             html_content = None
-        except:
-            html_content = f"Error loading data for obsid {obsid}"
+        except Exception as e:
+            str_e = str(e)
+            html_content = f"""
+Error loading data for obsid {obsid}\n
+{str_e}
+"""
 
         with self.output:
             clear_output(wait=True)
@@ -133,6 +137,7 @@ class CalibrationExplorer(StationsExplorer):
             colormap, 
             self.widgets,
             self.config["station_coordinates"],
+            self.config['station_id_column_name']
         )
         frame = self.create_frame()
         display(frame)
