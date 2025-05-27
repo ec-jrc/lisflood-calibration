@@ -12,7 +12,8 @@ from liscal import templates, calibration, config, subcatchment, objective, hydr
 def longtermrun_subcatchment(cfg, obsid, station_data):
 
     print("=================== "+str(obsid)+" ====================")
-    if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")):
+    if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")) or \
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForLowKGE.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
@@ -42,11 +43,20 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     reservoir_events_df = pd.read_csv(cfg.reservoir_events)
                     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
                     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-                    subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, min_years=None, isLongRun=True)
+                    subperiods, filtered_reservoir_events = stations.process_reservoir_periods(model, reservoir_events_df, dt, None, run_start, run_end, Min_calib_days=None, isLongRun=True)
                 else:
                     print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 
             hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events)
+            calibstatus_file_path_KGEJSDLow = os.path.join(subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
+            if os.path.exists(calibstatus_file_path_KGEJSDLow)==True:
+                out_dir = subcatch.path_out
+                os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.csv"))
+                os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.tss"))
+                os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.csv"))
+                os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.tss"))
+            
+
         else:
             raise Exception('Could not find initialize model.')
     else:

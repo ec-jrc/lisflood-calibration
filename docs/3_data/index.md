@@ -27,8 +27,10 @@ Below you find an example of settings file:
 forcing_start = 02/01/1990 06:00  # Starting of Meteo Forcings Precipitation Evapotranspiration TAvg 
 forcing_end = 31/12/2017 06:00  # Ending of Meteo Forcings Precipitation Evapotranspiration TAvg
 timestep = 360  # Timestep of the calibration run (typicall 6-hourly or daily)
-prerun_start = 02/01/1990 06:00  # When to start the prerun
-prerun_end = 31/12/2017 06:00 # When to end the prerun
+prerun_start = 02/01/1990 06:00  # When to start the prerun in calibration
+prerun_end = 31/12/2017 06:00 # When to end the prerun in calibration
+longterm_prerun_start = 02/01/1990 06:00  # Optional: when to start the prerun in the long term run (by Default will take the forcing start date)
+longterm_prerun_end = 31/12/2017 06:00 # Optional: when to end the prerun in the long term run (by Default will take the forcing end date)
 prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
 fast_debug = 0  # Flag to set to 1 for quicker debugging
 num_max_calib_years = 20 # Maximum number of years of observation to use during calibration
@@ -65,6 +67,8 @@ split_lake_params = 1
 apply_statistical_stall_check = 1
 # filter out outliers when computing t_test in statistical stop condition
 use_filtered_population = 1
+# stop calibration workflow when KGEJSD is low (<-0.41). This flag is used in recalibration workflow process. (default 0=False)
+stop_on_low_kgejsd = 0
 
 # Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"
 # Possible values are: KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD.

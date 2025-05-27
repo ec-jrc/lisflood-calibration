@@ -67,7 +67,7 @@ if __name__ == '__main__':
       subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
       path_subcatch_maps = os.path.join(subcatchment_path,'maps')
 
-      cmd="python " + new_prog_name + " "+settings_file+" "+path_maps+" "+str(obsid)
+      cmd="python " + new_prog_name + " "+settings_file+" "+path_maps+" "+str(obsid) + " --use-dask-config"
       atLeastOneFileToProcess=False
       if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
             afile = os.path.basename(path_maps)

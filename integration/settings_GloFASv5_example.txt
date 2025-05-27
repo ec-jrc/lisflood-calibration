@@ -42,4 +42,6 @@ apply_statistical_stall_check = 1
 
 use_filtered_population = 0
 
+stop_on_low_kgejsd = 1
+
 objectives = KGE_JSD

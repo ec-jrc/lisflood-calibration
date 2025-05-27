@@ -686,6 +686,8 @@ class BestParamPlot():
         bestparam_df = pd.read_csv(infile_path)
         bestparam_df = bestparam_df.T.dropna()
         bestparam_df['Param'] = bestparam_df.index
+        kept_rows = [i for i in bestparam_df.index if 'param_' in i]
+        bestparam_df = bestparam_df.loc[kept_rows]
         # print(bestparam_df)
         # bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[obsid].values})
 
@@ -756,7 +758,7 @@ class SpatialPlot():
         pcrasterCommand(f"col2map {outlet_txt} {outlet_map} -N --clone {ldd_map}")
         full_mask_map = outlet_map.replace('.map', '_fullmask.map')
         pcrasterCommand("pcrcalc 'F0 = boolean(catchment(F1,F2))'", {"F0": full_mask_map, "F1":ldd_map, "F2":outlet_map})
-        ldd_xr = ldd_map.replace('ldd.map', 'static/ldd.nc')
+        ldd_xr = ldd_map.replace('ldd.map', '../ldd.nc')
         ldd_xr = self.get_da(ldd_xr)
 
         # define clone for pcraster, otherwise it gets any clone available which can be wrong
@@ -798,7 +800,12 @@ class SpatialPlot():
         outlet = pcraster.readmap(f'{maps_dir}/outletsmall.map')
         outlet = pcraster.pcr2numpy(outlet, 0)
         outlet = pixarea.fillna(0)*0+outlet
-        outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
+        
+        # outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
+
+        # for some reasons, rarely, outlets can be more than 1 so we keep the one with max uparea (this is normally not expected!)
+        outlet = uparea.where(outlet).to_dataframe().reset_index().dropna()
+        outlet = outlet.sort_values('Band1', ascending=False).iloc[[0],]  
 
         # inflows in case of intercatchment
         if os.path.exists(f'{inflow_dir}/inflow_cut.map'):

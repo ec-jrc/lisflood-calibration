@@ -5,6 +5,7 @@ import pandas as pd
 
 from lisflood.global_modules.add1 import loadmap, loadmap_base, compressArray
 from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
+from lisflood.global_modules.settings import LisSettings
 
 from pcraster import boolean
 
@@ -144,7 +145,7 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered,
 
     return split_date
 
-def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False):
+def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, Min_calib_days, isLongRun=False):
     # copy dates as string
     best_period_start, best_period_end = valid_start, valid_end
 
@@ -171,11 +172,12 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
             reservoir_events_df['DEMOL_YEAR'] = pd.to_datetime(reservoir_events_df['DEMOL_YEAR'], format='%Y', errors='coerce')
 
             # Gather potentially impacting events
-            reservoir_events = sorted(
+            reservoir_events = set(
                 [date for date in reservoir_events_df['CONSTR_YEAR'].dropna().tolist() +
                  reservoir_events_df['DEMOL_YEAR'].dropna().tolist()
                  if valid_start < date < valid_end]
             )
+            reservoir_events = sorted(reservoir_events)
 
             if isLongRun:
                 # Define subperiods from valid_start to valid_end interrupted by events
@@ -184,7 +186,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 for event in reservoir_events + [valid_end]:
                     if start_date < event:
                         if start_date != valid_start:
-                            start_date += datetime.timedelta(hours=dt)
+                            start_date += datetime.timedelta(hours=int(dt))
                     subperiods.append((start_date, event))
                     start_date = event
 
@@ -195,9 +197,11 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                 return subperiods, reservoir_events_df
             else:
                 # Determine the most recent valid observation period
-                min_steps = int(min_years*365.25*24/dt)
+                min_steps = int(Min_calib_days*24/dt)
                 last_valid_end = valid_end
-                for event in reversed([valid_start - pd.Timedelta(days=1)] + reservoir_events):
+                best_period_start_dt = None
+                best_period_end_dt = None
+                for event in reversed([valid_start - datetime.timedelta(hours=int(dt))] + reservoir_events):
                     period_observations = observations_filtered.copy()
                     period_observations.index = pd.to_datetime(period_observations.index, format='%d/%m/%Y %H:%M')
                     period_observations = period_observations[event:last_valid_end]
@@ -205,8 +209,10 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
                         best_period_start_dt, best_period_end_dt = period_observations.index[0], period_observations.index[-1]
                         best_period_start, best_period_end = best_period_start_dt.strftime('%d/%m/%Y %H:%M'), best_period_end_dt.strftime('%d/%m/%Y %H:%M')
                         break
-                    last_valid_end = event - pd.Timedelta(days=1)
+                    last_valid_end = event - datetime.timedelta(hours=int(dt))
                 
+                if best_period_start_dt is None or best_period_end_dt is None:
+                    raise Exception('Error: unable to find best period with {} steps after reservoir events check.'.format(min_steps))
                 map_name = "FilteredReservoirMap"
                 create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, best_period_start_dt, best_period_end_dt)
 
@@ -240,8 +246,15 @@ def create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initializ
     print("Generated new ReservoirSites content to:", strFilteredReservoirMap)
 
 def update_rsfil_netcdf_map(map_name, reservoir_events_df, settings, period_start_dt):
-    reservoirs = loadmap('ReservoirSites')
-    ReservoirFillMap = loadmap_base('ReservoirFillEnd',force_load_with_nans=True)
+    settings_instance = LisSettings.instance()
+    settings_instance.binding['ReservoirSites'] = settings.binding['ReservoirSites']
+    settings_instance.binding['ReservoirFillEnd'] = settings.binding['ReservoirFillEnd']
+    reservoirs = loadmap_base('ReservoirSites')
+    try:
+        ReservoirFillMap = loadmap_base('ReservoirFillEnd',force_load_with_nans=True)
+    except:
+        # in case map doesn't exist, initialize an empty map
+        ReservoirFillMap = np.full_like(reservoirs, 0, dtype=float)
     
     # Identify new reservoirs for the selected period
     new_reservoirs = {
@@ -323,8 +336,8 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
     # Extract valid calibration period
     observations_filtered = observed_streamflow[observed_streamflow.notna()]
 
-    dt = time_step_from_type(station_data['CAL_TYPE'])  # here we use dt to calculate the obseration period in process_reservoir_periods
-
+    dt = time_step_from_type(station_data['CAL_TYPE'])  # here we use dt to calculate the observation period in process_reservoir_periods
+    Min_calib_days = float(station_data['Min_calib_days']) # used also in process_reservoir_periods
     valid_start = observations_filtered.index[0]
     valid_end = observations_filtered.index[-1]
 
@@ -332,7 +345,15 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
         if cfg.reservoir_events is not None:
             if os.path.exists(cfg.reservoir_events):
                 reservoir_events_df = pd.read_csv(cfg.reservoir_events)
-                valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, min_years=4, isLongRun=False)
+                valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, Min_calib_days, isLongRun=False)
+                # update observed_streamflow and obs_period_years after reservoir_events to compute correct split date
+                observed_streamflow = observed_streamflow[valid_start:valid_end]
+                obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+                obs_period_years = obs_period_days/365.25
+                if check_obs:
+                    if obs_period_days < Min_calib_days:
+                        raise Exception('ERROR after process_reservoir_periods: Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, Min_calib_days))
+                observations_filtered = observed_streamflow[observed_streamflow.notna()]
             else:
                 print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
 

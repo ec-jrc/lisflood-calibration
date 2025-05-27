@@ -276,7 +276,39 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss, inflow_tss_cal)
         os.rename(inflow_tss_last_run, inflow_tss)
 
+# utility function for merging tss files from dynamic reservoir warmstart routine
+# to be moved in a new file reservoir.py, together with all dynamic reservoir management code
+def merge_tss_files(tss_file_list, output_tss_file):
+    if not tss_file_list:
+        raise ValueError("The tss file list is empty.")
+    if output_tss_file is None:
+        raise ValueError("Output tss file is None.")
+    # number of metadata lines header in tss
+    metadata_lines = 4  
 
+    concatenated_data = []
+    for index, file_path in enumerate(tss_file_list):
+        if not os.path.exists(file_path):
+            print(f'Skipping {file_path}')
+            return
+        
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        if index == 0:
+            # Include all lines from the first file (metadata + data)
+            concatenated_data.extend(lines)
+        else:
+            # Skip metadata lines for subsequent files and add only data
+            concatenated_data.extend(lines[metadata_lines:])
+
+    # Write the concatenated data to the output file
+    with open(output_tss_file, 'w') as output_file:
+        output_file.writelines(concatenated_data)
+
+    print(f'Merged file created: {output_tss_file}')
+    
+    
 def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
     Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.
@@ -301,8 +333,8 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
     os.makedirs(out_dir, exist_ok=True)
 
     # use forcings start and end for prerun and run
-    prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-    prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+    prerun_start = cfg.longterm_prerun_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.longterm_prerun_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
     prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, 
@@ -321,13 +353,20 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
         # SECOND LISFLOOD RUN
         lisf1.main(run_file, '-q')
     else:
-        # generate subperiods settings files
-        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods)
+        #check if lakes and MCT were switched to OFF during the FIRST LISFLOOD RUN, for the write_warmstart_settings_files
+        instsettings = LisSettings.instance()
+        includeLakes, includeMCT = instsettings.options['simulateLakes'], instsettings.options['MCTRouting']
+
+        # generate subperiods settings files        
+        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods, includeLakes, includeMCT)
         # run different periods with warm start
         idx=0
+        list_of_variable_to_merge = None
+        var_files = {}
+        original_var_tss_name = {}
         for idx, warmstart_run_file in enumerate(warmstart_run_files):
+            settings = LisSettings(warmstart_run_file, "")
             if idx>0:
-                settings = LisSettings(warmstart_run_file, "")
                 rsfil_map_name = settings.binding['ReservoirFillEnd']
                 rsfil_map_name = rsfil_map_name[:-3] if rsfil_map_name.lower().endswith('.nc') else rsfil_map_name
                 # copy the ReservoirFill end map to a backup before editing it for the next run
@@ -336,7 +375,26 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
                 sub_start, _ = subperiods[idx]
                 map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
                 stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
+            else:
+                list_of_variable_to_merge = [k for k in settings.report_timeseries.keys()]
+                for varName in list_of_variable_to_merge:
+                    var_files[varName] = []
+                    original_var_tss_name[varName] = None
             lisf1.main(warmstart_run_file, '-q')
+            # rename chanq, dischage and other tss files to keep info for the final merge
+            for varName in list_of_variable_to_merge:
+                original_var_tss_name[varName] = settings.binding[varName]
+                var_tss_name = original_var_tss_name[varName][:-4] if original_var_tss_name[varName].lower().endswith('.tss') else original_var_tss_name[varName]
+                var_tss_name_dest = f'{var_tss_name}_ws_{idx}.tss'
+                cmd = f'mv {var_tss_name}.tss {var_tss_name_dest}'
+                utils.run_cmd(cmd)
+                var_files[varName].append(var_tss_name_dest)
+
+        # merge dis and chanq files
+        for varName in list_of_variable_to_merge:
+            merge_tss_files(var_files[varName], original_var_tss_name[varName])
+            
+            
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)

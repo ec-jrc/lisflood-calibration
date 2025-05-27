@@ -5,13 +5,17 @@ import os
 import sys
 import numpy as np
 import pandas
+import re
+import pdb
 import time
+from datetime import datetime
 ver = sys.version
 ver = ver[:ver.find('(')-1]
 if ver.find('3.') > -1:
-  from configparser import ConfigParser as Parser # Python 3.8
+  from configparser import ConfigParser # Python 3.8
 else:
-  from ConfigParser import SafeConfigParser as Parser # Python 2.7-15
+  from ConfigParser import SafeConfigParser # Python 2.7-15
+import glob
 import subprocess
 import random
 
@@ -24,17 +28,17 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
         print('new max no of calibration node is ' + str(new_nmax))
         #in case new_nmax < nmax, check if we need to kill running processes
         if new_nmax<nmax:
+            User_list_killing_nodes = parser.get('Main','User_list_killing_nodes')
             #first check how many jobs are running
-            curr_jobs = int(subprocess.Popen('qstat | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
+            curr_jobs = int(subprocess.Popen('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" --sort=t,-i | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
             if curr_jobs > new_nmax:
                 #N.B. only one list should care of killing processes
                 ID_list_killing_nodes = parser.get('Main','ID_list_killing_nodes')
-                User_list_killing_nodes = parser.get('Main','User_list_killing_nodes')
                 if ID_list_killing_nodes==list_id:
                     #check how many process to kill:
                     num_process_to_kill = curr_jobs-new_nmax
                     #Get list of jobs running
-                    curr_jobs_list = subprocess.run('qstat | grep '+job_prefix+' | grep ' + User_list_killing_nodes + ' ',shell=True,stdout=subprocess.PIPE).stdout.splitlines()
+                    curr_jobs_list = subprocess.run('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" | grep '+job_prefix+' ',shell=True,stdout=subprocess.PIPE).stdout.splitlines()
                     if len(curr_jobs_list)==0:
                         print('No jobs to kill')
                     else:
@@ -44,10 +48,10 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
                         time.sleep(15)
                         for i in range(1,num_process_to_kill+1):
                             if len(curr_jobs_list)>i:
-                                job_string = str(curr_jobs_list[-i])            # on PBS most recent job (that we want ot kill) is at the end of the list
+                                job_string = str(curr_jobs_list[i-1])      # on SLURM most recent job (that we want ot kill) is on top of the list
                                 print('Killing job: ' + job_string)
-                                job_to_kill = job_string[2:].split('.')[0]      # the line starts with b', so skip first 2 chars and take full job number separated by dot
-                                cmd="qdel "+job_to_kill
+                                job_to_kill = job_string[2:20]             # the line starts with b', so skip first 2 chars and take full 18 chars for job name
+                                cmd="scancel "+job_to_kill
                                 print(">> Calling \""+cmd+"\"")
                                 os.system(cmd)
                                 print("Done")
@@ -66,12 +70,16 @@ iniFile = os.path.normpath(sys.argv[1])
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 
-parser = Parser()
+if ver.find('3.') > -1:
+    parser = ConfigParser()  # python 3.8
+else:
+    parser = SafeConfigParser()  # python 2.7-15
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')
 numba_cache_root = parser.get('Main', 'numba_cache_root')
 nmax = int(parser.get('Main','No_of_calibration_nodes'))
+User_list_killing_nodes = parser.get('Main','User_list_killing_nodes')
 
 stations_data_path = parser.get("Stations", "stations_data")
 stations_links_path = parser.get('Stations', 'stations_links')
@@ -139,14 +147,14 @@ for index, row in stationdata_sorted.iterrows():
         job_name=job_prefix+list_id+"_"+sbc
 
         # do not create or submit the same job twice, if is still pending in the jobs queue
-        if int(subprocess.Popen('qstat | grep ' +job_name+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) == 0:
+        if int(subprocess.Popen('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" | grep ' +job_name+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) == 0:
             # create sh scripts in scripts folder (scripts folder should already exists)
             path_scripts = os.path.join(src_root,'scripts')
             if not os.path.exists(path_scripts):
                 print('Error: folder ' + path_scripts + ' not found')
                 raise Exception('Error: folder ' + path_scripts + ' not found')
 
-            if (numba_cache_root[:8]=="/local0/"):
+            if (numba_cache_root[:8]=="$TMPDIR"):
                 path_numba_cache_dirs = numba_cache_root
                 path_current_numba_cache_dir = os.path.join(path_numba_cache_dirs,'numba_cache_dir')
             else:
@@ -163,9 +171,20 @@ for index, row in stationdata_sorted.iterrows():
    
             script_name=os.path.join(path_scripts,'runLF_' +list_id+'_'+sbc+'.sh')
 
+            current_time_str = datetime.now().strftime("%Y%m%d_%H%M%s")
             f=open(script_name,'w')
-            f.write("#!/bin/sh \n")
-            f.write("source activate liscalnew \n")
+            f.write("#!/bin/bash\n")
+            f.write("#SBATCH -A EUHPC_D16_021\n")
+            f.write("#SBATCH -p dcgp_usr_prod\n")
+            f.write("#SBATCH --time 24:00:00     # format: HH:MM:SS\n")
+            f.write("#SBATCH --error=run_calibration_"+list_id+"_"+sbc+"_" + current_time_str + ".err            # standard error file\n")
+            f.write("#SBATCH --output=run_calibration_"+list_id+"_"+sbc+"_" + current_time_str + ".out           # standard output file\n")
+            f.write("#SBATCH -N 1                                        # 1 node\n")
+            f.write("#SBATCH --ntasks-per-node=28                        # only 28 cores, to use 1 fourth of the node (full=112 cores)\n")
+            f.write("#SBATCH --mem=120000                                # memory per node out of 494000MB (481GB)\n")
+            f.write("#SBATCH --job-name="+job_name+"\n")
+            f.write("#SBATCH --qos=normal                                # quality of service (dcgp_qos_lprod: max 4 days, normal: max 1 day)\n")
+            
             f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
@@ -187,11 +206,11 @@ for index, row in stationdata_sorted.iterrows():
             if (numba_cache_root[:8]=="/local0/"):
                 f.write("rm -Rf " + path_current_numba_cache_dir + " \n")
             f.close()
-            cmd="qsub -l nodes=1:ppn=32 -q long -N "+job_name+" "+script_name
+            cmd="sbatch "+script_name
 
             timerqsub = 0
             
-            while int(subprocess.Popen('qstat | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) >= int(nmax) and timerqsub<=900000:
+            while int(subprocess.Popen('squeue -u ' + User_list_killing_nodes + ' -o "%.18i %.40j" | grep '+job_prefix+' | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read()) >= int(nmax) and timerqsub<=900000:
                 #print 'submitted',int(subprocess.Popen('qstat | grep LF_calib | wc -l',shell=True,stdout=subprocess.PIPE).stdout.read())
                 rand_time = int(random.random()*10)+2
                 time.sleep(rand_time)
@@ -209,7 +228,7 @@ for index, row in stationdata_sorted.iterrows():
             rand_time = int(random.random()*5)
             time.sleep(rand_time)
     except:
-        print("Something went wrong with queue submission skipping...")
-        continue
+       print("Something went wrong with queue submission skipping...")
+       continue
 
 print("==================== END ====================")

@@ -2,7 +2,6 @@
 import os
 import argparse
 import pandas as pd
-
 import rasterio.features
 import xarray as xr
 import pcraster as pcr
@@ -132,6 +131,6 @@ if __name__ == '__main__':
         data_all = pd.merge(left=data_all, right=shapefile_data, left_on='ObsID', right_index=True, how='outer')
         data_all = gpd.GeoDataFrame(data_all, geometry=data_all.geometry)    
     
-        data_all.to_file(os.path.join(main_dir, 'summary/calibration_summary_json.json'), driver="GeoJSON")
+        data_all.to_file(os.path.join(main_dir, 'summary/calibration_summary.json'), driver="GeoJSON")
 
     print("==================== END ====================")
