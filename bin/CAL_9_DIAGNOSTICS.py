@@ -35,7 +35,7 @@ def construct_dfs(base_path, catchment_id, plot_groupings):
   for plot_vars in plot_groupings:
       for subplot_vars in plot_vars:
           for var in subplot_vars:
-              df = pd.read_csv(simulation_other_vars_path+f"{var}.tss", sep="\s+", header=None, skiprows=4, names=['step', var])
+              df = pd.read_csv(simulation_other_vars_path+f"{var}.tss", sep=r"\s+", header=None, skiprows=4, names=['step', var])
               df.drop(columns=['step'], inplace=True)
               if not df.index.equals(simulations_df.index):
                   raise ValueError("Indexes do not match. Cannot concatenate.")
