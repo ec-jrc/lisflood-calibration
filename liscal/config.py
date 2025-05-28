@@ -292,3 +292,50 @@ class ConfigCalibration(Config):
                 if 'TransSub' in self.param_ranges.index:
                     self.param_ranges.drop("TransSub", inplace=True)
 
+class PlotParameters():
+
+    title_size_big = 32
+    title_size_small = 18
+    label_size = 30
+    axes_size = 24
+    legend_size_small = 16
+    threshold_size = 24
+
+    file_format = 'svg'
+
+    text = {
+        'figure': {'autolayout': True},
+        'font': {
+            'size': 14,
+            'family':'sans-serif',
+            'sans-serif':['Arial'],
+            'weight': 'bold'
+        },
+        'text': {'usetex': True},
+        'axes': {'labelweight': 'bold'},
+    }
+
+
+class ConfigPostProcessing(ConfigCalibration):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
+
+        # paths
+        self.summary_path = self.parser.get('Path','summary_path')
+
+        # # Date parameters
+        # self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
+        # self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
+        # self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        # if self.timestep != 360 and self.timestep != 1440:
+        #     raise Exception('Calibration timestep {} not supported'.format(self.timestep))
+
+        # # we don't use it but required for objectives object
+        # self.param_ranges = None
+
+        # # stations
+        # self.stations_data = self.parser.get('Stations', 'stations_data')
+
+        # plot parameters
+        self.plot_params = PlotParameters()
