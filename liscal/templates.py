@@ -215,15 +215,15 @@ class LisfloodSettingsTemplate():
             "ThetaIrrigationInit2Value": "Theta2IrrigationEnd",
             "ThetaIrrigationInit3Value": "Theta3IrrigationEnd",
             "CumIntSealedInitValue": "CumIntSealedEnd",
-            "ReservoirInitialFill": "ReservoirFillEnd"
+            "ReservoirInitialFill": "ReservoirFillEnd",
+            "PrevDischarge": "ChanQEnd",
+            "PrevDischargeAvg": "ChanQAvgDtEnd"
         }
         if includeLakes is True:
             textvar_end_mappings.update({
                     "LakeInitialLevelValue": "LakeLevelEnd",
                     "LakePrevInflowValue": "LakePrevInflowEnd",
-                    "LakePrevOutflowValue": "LakePrevOutflowEnd",
-                    "PrevDischarge": "ChanQEnd",
-                    "PrevDischargeAvg": "ChanQAvgDtEnd",
+                    "LakePrevOutflowValue": "LakePrevOutflowEnd"
                 })
         if includeMCT is True:
             textvar_end_mappings.update({
@@ -294,7 +294,7 @@ class LisfloodSettingsTemplate():
 
                         if idx>0:
                             assert(last_sub_end is not None)
-                            timestepInit_element.set("value", (last_sub_end - timedelta(seconds=dtsec_value)).strftime('%d/%m/%Y %H:%M'))   
+                            timestepInit_element.set("value", last_sub_end.strftime('%d/%m/%Y %H:%M'))   
                             ColdStart_element.set("choice", "0")   
 
                             n = 0                     
