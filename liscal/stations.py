@@ -306,6 +306,13 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     # Retrieve observed streamflow and extract observation period
     observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+
+    # Create output directory
+    subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
+    out_dir = os.path.join(subcatchment_path, 'station')
+    os.makedirs(out_dir, exist_ok=True)
+
+    observations[str(obsid)].to_csv(os.path.join(out_dir, 'observations_original.csv'))
     
     # Convert the index to datetime
     observations.index = pd.to_datetime(observations.index, format='%d/%m/%Y %H:%M')
@@ -326,6 +333,8 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     observed_streamflow = observations[str(obsid)]
     observed_streamflow = observed_streamflow[start_date:end_date]
+    observed_streamflow.to_csv(os.path.join(out_dir, 'observations_complete.csv'))
+
     obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
     obs_period_years = obs_period_days/365.25
 
@@ -362,11 +371,6 @@ def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=
 
     # Compute split date
     split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered, cfg.num_max_calib_years)
-
-    # Create output directory
-    subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
-    out_dir = os.path.join(subcatchment_path, 'station')
-    os.makedirs(out_dir, exist_ok=True)
 
     # Export observation at station
     obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index)
