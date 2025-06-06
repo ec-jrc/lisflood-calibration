@@ -43,7 +43,8 @@ def test_subcatchment_full(dummy_cfg):
     assert subcatch.path_station == os.path.join(dummy_cfg.subcatchment_path, str(380), 'station')
     assert subcatch.gaugeloc == '4307500.0 2377500.0'
     assert subcatch.inflowflag == '0'
-    os.remove(os.path.join(subcatch.path, "inflow", "inflow_cut.map"))
+    # 380 do not have any inflow
+    # os.remove(os.path.join(subcatch.path, "inflow", "inflow_cut.map"))
     os.remove(os.path.join(subcatch.path, "inflow", "inflow.map"))
 
 

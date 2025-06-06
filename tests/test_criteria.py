@@ -12,10 +12,10 @@ def test_front_history(dummy_cfg):
     print('checking front_history file')
 
     criteria = calibration.Criteria(deap_param)
-    criteria.effmax = np.array([[0.9999384017071802], [0.9999384017071802]])
-    criteria.effmin = np.array([[0.9999384017071802], [0.9999384017071802]])
-    criteria.effstd = np.array([[0.0], [0.0]])
-    criteria.effavg = np.array([[0.9999384017071802], [0.9999384017071802]])
+    criteria.effmax_KGE = np.array([[0.9999384017071802], [0.9999384017071802]])
+    criteria.effmin_KGE = np.array([[0.9999384017071802], [0.9999384017071802]])
+    criteria.effstd_KGE = np.array([[0.0], [0.0]])
+    criteria.effavg_KGE = np.array([[0.9999384017071802], [0.9999384017071802]])
 
     criteria.write_front_history(path_out, 2)
 
@@ -59,7 +59,7 @@ def test_termination_gen(dummy_cfg):
 
     gen = 1
     criteria.max_gen = 2
-    criteria.effmax = np.array([[0.991], [0.991]])
+    criteria.effmax_KGE = np.array([[0.991], [0.991]])
 
     criteria.check_termination_conditions(gen)
 

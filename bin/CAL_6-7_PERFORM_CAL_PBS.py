@@ -195,7 +195,7 @@ for index, row in stationdata_sorted.iterrows():
             if (numba_cache_root[:8]=="/local0/"):
                 f.write("rm -Rf " + path_current_numba_cache_dir + " \n")
             f.close()
-            cmd="qsub -l nodes=1:ppn=32 -q long -N "+job_name+" "+script_name
+            cmd="qsub -l nodes=1:ppn=32 -q long -W umask=022 -N "+job_name+" "+script_name
 
             timerqsub = 0
             

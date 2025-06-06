@@ -398,6 +398,43 @@ class ObjectiveKGE():
             # Write the message to the file
             file.write(message)
 
+    # select best calibration strategy between KGEJSD (1st or 2nd) and KGE
+    def select_best_calib(self, 
+        JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd,
+        CORR_bestKGE, KGE_bestKGE
+    ):
+        # Determine which KGEJSD run to select
+        if ((JSD_1st <= 0.1) and (JSD_2nd <= 0.1)) or ((JSD_1st > 0.1) and (JSD_2nd > 0.1)):
+            if (CORR_1st - CORR_2nd > 0.05) or ((CORR_1st - CORR_2nd <= 0.05) and (KGE_1st > KGE_2nd)):
+                KGE_bestKGEJSD = KGE_1st
+                CORR_bestKGEJSD = CORR_1st
+                JSD_bestKGEJSD = JSD_1st
+                bestKGEJSDtoResume = "1st"
+            else:
+                KGE_bestKGEJSD = KGE_2nd
+                CORR_bestKGEJSD = CORR_2nd
+                JSD_bestKGEJSD = JSD_2nd
+                bestKGEJSDtoResume = "2nd"
+        else:
+            if JSD_1st <= 0.1:
+                KGE_bestKGEJSD = KGE_1st
+                CORR_bestKGEJSD = CORR_1st
+                JSD_bestKGEJSD = JSD_1st
+                bestKGEJSDtoResume = "1st"
+            else:
+                KGE_bestKGEJSD = KGE_2nd
+                CORR_bestKGEJSD = CORR_2nd
+                JSD_bestKGEJSD = JSD_2nd
+                bestKGEJSDtoResume = "2nd"
+
+        # Determine if the long run should execute using KGE
+        # if both KGEJSD calibration failed for the JSD value, and KGE or Corr of the calibKGE are strictly superior, take it and reject KGEJSD calibration.
+        # if at least one JSD is <= 0.1, execute the long run using the KGE when delta_corr>0.05 or delta_KGE>0.05, otherwise resume KGEJSD calibration folders        
+        select_KGE = ((JSD_bestKGEJSD > 0.1) and ((CORR_bestKGE > CORR_bestKGEJSD) or (KGE_bestKGE > KGE_bestKGEJSD))) or \
+                     ((JSD_bestKGEJSD <= 0.1) and ((CORR_bestKGE - CORR_bestKGEJSD > 0.05) or (KGE_bestKGE - KGE_bestKGEJSD > 0.05)))
+
+        return select_KGE, bestKGEJSDtoResume, KGE_bestKGEJSD, CORR_bestKGEJSD, JSD_bestKGEJSD
+
     def process_results(self, runType = "KGEJSD_1st", compare_KGSJSD = False):
 
         pHistory = self.read_param_history()
@@ -413,18 +450,19 @@ class ObjectiveKGE():
             # Select max KGE value of the whole param history csv file
             maxKGEhistory = pHistory["Kling Gupta Efficiency"].max()  # store the maximum value of the KGE
         
-            # get Correlation and KGE of the selected KGEJSD calibrated parameter set
+            # get Correlation, KGE and JSD of the selected KGEJSD calibrated parameter set
             bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
             CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
             KGE_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
+            JSD_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["JSD"].values[0]
 
             if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == True:
                 self.write_pareto_front(pHistory_ranked, isKGE_JSD)
                 self.write_summary_file(selObjFun = runType)
                 return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)
             else:
-                # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095, stop here with a warning and a text file, avoiding to write the pareto_front file
-                if (maxCORRhistory - CORR_bestKGEJSD > 0.095) or (maxKGEhistory - KGE_bestKGEJSD > 0.095):
+                # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095 or JSD_bestKGEJSD > 0.1, stop here with a warning and a text file, avoiding to write the pareto_front file
+                if (maxCORRhistory - CORR_bestKGEJSD > 0.095) or (maxKGEhistory - KGE_bestKGEJSD > 0.095) or (JSD_bestKGEJSD > 0.1):
                     # the check has failed here, thus rename the files and folder to prepare restarting the calibration with KGE
                     renamed_pathout = self.subcatch.path_out + "_" + runType
                     os.rename(self.subcatch.path_out, renamed_pathout)
@@ -443,6 +481,7 @@ class ObjectiveKGE():
                         f"Selected kge-jsd calibrated item correlation value = {CORR_bestKGEJSD}\n" \
                         f"Max KGE value in param history = {maxKGEhistory}\n" \
                         f"Selected kge-jsd calibrated item KGE value = {KGE_bestKGEJSD}\n" \
+                        f"Selected kge-jsd calibrated item JSD value = {JSD_bestKGEJSD}\n" \
                         f"Repeating the calibration with 'KGE objective function'\n" \
                         f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
                     print(message)
@@ -470,25 +509,20 @@ class ObjectiveKGE():
                 bestParetoIndex_KGSJSD_1st = pHistory_ranked_KGSJSD_1st["paretoRank"].nsmallest(1).index
                 CORR_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Correlation"].values[0]            
                 KGE_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Kling Gupta Efficiency"].values[0]
+                JSD_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["JSD"].values[0]
 
                 # get Correlation and KGE of the selected KGEJSD_2nd calibrated parameter set
                 bestParetoIndex_KGSJSD_2nd = pHistory_ranked_KGSJSD_2nd["paretoRank"].nsmallest(1).index
                 CORR_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Correlation"].values[0]            
                 KGE_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Kling Gupta Efficiency"].values[0]
+                JSD_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["JSD"].values[0]
                 
-                # select best KGEJSD run (main condition: best correlation, otherwise best KGE)
-                if (CORR_bestKGEJSD_1st - CORR_bestKGEJSD_2nd > 0.05) or \
-                    ((CORR_bestKGEJSD_1st - CORR_bestKGEJSD_2nd <= 0.05) and (KGE_bestKGEJSD_1st > KGE_bestKGEJSD_2nd)):
-                    KGE_bestKGEJSD = KGE_bestKGEJSD_1st
-                    CORR_bestKGEJSD = CORR_bestKGEJSD_1st
-                    bestKGEJSDtoResume="1st"
-                else:
-                    KGE_bestKGEJSD = KGE_bestKGEJSD_2nd
-                    CORR_bestKGEJSD = CORR_bestKGEJSD_2nd
-                    bestKGEJSDtoResume="2nd"
+                select_KGE, bestKGEJSDtoResume, KGE_bestKGEJSD, CORR_bestKGEJSD, JSD_bestKGEJSD = self.select_best_calib(JSD_bestKGEJSD_1st, JSD_bestKGEJSD_2nd, \
+                                                                                                                         CORR_bestKGEJSD_1st, CORR_bestKGEJSD_2nd, \
+                                                                                                                         KGE_bestKGEJSD_1st, KGE_bestKGEJSD_2nd, \
+                                                                                                                         CORR_bestKGE, KGE_bestKGE)
                 
-                # execute the long run using the KGE if delta_corr>0.05 or delta_KGE>0.05, otherwise resume KGEJSD calibration folders
-                if (CORR_bestKGE - CORR_bestKGEJSD > 0.05) or (KGE_bestKGE - KGE_bestKGEJSD > 0.05):
+                if select_KGE:
                     # All good, continue using the current folders and running the long run with the KGE calibration
                     self.write_pareto_front(pHistory_ranked, isKGE_JSD)
                     self.write_summary_file(selObjFun = "KGE")
@@ -520,8 +554,10 @@ class ObjectiveKGE():
                         f"Selected kge calibrated item  KGE value = {KGE_bestKGE}\n" \
                         f"Selected kge-jsd 1st calibrated item correlation value = {CORR_bestKGEJSD_1st}\n" \
                         f"Selected kge-jsd 1st calibrated item KGE value = {KGE_bestKGEJSD_1st}\n" \
+                        f"Selected kge-jsd 1st calibrated item JSD value = {JSD_bestKGEJSD_1st}\n" \
                         f"Selected kge-jsd 2nd calibrated item correlation value = {CORR_bestKGEJSD_2nd}\n" \
                         f"Selected kge-jsd 2nd calibrated item KGE value = {KGE_bestKGEJSD_2nd}\n" \
+                        f"Selected kge-jsd 2nd calibrated item JSD value = {JSD_bestKGEJSD_2nd}\n" \
                         f"Resuming the calibration with 'KGEJSD objective function', {bestKGEJSDtoResume} attempt\n" \
                         f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
                     print(message)
