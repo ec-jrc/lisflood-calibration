@@ -30,11 +30,13 @@ dependencies = [
     "xarray",
     "deap",
     "matplotlib",
-    "scipy",
-    "hydro_analysis_toolkit @ git+https://github.com/ecmwf/hat.git@develop"
+    "scipy"
 ]
 
 [project.optional-dependencies]
+    explorers = [
+        "hydro_analysis_toolkit @ git+https://github.com/ecmwf/hat.git@develop"
+    ]
     test = [
         "pytest",
         "gzip",
