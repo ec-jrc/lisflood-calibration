@@ -2,7 +2,7 @@
 import os
 import argparse
 
-from liscal import config, subcatchment, objective, products
+from liscal import subcatchment, objective, products
 from liscal.config import ConfigPostProcessing
 
 

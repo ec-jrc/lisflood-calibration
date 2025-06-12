@@ -6,12 +6,7 @@ import sys
 import numpy as np
 import pandas
 import time
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser as Parser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser as Parser # Python 2.7-15
+from configparser import ConfigParser as Parser # Python 3.8
 import subprocess
 import random
 
