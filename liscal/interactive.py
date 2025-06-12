@@ -6,6 +6,7 @@ import xarray as xr
 from IPython.display import clear_output, display
 from ipywidgets import Output
 import ipywidgets
+import matplotlib.pyplot as plt
 
 from IPython.display import display, HTML
 from io import BytesIO
@@ -67,6 +68,7 @@ Error loading data for obsid {obsid}\n
                     
                     # Embed the image as a base64 string in the HTML
                     html_content += f'<img src="data:image/png;base64,{img_base64}" style="max-width:100%;"/><br>'
+                    plt.close(fig)
 
                 html_content += "</div>"
 
