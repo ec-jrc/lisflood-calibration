@@ -279,36 +279,69 @@ def stage_inflows(path_subcatch):
 # utility function for merging tss files from dynamic reservoir warmstart routine
 # to be moved in a new file reservoir.py, together with all dynamic reservoir management code
 def merge_tss_files(tss_file_list, output_tss_file):
-    if not tss_file_list:
-        raise ValueError("The tss file list is empty.")
-    if output_tss_file is None:
-        raise ValueError("Output tss file is None.")
-    # number of metadata lines header in tss
-    metadata_lines = 4  
-
     concatenated_data = []
-    for index, file_path in enumerate(tss_file_list):
+    all_column_names = set()
+    file_data = []
+
+    for file_path in tss_file_list:
         if not os.path.exists(file_path):
-            print(f'Skipping {file_path}')
-            return
-        
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-
-        if index == 0:
-            # Include all lines from the first file (metadata + data)
-            concatenated_data.extend(lines)
+            print(f'{file_path} not found. Skipping...')
         else:
-            # Skip metadata lines for subsequent files and add only data
-            concatenated_data.extend(lines[metadata_lines:])
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
 
-    # Write the concatenated data to the output file
-    with open(output_tss_file, 'w') as output_file:
-        output_file.writelines(concatenated_data)
+            # Remove empty lines at the end of the file
+            lines = [line for line in lines if line.strip()]
 
-    print(f'Merged file created: {output_tss_file}')
-    
-    
+            # Parse header to determine metadata lines and column count
+            header_lines, data_start_index, n_columns, column_names = parse_tss_header(lines)
+            all_column_names.update(column_names)
+            file_data.append((header_lines, data_start_index, column_names, lines[data_start_index:]))
+    if len(file_data)>0:
+        # Sort column names to have a consistent order
+        all_column_names = sorted(all_column_names)
+
+        # Build the final merged data
+        merged_header = create_merged_header(file_data[0][0], all_column_names)
+        concatenated_data.extend(merged_header)
+
+        for _, data_start_index, column_names, data_lines in file_data:
+            column_index_map = {name: i for i, name in enumerate(column_names)}
+            for line in data_lines:
+                parts = line.split()
+                timestep = parts[0]
+                values = parts[1:]
+                merged_line = [f"{timestep:>9}"]  # Format the timestep with width of 9
+
+                for col_name in all_column_names:
+                    if col_name in column_index_map:
+                        value_index = column_index_map[col_name]
+                        merged_line.append(f"{float(values[value_index]):>15}")  # Format values with width of 15
+                    else:
+                        merged_line.append(f"{0.0:>15}")  # Fill missing columns with zeros
+
+                concatenated_data.append(''.join(merged_line) + '\n')
+
+        # Write the concatenated data to the output file
+        with open(output_tss_file, 'w') as output_file:
+            output_file.writelines(concatenated_data)
+
+        print(f'Merged file created: {output_tss_file}')
+
+def parse_tss_header(lines):
+    # Read header to get number of columns and metadata
+    n_columns = int(lines[1].strip()) - 1     # exclude timestep from columns
+    column_names = [lines[i].strip() for i in range(3, 3 + n_columns)]
+    data_start_index = 3 + n_columns
+    return lines[:data_start_index], data_start_index, n_columns, column_names
+
+def create_merged_header(header_lines, all_column_names):
+    # Create a new header with all column names
+    merged_header = header_lines[:3]  # Keep the first three lines (timeseries, number of columns, timestep)
+    merged_header[1] = f"{len(all_column_names) + 1}\n"  # Update column count + timestep
+    merged_header.extend([name + '\n' for name in all_column_names])
+    return merged_header
+
 def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
     Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.

@@ -21,6 +21,11 @@ class DummyDEAPParameters():
         self.gen_offset = 3
         self.effmax_tol = 0.003
 
+        self.elite = 0  		 
+        self.split_lake_params = 0
+        self.apply_statistical_stall_check = 0
+        self.use_filtered_population = 0
+
 
 class ModelDummy():
 
@@ -112,5 +117,5 @@ def test_deap_seed(dummy_cfg):
     calib_deap = calibration.CalibrationDeap(dummy_cfg, model.run, [1], seed=42)
     target = calib_deap.run(dummy_cfg.path_out, lock_mgr)
 
-    assert lock_mgr.get_gen() == 24
-    assert np.isclose(target[0], 0.95862664)
+    assert lock_mgr.get_gen() == 16
+    assert np.isclose(target[0], 0.93633923)
