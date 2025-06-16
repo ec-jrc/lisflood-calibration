@@ -325,7 +325,7 @@ def merge_tss_files(tss_file_list, output_tss_file):
                         value_index = column_index_map[col_name]
                         merged_line.append(f"{float(values[value_index]):>15}")  # Format values with width of 15
                     else:
-                        merged_line.append(f"{0.0:>15}")  # Fill missing columns with zeros
+                        merged_line.append(f"{np.nan:>15}")  # Fill missing columns with nan
 
                 concatenated_data.append(''.join(merged_line) + '\n')
 
