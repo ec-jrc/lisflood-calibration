@@ -405,7 +405,7 @@ class ObjectiveKGE():
     ):
         # Determine which KGEJSD run to select
         if ((JSD_1st <= 0.1) and (JSD_2nd <= 0.1)) or ((JSD_1st > 0.1) and (JSD_2nd > 0.1)):
-            if (CORR_1st - CORR_2nd > 0.05) or ((CORR_1st - CORR_2nd <= 0.05) and (KGE_1st > KGE_2nd)):
+            if (CORR_1st - CORR_2nd > 0.05) or ((abs(CORR_1st - CORR_2nd) <= 0.05) and (KGE_1st > KGE_2nd)):
                 KGE_bestKGEJSD = KGE_1st
                 CORR_bestKGEJSD = CORR_1st
                 JSD_bestKGEJSD = JSD_1st
