@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 from liscal import hydro_stats, utils
+from liscal.stations import time_step_from_type
 
 
 class ObjectiveKGE():
@@ -151,7 +152,7 @@ class ObjectiveKGE():
         if cfg.timestep == 360:
             # DD: Check if daily or 6-hourly observed streamflow is available
             # DD: Aggregate 6-hourly simulated streamflow to daily ones
-            if self.subcatch.data["CAL_TYPE"].find("_24h") > -1:
+            if time_step_from_type(self.subcatch.data["CAL_TYPE"]) == 24:
                 # start and end have to be in datetime format to avoid "dayfirst" type bugs
                 # DD: Overwrite index with date range so we can use Pandas' resampling + mean function to easily average 6-hourly to daily data
                 Qsim.index = date_range
@@ -197,6 +198,8 @@ class ObjectiveKGE():
 
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
 
+        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
+
         additional_metrics = {}
         if compute_additional_metrics:
             additional_metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
@@ -204,7 +207,7 @@ class ObjectiveKGE():
             additional_metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
             additional_metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
             additional_metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
-            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs)            
+            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt = dt)            
 
         return kge_components, additional_metrics
 

@@ -11,10 +11,7 @@ import time
 from datetime import datetime
 ver = sys.version
 ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
+from configparser import ConfigParser # Python 3.8
 import glob
 import datetime
 import subprocess
@@ -71,10 +68,7 @@ iniFile = os.path.normpath(sys.argv[1])
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 
-if ver.find('3.') > -1:
-    parser = ConfigParser()  # python 3.8
-else:
-    parser = SafeConfigParser()  # python 2.7-15
+parser = ConfigParser()  # python 3.8
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')

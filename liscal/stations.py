@@ -43,9 +43,9 @@ def time_step_from_type(station_type):
         else:
             raise Exception('Calibration type {} not supported'.format(station_type))
     else:
-        if station_type.find("_6h") > -1:
+        if station_type.find("_6h") > -1 or station_type=='6':
             dt = 6
-        elif station_type.find("_24h") > -1:
+        elif station_type.find("_24h") > -1 or station_type=='24':
             dt = 24
         else:
             raise Exception('Calibration type {} not supported'.format(station_type))
