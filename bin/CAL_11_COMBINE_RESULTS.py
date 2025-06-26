@@ -42,12 +42,12 @@ def vectorize(raster_mask):
     return mypoly
 
 
-def get_mask(catch_id):
+def get_mask(cutmaps_dir, catch_id):
     'get the shapefile mask of the intercatchment used for the calibration'
 
     # get ldd as auxiliary for getting the xarray info
-    ldd = os.path.join(main_dir, 'calibration', str(catch_id), 'maps/ldd.nc')
-    ldd = xr.open_dataset(ldd)
+    ldd_path = os.path.join(cutmaps_dir, str(catch_id), 'maps/ldd.nc')
+    ldd = xr.open_dataset(ldd_path)
     projection = ldd['crs'].spatial_ref
     ldd = ldd['Band1']
 
@@ -56,7 +56,7 @@ def get_mask(catch_id):
     pcr.setclone(rows, cols, 1, 0, 0)
 
     # get the mask map and derive the mask xarray
-    maskmap = os.path.join(main_dir, 'calibration', str(catch_id), 'maps/masksmall.map')
+    maskmap = os.path.join(cutmaps_dir, str(catch_id), 'maps/masksmall.map')
     maskmap = pcr.readmap(maskmap)
     maskmap = pcr.pcr2numpy(maskmap, 0)
     maskmap = ldd.fillna(0)*0+maskmap
@@ -72,9 +72,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('settings_file', help='Calibration settings file')
+    parser.add_argument('cutmaps_path', help='Cutmaps main path')
     args = parser.parse_args()
 
     settings_file = args.settings_file
+    cutmaps_path = args.cutmaps_path
     
     # get the main directory from where inputs and outputs will be read/saved
     main_dir = settings_file.replace('/calibration/settings.txt', '')
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     shapefile_data = []
     for i_catch in data_all.ObsID:
         try:
-            i_data = get_mask(i_catch)
+            i_data = get_mask(cutmaps_path, i_catch)
             shapefile_data.append(i_data)
         except:
             print(f'No spatial data for catchment {i_catch}!')
