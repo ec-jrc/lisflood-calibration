@@ -5,19 +5,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 
-import subprocess
-import traceback
-import random
-import time
-import sys
-
 # lisflood
 import lisf1
 from lisflood.global_modules.decorators import Cache
 from lisflood.global_modules.settings import LisSettings
 
 from liscal import stations, utils
-import xml.etree.ElementTree as ET
 
 
 class HydrologicalModel():

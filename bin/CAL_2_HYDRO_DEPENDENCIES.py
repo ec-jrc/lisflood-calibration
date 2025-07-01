@@ -3,7 +3,6 @@ import os
 import sys
 import argparse
 import pandas
-import datetime
 import numpy as np
 
 from liscal.pcr_utils import pcrasterCommand, getPCrasterPath

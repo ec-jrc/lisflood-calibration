@@ -1,12 +1,9 @@
-#!/fws5/lb/user/macw/lisflow_efas5/local/lisflow_env/bin/python3
-
 import os
 import xarray as xr
 import numpy as np
 import pcraster as pcr
 
 import dask
-#from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
 from multiprocessing.pool import ThreadPool
 
 from liscal import pcr_utils

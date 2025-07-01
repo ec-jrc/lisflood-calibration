@@ -1,7 +1,6 @@
 from datetime import timedelta
 import os
 import numpy as np
-from netCDF4 import Dataset
 from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
 from lisflood.global_modules.settings import LisSettings
 
