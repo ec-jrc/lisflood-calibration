@@ -10,8 +10,6 @@ from lisflood.global_modules.settings import LisSettings
 from pcraster import boolean
 
 
-import numpy as np
-
 def time_step_from_type(station_type):
     """
     Determines the time step (6 or 24) based on the station/calibration type.
