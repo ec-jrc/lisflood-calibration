@@ -29,8 +29,12 @@ def time_step_from_type(station_type):
     Exception
         If the input type or format is unsupported.
     """
-    # Handle numeric types
-    if isinstance(station_type, (int, float, np.int64, np.float64)):
+    # Handle 0D NumPy arrays (e.g., np.array(6.0))
+    if isinstance(station_type, np.ndarray) and station_type.shape == ():
+        station_type = station_type.item()  # Extract scalar
+
+    # Normalize numeric types
+    if isinstance(station_type, (int, float, np.integer, np.floating)):    
         station_type = int(station_type)
         if station_type in (6, 24):
             return station_type
