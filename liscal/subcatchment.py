@@ -1,11 +1,8 @@
 import os
-import sys
 import pandas
 import numpy as np
-import pcraster as pcr
-from datetime import datetime, timedelta
 
-from liscal import pcr_utils, utils, stations
+from liscal import pcr_utils, utils
 
 
 class SubCatchment():

@@ -13,20 +13,21 @@ pcr= 1
 
 def set_calibrated_parameters(param_ranges, index, path_subcatch, params, interstation, lakes_reservoirs_default=False):
 	count_front = 0
-	if os.path.isfile(os.path.join(path_subcatch, "pareto_front.csv")):
-		count_front = 1
-		pareto_front = pandas.read_csv(os.path.join(path_subcatch,"pareto_front.csv"))
-	
-		# Assign these to maps
-		for ii in range(0, len(param_ranges)):
-			if lakes_reservoirs_default and param_ranges.index[ii] in ['LakeMultiplier', 'adjust_Normal_Flood', 'ReservoirRnormqMult']:
-				paramvalue = param_ranges.iloc[ii,2]
-			else:
-				paramvalue = pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]][0]
-			param = param_ranges.index[ii]
-			params[param] = pcr.ifthenelse(interstation==index, pcr.scalar(float(paramvalue)), pcr.scalar(params[param]))
-	else:
+	if not os.path.isfile(os.path.join(path_subcatch, "pareto_front.csv")):
 		raise Exception(f'Could not find optimised parameters for catchment {index} in {path_subcatch}')
+	
+	count_front = 1
+	pareto_front = pandas.read_csv(os.path.join(path_subcatch,"pareto_front.csv"))
+
+	# Assign these to maps
+	for ii in range(len(param_ranges)):
+		if lakes_reservoirs_default and param_ranges.index[ii] in ['LakeMultiplier', 'adjust_Normal_Flood', 'ReservoirRnormqMult']:
+			paramvalue = param_ranges.iloc[ii,2]
+		else:
+			paramvalue = pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]][0]
+		param = param_ranges.index[ii]
+		params[param] = pcr.ifthenelse(interstation==index, pcr.scalar(float(paramvalue)), pcr.scalar(params[param]))
+		
 	return count_front
 
 
@@ -79,7 +80,7 @@ if __name__=="__main__":
 	interstation_regions_map = os.path.join(path_stations,"interstation_regions.map")
 	interstation = pcr.readmap(interstation_regions_map)
 	params = {}
-	for ii in range(0,len(param_ranges)):
+	for ii in range(len(param_ranges)):
 		param = param_ranges.index[ii]
 		params[param] = pcr.scalar(interstation)*0.0
 		

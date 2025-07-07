@@ -3,9 +3,6 @@ import numpy as np
 import pandas
 from datetime import datetime
 from configparser import ConfigParser, NoOptionError
-from liscal import pcr_utils, calibration
-from lisflood.global_modules.add1 import loadmap, compressArray
-from pcraster import boolean
 
 class Config():
     """
@@ -76,14 +73,14 @@ class DEAPParameters():
         self.pop = int(parser.get('DEAP','pop'))
         self.mu = int(parser.get('DEAP','mu'))
         self.lambda_ = int(parser.get('DEAP','lambda_'))
-        self.elite = int(parser.get('DEAP','elite')) # usually take 10% of mu as elites to keep in new population
+        self.elite = int(parser.get('DEAP','elite', fallback=0)) # usually take 10% of mu as elites to keep in new population.
         self.cxpb = 0.6
         self.mutpb = 0.4
         self.gen_offset = int(parser.get('DEAP','gen_offset'))
         self.effmax_tol = float(parser.get('DEAP','effmax_tol'))
-        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params')))
-        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check')))
-        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population')))
+        self.split_lake_params = bool(int(parser.get('DEAP','split_lake_params', fallback=0)))
+        self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check', fallback=0)))
+        self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population', fallback=0)))
 
         self.stop_on_low_kgejsd = bool(int(parser.get('DEAP','stop_on_low_kgejsd', fallback=0)))
 
@@ -198,7 +195,7 @@ class ConfigCalibration(Config):
         if self.prerun_timestep != 360 and self.prerun_timestep != 1440:
             raise Exception('Pre-run timestep {} not supported'.format(self.prerun_timestep))
         
-        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years'))  # max calibration years, used to compute split date
+        self.num_max_calib_years = int(self.parser.get('Main', 'num_max_calib_years', fallback=20))  # max calibration years, used to compute split date
 
         # deap
         self.deap_param = DEAPParameters(self.parser)
@@ -244,6 +241,8 @@ class ConfigCalibration(Config):
                 self.param_ranges.drop("LakeMultiplier", inplace=True)
         else:
             if split_lake_params==True:
+                from lisflood.global_modules.add1 import loadmap, compressArray
+                from pcraster import boolean
                 # check how many lakes are in the catchment
                 self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
                 IsChannelPcr = boolean(loadmap('Channels', pcr=True))
@@ -293,3 +292,50 @@ class ConfigCalibration(Config):
                 if 'TransSub' in self.param_ranges.index:
                     self.param_ranges.drop("TransSub", inplace=True)
 
+class PlotParameters():
+
+    title_size_big = 32
+    title_size_small = 18
+    label_size = 30
+    axes_size = 24
+    legend_size_small = 16
+    threshold_size = 24
+
+    file_format = 'svg'
+
+    text = {
+        'figure': {'autolayout': True},
+        'font': {
+            'size': 14,
+            'family':'sans-serif',
+            'sans-serif':['Arial'],
+            'weight': 'bold'
+        },
+        'text': {'usetex': True},
+        'axes': {'labelweight': 'bold'},
+    }
+
+
+class ConfigPostProcessing(ConfigCalibration):
+
+    def __init__(self, settings_file):
+        super().__init__(settings_file)
+
+        # paths
+        self.summary_path = self.parser.get('Path','summary_path')
+
+        # # Date parameters
+        # self.forcing_start = datetime.strptime(self.parser.get('Main','forcing_start'),"%d/%m/%Y %H:%M")
+        # self.forcing_end = datetime.strptime(self.parser.get('Main','forcing_end'),"%d/%m/%Y %H:%M")
+        # self.timestep = int(self.parser.get('Main', 'timestep'))  # in minutes
+        # if self.timestep != 360 and self.timestep != 1440:
+        #     raise Exception('Calibration timestep {} not supported'.format(self.timestep))
+
+        # # we don't use it but required for objectives object
+        # self.param_ranges = None
+
+        # # stations
+        # self.stations_data = self.parser.get('Stations', 'stations_data')
+
+        # plot parameters
+        self.plot_params = PlotParameters()

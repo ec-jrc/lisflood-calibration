@@ -5,15 +5,8 @@ import os
 import sys
 import numpy as np
 import pandas
-import re
-import pdb
 import time
-from datetime import datetime
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-from configparser import ConfigParser # Python 3.8
-import glob
-import datetime
+from configparser import ConfigParser as Parser # Python 3.8
 import subprocess
 import random
 
@@ -68,7 +61,7 @@ iniFile = os.path.normpath(sys.argv[1])
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 
-parser = ConfigParser()  # python 3.8
+parser = Parser()
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')

@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 import os
-import sys
 import argparse
 import pandas as pd
-import datetime
-import numpy as np
 from configparser import ConfigParser
-
-
-from liscal.pcr_utils import pcrasterCommand, getPCrasterPath
 
 if __name__=="__main__":
     print("=================== START ===================")
