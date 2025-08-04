@@ -61,7 +61,7 @@ def main(main_folder):
             data_df[station_id] = missing_df[station_id]
 
     # Format the 'day' column to 'dd/mm/yyyy HH:MM' with '00:00' as the time
-    data_df['day'] = pd.to_datetime(data_df['day']).dt.strftime('%d/%m/%Y 00:00')
+    data_df['day'] = pd.to_datetime(data_df['day'], dayfirst=True).dt.strftime('%d/%m/%Y 00:00')
 
     # Save the corrected data to a new CSV file
     output_file = os.path.join(output_folder, 'data_corrected.csv')
