@@ -102,7 +102,9 @@ for index, row in stationdata_sorted.iterrows():
     print("=================== "+str(catchment)+" ====================")
     path_subcatch = os.path.join(SubCatchmentPath,str(catchment))
     if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")) or \
-        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")):
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighTL.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         continue
     print(">> Starting calibration of catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")
