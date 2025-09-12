@@ -459,7 +459,17 @@ class ObjectiveKGE():
             KGE_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
             JSD_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["JSD"].values[0]
 
-            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == True:
+            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd > 0:
+                calibstatus_file_path_KGEJSDLow = os.path.join(self.subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
+                message = "KGEJSD 1st calibration failed, low KGE, running longterm run and STOP here..."
+                print(message)
+                
+                # Open the file in write mode
+                with open(calibstatus_file_path_KGEJSDLow, 'w') as file:
+                    # Write the message to the file
+                    file.write(message)
+                    
+            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == 1:
                 self.write_pareto_front(pHistory_ranked, isKGE_JSD)
                 self.write_summary_file(selObjFun = runType)
                 return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)

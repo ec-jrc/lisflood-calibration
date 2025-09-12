@@ -14,7 +14,9 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
 
     print("=================== "+str(obsid)+" ====================")
     if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")) or \
-        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForLowKGE.csv")):
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForHighTL.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
@@ -50,18 +52,19 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
 
             hydro_model.generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events)
             # additional Checks to STOP downstream catchments calibration 
-            # 1) KGElow  KGE<-0.41 (Already applyed in CAL6)
+            # 1) KGE is low  KGE<-0.41 (Already applyed in CAL6)
             # 2) HighWaterRemoval TransSub>0.12 & GwLoss >0.9 & GwPerc>1 & b_Xinanjiang<1 & PowerPrefFlow>5 & LowerZoneTimeConstant>500
             # 3) HighTL ratio cumsum(TransmLosslong_term_run.tss)[end]/ (cumsum(rainUpslong_term_run.tss[end)[end]+cumsum(snowUpslong_term_run.tss)[end]) >0.40
-            if cfg.deap_param.stop_on_low_kgejsd == True:
+            if cfg.deap_param.stop_on_low_kgejsd > 0:            
                 calibstatus_file_path_KGEJSDLow = os.path.join(subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
                 # check for KGElow  KGE<-0.41 (Already applyed in CAL6)
                 if os.path.exists(calibstatus_file_path_KGEJSDLow)==True:
                     out_dir = subcatch.path_out
-                    os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.csv"))
-                    os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.tss"))
-                    os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.csv"))
-                    os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.tss"))
+                    if cfg.deap_param.stop_on_low_kgejsd == 1:
+                        os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.csv"))
+                        os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.tss"))
+                        os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.csv"))
+                        os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.tss"))
             
                 # check for HighWaterRemoval
                 try:
@@ -85,10 +88,11 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                                 file.write(message)
 
                             out_dir = subcatch.path_out
-                            os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.csv"))
-                            os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.tss"))
-                            os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.csv"))
-                            os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.tss"))
+                            if cfg.deap_param.stop_on_low_kgejsd == 1:
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.csv"))
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.tss"))
+                                os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.csv"))
+                                os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.tss"))
                         except:
                             print("Warning: issue in HighWaterRemoval Stop condition")
                             pass                        
@@ -127,10 +131,11 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                                 file.write(message)
 
                             out_dir = subcatch.path_out
-                            os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.csv"))
-                            os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.tss"))
-                            os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.csv"))
-                            os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.tss"))
+                            if cfg.deap_param.stop_on_low_kgejsd == 1:
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.csv"))
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.tss"))
+                                os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.csv"))
+                                os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.tss"))
                         except:
                             print("Warning: issue in HighTL Stop condition")
                             pass                        
