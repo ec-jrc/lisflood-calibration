@@ -721,6 +721,6 @@ def evap_index_BUDYKO(tot_precip,tot_etactBudyko,tot_PETBudyko):
     dryness_index=float(tot_PETBudyko)/float(tot_precip)
     #dryness index according to Budyko
     optimal_evap_index=budyko(dryness_index)
-    budyko_distance=(optimal_evap_index-evap_index)/optimal_evap_index
+    budyko_distance=(evap_index-optimal_evap_index)/optimal_evap_index
 
     return evap_index,budyko_distance
