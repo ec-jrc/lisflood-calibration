@@ -33,7 +33,7 @@ def construct_dfs(base_path, catchment_id, plot_groupings):
   
   return observations_df, simulations_df, stations_info_df, stats_df # decide if we use stats_df or not
 
-def discharge_plot(observations_df, simulations_df, stations_info_df, savepath="", save=True):
+def discharge_plot(observations_df, simulations_df, stations_info_df, catchment_id, savepath="", save=True):
   fig = go.Figure()
   fig.add_trace(go.Scatter(
       x=simulations_df['time'],
@@ -57,10 +57,10 @@ def discharge_plot(observations_df, simulations_df, stations_info_df, savepath="
       height=500
   )
   if save:
-    fig.write_html(f"{savepath}{station_name}_dis.html")
+    fig.write_html(f"{savepath}{catchment_id}_dis.html")
   return fig
 
-def other_var_plots(simulations_df, stations_info_df, plot_groupings, savepath="", save=True):
+def other_var_plots(simulations_df, stations_info_df, plot_groupings, catchment_id, savepath="", save=True):
   figs = []
   for plot_vars in plot_groupings:
     num_plots = len(plot_vars)
@@ -88,6 +88,6 @@ def other_var_plots(simulations_df, stations_info_df, plot_groupings, savepath="
         for var in subplot_vars
     ]) + ".html"
     if save:
-      fig.write_html(f"{savepath}{station_name}_{figure_name}")
+      fig.write_html(f"{savepath}{catchment_id}_{figure_name}")
     figs.append(fig)
   return figs
