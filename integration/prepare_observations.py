@@ -30,8 +30,17 @@ def main(main_folder):
                 print(f"Error: Station ID {station_id} not found in data.csv")
                 continue
 
+            # Check if 'day' or 'time' columns exist
+            if 'day' in corrected_df.columns:
+                date_column = 'day'
+            elif 'time' in corrected_df.columns:
+                date_column = 'time'
+            else:
+                print(f"Warning: No 'day' or 'time' column found for Station ID {station_id}.")
+                continue
+
             # Check if the number of rows and day column match
-            if len(data_df) != len(corrected_df) or not (data_df['day'].equals(corrected_df['day'])):
+            if len(data_df) != len(corrected_df) or not (data_df['day'].equals(corrected_df[date_column])):
                 print(f"Error: Mismatch in row count or 'day' values for station ID {station_id}")
                 continue
             
@@ -52,8 +61,17 @@ def main(main_folder):
                 print(f"Error: Station ID {station_id} already exists in data.csv")
                 continue
 
+            # Check if 'day' or 'time' columns exist
+            if 'day' in missing_df.columns:
+                date_column = 'day'
+            elif 'time' in missing_df.columns:
+                date_column = 'time'
+            else:
+                print(f"Warning: No 'day' or 'time' column found for Station ID {station_id}.")
+                continue
+            
             # Check if the number of rows and day column match
-            if len(data_df) != len(missing_df) or not (data_df['day'].equals(missing_df['day'])):
+            if len(data_df) != len(missing_df) or not (data_df['day'].equals(missing_df[date_column])):
                 print(f"Error: Mismatch in row count or 'day' values for station ID {station_id}")
                 continue
             
