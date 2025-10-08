@@ -11,6 +11,7 @@ prerun_timestep = 1440
 fast_debug = 0
 min_obs_years = 3.5
 num_max_calib_years = 20
+# Optional: use_aridity_index_check = 0 (Default). If set to 1, this flag will check aridity index and disable TransSub parameter in calibration for values >= 0.5
 
 [Stations]
 stations_data = STATIONS/stations_data.csv
@@ -58,6 +59,6 @@ objectives = KGE
 # split_lake_params = option to split lake multiplier parameter: 1 = one param for each lake, 0 = one param only for all the lakes
 # apply_statistical_stall_check = use statistical t-test between population individuals KGE values of current generation VS previous "gen_offset" generations and continue if the KGE is significantly higher
 # use_filtered_population = filter out outliers when computing t_test in statistical stop condition
-# stop_on_low_kgejsd = stop recalibration workflow when KGEJSD is low (<-0.41). Default value = 0
+# stop_on_low_kgejsd = stop recalibration KGEJSD workflow when KGE is low (<-0.41) or HighWaterRemoval or HighTL conditions. Default value = 0
 
 

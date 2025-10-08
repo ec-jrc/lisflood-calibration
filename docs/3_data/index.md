@@ -34,6 +34,7 @@ longterm_prerun_end = 31/12/2017 06:00 # Optional: when to end the prerun in the
 prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
 fast_debug = 0  # Flag to set to 1 for quicker debugging
 num_max_calib_years = 20 # Maximum number of years of observation to use during calibration
+# Optional: use_aridity_index_check = 0 (Default). If set to 1, this flag will check aridity index and disable TransSub parameter in calibration for values >= 0.5
 
 [Stations]
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
@@ -67,7 +68,15 @@ split_lake_params = 1
 apply_statistical_stall_check = 1
 # filter out outliers when computing t_test in statistical stop condition
 use_filtered_population = 1
-# stop calibration workflow when KGEJSD is low (<-0.41). This flag is used in recalibration workflow process. (default 0=False)
+# When calibrating with KGE_JSD objective, stop calibration workflow when one or more of the following conditions are met:
+# 1) KGEJSDlow  (KGE<-0.41 during first attempt of KGE_JSD calibration)
+# 2) HighWaterRemoval (TransSub>0.12 & GwLoss >0.9 & GwPerc>1 & b_Xinanjiang<1 & PowerPrefFlow>5 & LowerZoneTimeConstant>500)
+# 3) HighTL (ratio cumsum(TransmLosslong_term_run.tss)[end]/(cumsum(rainUpslong_term_run.tss[end)[end]+cumsum(snowUpslong_term_run.tss)[end]) > 0.40)
+# This flag is used in recalibration workflow process. Value can be 
+# 0: Do not stop and ignore these conditions
+# 1: Stop when at least one condition is met
+# 2: Just log in txt files 
+# (default 0)
 stop_on_low_kgejsd = 0
 
 # Select the list of objectives. If "objectives" option is missing, it will use just the "KGE"

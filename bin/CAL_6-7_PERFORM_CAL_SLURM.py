@@ -5,17 +5,9 @@ import os
 import sys
 import numpy as np
 import pandas
-import re
-import pdb
 import time
 from datetime import datetime
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
-import glob
+from configparser import ConfigParser as Parser # Python 3.8
 import subprocess
 import random
 
@@ -70,10 +62,7 @@ iniFile = os.path.normpath(sys.argv[1])
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 
-if ver.find('3.') > -1:
-    parser = ConfigParser()  # python 3.8
-else:
-    parser = SafeConfigParser()  # python 2.7-15
+parser = Parser()
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')
@@ -113,7 +102,9 @@ for index, row in stationdata_sorted.iterrows():
     print("=================== "+str(catchment)+" ====================")
     path_subcatch = os.path.join(SubCatchmentPath,str(catchment))
     if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")) or \
-        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")):
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighTL.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         continue
     print(">> Starting calibration of catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")

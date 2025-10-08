@@ -119,7 +119,7 @@ if __name__ == '__main__':
         StepsInOneDAy=86400/(ts*3600)
 
         # get calibration dates
-        cal_start = (datetime.strptime(station_data.loc['Obs_start'].item(),"%d/%m/%Y %H:%M") - timedelta(days=float(spinup))).strftime('%d/%m/%Y %H:%M')
+        cal_start = (datetime.strptime(station_data.loc['Split_date'].item(),"%d/%m/%Y %H:%M") - timedelta(days=float(spinup))).strftime('%d/%m/%Y %H:%M')
         cal_end = datetime.strptime(station_data.loc['Obs_end'].item(),"%d/%m/%Y %H:%M").strftime('%d/%m/%Y %H:%M')
 
         # open meteo precipitation and meteo maps and compute total

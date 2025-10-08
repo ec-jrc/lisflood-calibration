@@ -35,7 +35,7 @@ Functions:
 # import required modules
 import numpy as np
 from random import randrange
-
+from scipy.stats import iqr
 
 def filter_nan(s,o):
     """
@@ -165,20 +165,20 @@ def mae(s,o):
     return np.mean(abs(s-o))
 
 # DD try using the MAE as objective function
-def maeSkill(s, o, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
-    s,o = filter_nan(s,o)
-    if lowFlowPercentileThreshold > 0:
-        # DD Construct CDF of observation
-        olen = len(o)
-        osorted = np.sort(o)
-        ocdf = np.array(xrange(olen)) / float(olen)
-        # Interpolate to the requested percentile
-        othr = np.interp(lowFlowPercentileThreshold,ocdf,osorted)
-        if usePeaksOnly:
-            # Filter out the low flow completely
-            s = s[o > othr]
-            o = o[o > othr]
-    return 1.0 - mae(s, o)
+# def maeSkill(s, o, lowFlowPercentileThreshold=0.0, usePeaksOnly=False):
+#     s,o = filter_nan(s,o)
+#     if lowFlowPercentileThreshold > 0:
+#         # DD Construct CDF of observation
+#         olen = len(o)
+#         osorted = np.sort(o)
+#         ocdf = np.array(xrange(olen)) / float(olen)
+#         # Interpolate to the requested percentile
+#         othr = np.interp(lowFlowPercentileThreshold,ocdf,osorted)
+#         if usePeaksOnly:
+#             # Filter out the low flow completely
+#             s = s[o > othr]
+#             o = o[o > othr]
+#     return 1.0 - mae(s, o)
 
 def bias(s,o):
     """
@@ -441,58 +441,113 @@ def index_agreement(s,o):
     return ia
 
 
-def js_div_bq_l2(obs, sim):
+## JSD - new improved JSD - discretized version with revised (scale-invariant) binning strategy
+# ts_s=86400 for daily time step
+def jsd_fd_log(obs, sim, ts_s):
     """
-	Discretized Jensen-Shannon Divergence 
-	input:
+    Discretized Jensen-Shannon Divergence 
+    input:
         obs: observed
         sim: simulated
+        ts_s: data time step in seconds
     output:
-        js_div: Jensen-Shannon Divergence in bits (using log2 in the JS equation)
+        js_div: Jensen-Shannon Divergence in bits (using log2 in the JSD equation)
     """
 
-# Jensen-Shannon Divergence - log2 with non-uniform bins by quantiles of concantenated data
+# Jensen-Shannon Divergence - log2 with bins by quantiles of concantenated data
 
 # The Jensen-Shannon-Divergence measures the distance between two data distributions
 # The JS-div falls between 1 and 0 given that one uses the base 2 logarithm (output in bits), 
 # with 0 meaning that the distributions are equal.
 
+    # Fixed hyperparameters
+    epsilon = 1e-6
+    min_nbins = 25
+    max_nbins = 100
+
+    # time-step scaling factor
+    ts_factor = ts_s / 86400
+
+    ## non-finite and non-positive data filtering
+    obs = obs[np.isfinite(obs) & (obs >= 0)]
+    sim = sim[np.isfinite(sim) & (sim >= 0)]
+
+    # epsilon adjustments for safety and data distribution consistency
+    if len(obs[obs > 0]) > 0:
+        obs_min_nonzero = np.min(obs[obs > 0])
+    else:
+        obs_min_nonzero = epsilon
+    if len(sim[sim > 0]) > 0:
+        sim_min_nonzero = np.min(sim[sim > 0])
+    else:
+        sim_min_nonzero = epsilon
+    epsilon_max = min(obs_min_nonzero, sim_min_nonzero)
+
+    if epsilon > epsilon_max:
+        epsilon = epsilon_max * 1e-1
+
+    obs[obs == 0] = epsilon
+    sim[sim == 0] = epsilon
+
+    # log transformation
+    obs_log = np.log(obs)
+    sim_log = np.log(sim)
+
     # Ensure bins are computed over the entire range of data (obs & sim)
-    all_data = np.concatenate((obs, sim))
-    
-    # Set number of bins as default value (Rice, 1944): 2 * cubic root of the number of samples
-    bins = int(2 * len(all_data)**(1/3)) # use number of samples (obs, sim) to define number of bins
-    
-    # Generate non-uniform bins using quantiles of all data
-    bin_edges = np.quantile(all_data, np.linspace(0, 1, bins + 1)) 
-    
+    all_data = np.concatenate([obs_log, sim_log])
+    obs_log_min = np.min(all_data)
+    obs_log_max = np.max(all_data)
+
+    # Freedman–Diaconis (FD) binning rule
+    iqr_val = iqr(obs_log, nan_policy='omit')
+
+    if iqr_val == 0:
+        bin_width = (obs_log_max - obs_log_min) / min_nbins # fallback bin width
+    else:
+        bin_width = 2 * iqr_val / len(obs_log)**(1/3)  # FD-based bin width
+
+    # Get number of bins (FD + safety limits)
+    absolute_min_width = epsilon * 100    
+    bin_width = max(bin_width, absolute_min_width)
+    range_width = obs_log_max - obs_log_min
+    n_bins = max(min(int(np.ceil((ts_factor**(1/3)) * range_width / bin_width)), max_nbins), min_nbins)
+
+    # Generate bin edges 
+    bin_edges = np.linspace(obs_log_min, obs_log_max, n_bins + 1)  
+    bin_edges = bin_edges[np.isfinite(bin_edges)]                  
+
+    bin_edges[0] = min(bin_edges[0], obs_log_min)
+    bin_edges[-1] = max(bin_edges[-1], obs_log_max)
+
     # Compute the histogram for observed and simulated data with density normalization
-    p_hist, _ = np.histogram(obs, bins=bin_edges, density=True)
-    q_hist, _ = np.histogram(sim, bins=bin_edges, density=True)
-    
+    p_hist, _ = np.histogram(obs_log, bins=bin_edges, density=True)
+    q_hist, _ = np.histogram(sim_log, bins=bin_edges, density=True)
+
     # Avoid zero probabilities by adding a small epsilon
-    epsilon = 1e-8
     p_hist = p_hist + epsilon
     q_hist = q_hist + epsilon
 
     # Normalize histograms to ensure they represent probability distributions
     p_hist /= np.nansum(p_hist)
     q_hist /= np.nansum(q_hist)
-
+    
     # Compute the mixture distribution
     mix_hist = 0.5 * (p_hist + q_hist)
     
-    # Calculate JS divergence using base-2 logarithm - version 2 - more robust to manage cases of null-probability bins (to avoid NaNs)
+    # Calculate JS divergence using base-2 logarithm
     js_div = 0.5 * np.nansum(p_hist * np.log2(p_hist / mix_hist)) + 0.5 * np.nansum(q_hist * np.log2(q_hist / mix_hist))
 
     return js_div
 
-def KGE_JSD(s,o):
+
+
+def KGE_JSD(s,o,dt):
     """
 	Modified Kling Gupta Efficiency with additional Jensen-Shannon Divergence component 
 	input:
         s: simulated
         o: observed
+        dt: observations time step (in hours)
     output:
         KGE: Kling Gupta Efficiency
     """
@@ -500,18 +555,20 @@ def KGE_JSD(s,o):
     B = np.mean(s) / np.mean(o)
     y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
     r = np.corrcoef(o, s)[0,1]
-    JSD = js_div_bq_l2(o, s) # Jensen-Shannon Divergence
+    ts_s = dt*3600
+    JSD = jsd_fd_log(o, s, ts_s)   ## Jensen-Shannon Divergence
     
     KGE_JSD = 1 - np.sqrt( (r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2 + JSD**2 )
 
     return KGE_JSD
 
-def fKGE_JSD(s, o):
+def fKGE_JSD(s, o, dt):
     """
 	Modified filtered Kling Gupta Efficiency with additional Jensen-Shannon Divergence component 
 	input:
         s: simulated
         o: observed
+        dt: observations time step (in hours)
     output:
         KGE: Kling Gupta Efficiency
         r:   correlation component
@@ -524,7 +581,8 @@ def fKGE_JSD(s, o):
     r = np.corrcoef(o, s)[0,1]
     B = np.mean(s) / np.mean(o)
     y = (np.std(s) / np.mean(s)) / (np.std(o) / np.mean(o))
-    JSD = js_div_bq_l2(o, s) # Jensen-Shannon Divergence
+    ts_s = dt*3600
+    JSD = jsd_fd_log(o, s, ts_s)   ## Jensen-Shannon Divergence
         
     aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2 + JSD**2 )
     
@@ -669,6 +727,6 @@ def evap_index_BUDYKO(tot_precip,tot_etactBudyko,tot_PETBudyko):
     dryness_index=float(tot_PETBudyko)/float(tot_precip)
     #dryness index according to Budyko
     optimal_evap_index=budyko(dryness_index)
-    budyko_distance=(optimal_evap_index-evap_index)/optimal_evap_index
+    budyko_distance=(evap_index-optimal_evap_index)/optimal_evap_index
 
     return evap_index,budyko_distance

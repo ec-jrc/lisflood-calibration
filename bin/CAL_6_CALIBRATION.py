@@ -64,15 +64,6 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
                     else:
                         if reason == "KGEJSD_Low":
                             # Execute longterm run and stop
-                            calibstatus_file_path_KGEJSDLow = os.path.join(subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
-                            message = "KGEJSD 1st calibration failed, low KGE, running longterm run and STOP here..."
-                            print(message)
-                            
-                            # Open the file in write mode
-                            with open(calibstatus_file_path_KGEJSDLow, 'w') as file:
-                                # Write the message to the file
-                                file.write(message)
-
                             rerun_with_KGEJSD = False
                             del calib_deap
                             del model
