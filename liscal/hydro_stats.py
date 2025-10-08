@@ -473,8 +473,14 @@ def jsd_fd_log(obs, sim, ts_s):
     sim = sim[np.isfinite(sim) & (sim >= 0)]
 
     # epsilon adjustments for safety and data distribution consistency
-    obs_min_nonzero = np.min(obs[obs > 0])
-    sim_min_nonzero = np.min(sim[sim > 0])
+    if len(obs[obs > 0]) > 0:
+        obs_min_nonzero = np.min(obs[obs > 0])
+    else:
+        obs_min_nonzero = epsilon
+    if len(sim[sim > 0]) > 0:
+        sim_min_nonzero = np.min(sim[sim > 0])
+    else:
+        sim_min_nonzero = epsilon
     epsilon_max = min(obs_min_nonzero, sim_min_nonzero)
 
     if epsilon > epsilon_max:
