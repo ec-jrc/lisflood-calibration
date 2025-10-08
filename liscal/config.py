@@ -225,7 +225,7 @@ class ConfigCalibration(Config):
         self.reservoir_events = self.parser.get('Stations', 'reservoir_events', fallback=None)
 
         # flag to enable aridity index check 
-        self.use_aridity_index_check = bool(self.parser.get('Main', 'use_aridity_index_check', fallback=0))
+        self.use_aridity_index_check = bool(int(self.parser.get('Main', 'use_aridity_index_check', fallback=0)))
 
 
         # pcraster commands

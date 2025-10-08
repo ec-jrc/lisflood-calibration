@@ -34,6 +34,7 @@ longterm_prerun_end = 31/12/2017 06:00 # Optional: when to end the prerun in the
 prerun_timestep = 1440  # Timestep of the prerun (can be different than calibration to accelerate the process)
 fast_debug = 0  # Flag to set to 1 for quicker debugging
 num_max_calib_years = 20 # Maximum number of years of observation to use during calibration
+# Optional: use_aridity_index_check = 0 (Default). If set to 1, this flag will check aridity index and disable TransSub parameter in calibration for values >= 0.5
 
 [Stations]
 stations_data = STATIONS/stations_data.csv  # Path to the stations CSV file
