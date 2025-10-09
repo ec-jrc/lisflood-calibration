@@ -3984,6 +3984,12 @@ soil layer 3 [V/V]
                 </comment>
             </textvar>
 
+            <textvar name="ChanqavgdtTS" value="$(PathOut)/chanqavgdt%run_rand_id.tss">
+                <comment>
+                    Reported average discharge on the last routing sub-step [cu m/s]
+                </comment>
+            </textvar>
+
            <textvar name="withdrawalCHactualTS" value="$(PathOut)/withdrawalCHactual%run_rand_id.tss"></textvar>
            <textvar name="withdrawalReservoirsTS" value="$(PathOut)/withdrawalReservoirs%run_rand_id.tss"></textvar>
            <textvar name="withdrawalLakesTS" value="$(PathOut)/withdrawalLakes%run_rand_id.tss"></textvar>

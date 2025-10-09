@@ -125,7 +125,7 @@ class SubCatchment():
 
                 print('Retrieving inflow for subcatchment {}'.format(subcatchment))
                                 
-                Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
+                Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanqavgdt_simulated_best.tss")
 
                 if not os.path.exists(Qsim_tss) or os.path.getsize(Qsim_tss) == 0:
                     raise Exception("ERROR: Missing " + Qsim_tss)

@@ -102,7 +102,8 @@ for index, row in stationdata_sorted.iterrows():
     if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")) or \
         os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
         os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
-        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighTL.csv")):
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighTL.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForChanqAvgDiff.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         continue
     print(">> Starting calibration of catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")
@@ -118,7 +119,7 @@ for index, row in stationdata_sorted.iterrows():
         subcatchment = str(subcatchment)
         print(subcatchment+" ")
                     
-        Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","chanq_simulated_best.tss")
+        Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","chanqavgdt_simulated_best.tss")
         
         #loop here till previous catchment on the list is done
         timer = 0
