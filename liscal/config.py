@@ -82,7 +82,7 @@ class DEAPParameters():
         self.apply_statistical_stall_check = bool(int(parser.get('DEAP','apply_statistical_stall_check', fallback=0)))
         self.use_filtered_population  = bool(int(parser.get('DEAP','use_filtered_population', fallback=0)))
 
-        self.stop_on_low_kgejsd = bool(int(parser.get('DEAP','stop_on_low_kgejsd', fallback=0)))
+        self.stop_on_low_kgejsd = int(parser.get('DEAP','stop_on_low_kgejsd', fallback=0))
 
         try:
             objectives_str = parser.get('DEAP', 'objectives')
@@ -225,7 +225,7 @@ class ConfigCalibration(Config):
         self.reservoir_events = self.parser.get('Stations', 'reservoir_events', fallback=None)
 
         # flag to enable aridity index check 
-        self.use_aridity_index_check = bool(self.parser.get('Main', 'use_aridity_index_check', fallback=0))
+        self.use_aridity_index_check = bool(int(self.parser.get('Main', 'use_aridity_index_check', fallback=0)))
 
 
         # pcraster commands

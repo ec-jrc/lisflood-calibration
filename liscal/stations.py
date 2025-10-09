@@ -12,45 +12,59 @@ from pcraster import boolean
 
 def time_step_from_type(station_type):
     """
-    Determines the time step based on the station/calibration type.
+    Determines the time step (6 or 24) based on the station/calibration type.
 
     Parameters
     ----------
-    station_type : int, float, np.int64, np.float64, or str
-        Type of the station which could be an integer, float, or string
-        indicating the station/calibration type.
+    station_type : int, float, str, np.int64, np.float64
+        Type of the station (e.g., 6, 24, 6.0, 24.0, "6", "24", "6.0", "24.0", "*_6h", "*_24h")
 
     Returns
     -------
     int
-        The time step as an integer.
+        Time step in hours (6 or 24)
 
     Raises
     ------
     Exception
-        If the station/calibration type is not supported.
-        Support formats for the station/calibration type are 6.0, 24.0, 6, 24, "*_6h", and "*_24h".
+        If the input type or format is unsupported.
     """
+    # Handle 0D NumPy arrays (e.g., np.array(6.0))
+    if isinstance(station_type, np.ndarray) and station_type.shape == ():
+        station_type = station_type.item()  # Extract scalar
 
-    if isinstance(station_type, float) or isinstance(station_type, np.float64):
-        if (station_type == 6.0 or station_type == 24.0):
-            dt = int(station_type)
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
-    elif isinstance(station_type, int) or isinstance(station_type, np.int64):
-        if (station_type == 6 or station_type == 24):
-            dt = station_type
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
-    else:
-        if station_type.find("_6h") > -1:
-            dt = 6
-        elif station_type.find("_24h") > -1:
-            dt = 24
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
+    # Normalize numeric types
+    if isinstance(station_type, (int, float, np.integer, np.floating)):    
+        station_type = int(station_type)
+        if station_type in (6, 24):
+            return station_type
 
-    return dt
+    # Handle strings
+    if isinstance(station_type, str):
+        cleaned = station_type.strip()
+
+        # Try to parse as float (e.g., "6.0")
+        try:
+            numeric_value = float(cleaned)
+            if numeric_value in (6.0, 24.0):
+                return int(numeric_value)
+        except ValueError:
+            pass
+
+        # Check for suffix patterns
+        if "_6h" in cleaned:
+            return 6
+        elif "_24h" in cleaned:
+            return 24
+        elif cleaned == "6":
+            return 6
+        elif cleaned == "24":
+            return 24
+
+    raise Exception(
+        f"Calibration type {station_type} not supported. "
+        "Supported formats: 6, 24, 6.0, 24.0, '6', '24', '6.0', '24.0', '*_6h', '*_24h'."
+    )
 
 
 def observation_period_days(station_type, observed_streamflow):
