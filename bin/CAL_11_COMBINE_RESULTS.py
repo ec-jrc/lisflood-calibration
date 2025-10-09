@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     # merge with the metadata and save final sv file
     data_all = pd.merge(left=metadata_stations, right=calibration_data, left_on='ObsID', right_index=True, how='outer')
-    data_all.to_csv(os.path.join(main_dir, 'summary/calibration_summary.csv'))
+    data_all.to_csv(os.path.join(main_dir, 'calibration/summary/calibration_summary.csv'))
 
     ################
     # SPATIAL DATA #
@@ -133,6 +133,6 @@ if __name__ == '__main__':
         data_all = pd.merge(left=data_all, right=shapefile_data, left_on='ObsID', right_index=True, how='outer')
         data_all = gpd.GeoDataFrame(data_all, geometry=data_all.geometry)    
     
-        data_all.to_file(os.path.join(main_dir, 'summary/calibration_summary.json'), driver="GeoJSON")
+        data_all.to_file(os.path.join(main_dir, 'calibration/summary/calibration_summary.json'), driver="GeoJSON")
 
     print("==================== END ====================")

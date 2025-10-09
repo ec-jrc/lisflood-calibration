@@ -21,5 +21,5 @@ if __name__ == "__main__":
 
   for catchment_id in catchment_ids:
     obs_df, sim_df, stn_df, _ = construct_dfs(base_path, catchment_id, plot_groupings)
-    dis_fig = discharge_plot(obs_df, sim_df, stn_df, savepath)
-    other_figs = other_var_plots(sim_df, stn_df, plot_groupings, savepath)
+    dis_fig = discharge_plot(obs_df, sim_df, stn_df, catchment_id, savepath)
+    other_figs = other_var_plots(sim_df, stn_df, plot_groupings, catchment_id, savepath)
