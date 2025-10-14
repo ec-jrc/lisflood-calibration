@@ -156,11 +156,11 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     
                     ##################################################################3
                     # checking chanqvagdt and chanq for instability in MCT that can can create issues when using inflows
-                    # Only consider elements where ChanQAvgDt >1000
-                    dismask = chanqavgdt_data > 1000.
+                    # Only consider elements where ChanQAvgDt >100 or ChanQ >100
+                    dismask = (chanq_data > 100.) | (chanqavgdt_data > 100.)
                     # Check for ChanQ values that are 10x larger or smaller than ChanQAvgDt
-                    too_large = chanq_data[dismask] > 15 * chanqavgdt_data[dismask]
-                    too_small = chanq_data[dismask] < 0.05 * chanqavgdt_data[dismask]
+                    too_large = chanq_data[dismask] > 10 * chanqavgdt_data[dismask]
+                    too_small = chanq_data[dismask] < 0.1 * chanqavgdt_data[dismask]
 
                     bad = too_large | too_small
 
