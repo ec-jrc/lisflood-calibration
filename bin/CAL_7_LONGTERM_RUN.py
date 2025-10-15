@@ -107,6 +107,12 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     rain_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'rainUpslong_term_run.tss'))[1]  
                     snow_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'snowUpslong_term_run.tss'))[1]  
                     
+                    # Skip spinup days:
+                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    transm_loss_data = transm_loss_data[days_to_skip:]
+                    rain_data = rain_data[days_to_skip:]
+                    snow_data = snow_data[days_to_skip:]
+
                     # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
                     transm_loss_data[transm_loss_data==1e31] = np.nan  
                     rain_data[rain_data==1e31] = np.nan  
@@ -150,6 +156,11 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     chanqavgdt_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'chanqavgdtlong_term_run.tss'))[1]  
                     chanq_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'chanqlong_term_run.tss'))[1]  
                     
+                    # Skip spinup days:
+                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    chanqavgdt_data = chanqavgdt_data[days_to_skip:]
+                    chanq_data = chanq_data[days_to_skip:]
+
                     # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
                     chanqavgdt_data[chanqavgdt_data==1e31] = np.nan  
                     chanq_data[chanq_data==1e31] = np.nan  
