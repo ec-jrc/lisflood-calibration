@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import argparse
 from datetime import datetime, timedelta
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 def generate_days_column():
     """Generate a DataFrame with a 'day' column from 01/01/1980 to 01/01/2024."""
