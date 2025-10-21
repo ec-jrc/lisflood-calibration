@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import argparse
 from datetime import datetime, timedelta
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 def generate_days_column():
     """Generate a DataFrame with a 'day' column from 01/01/1980 to 01/01/2024."""
@@ -37,6 +39,10 @@ def main(main_folder, prefix):
     # Load HIST file once
     hist_file = os.path.join(observations_folder, 'HIST', 'Europe_HIST.csv')
     hist_df = pd.read_csv(hist_file) if os.path.exists(hist_file) else None
+
+    # Load FranceHIST file once
+    francehist_file = os.path.join(observations_folder, 'FranceHIST', 'FranceHIST.csv')
+    francehist_df = pd.read_csv(francehist_file) if os.path.exists(francehist_file) else None
 
     # Load efas Qts_calib_9023_daily.csv file once
     efas_file = os.path.join(observations_folder, 'efas', 'Qts_calib_9023_daily.csv')
@@ -74,6 +80,19 @@ def main(main_folder, prefix):
                     print(f"Warning: Station ID {station_id} not found in HIST.csv.")
             else:
                 print("Warning: Europe_HIST.csv not found.")
+
+        elif folder_value == 'FranceHIST':
+            if francehist_df is not None:
+                if station_id in francehist_df.columns:
+                    # Check if 'day' columns match
+                    if corrected_df['day'].equals(francehist_df['day']):
+                        corrected_df[station_id] = francehist_df[station_id]
+                    else:
+                        print(f"Warning: Day values do not match for Station ID {station_id} in FranceHIST.csv.")
+                else:
+                    print(f"Warning: Station ID {station_id} not found in FranceHIST.csv.")
+            else:
+                print("Warning: FranceHIST.csv not found.")
 
         elif folder_value == 'efas':
             if efas_df is not None:

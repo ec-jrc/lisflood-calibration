@@ -16,7 +16,8 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
     if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")) or \
         os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
         os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
-        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForHighTL.csv")):
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForHighTL.csv")) or \
+        os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best_STOPForChanqAvgDiff.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         return
 
@@ -63,8 +64,8 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     if cfg.deap_param.stop_on_low_kgejsd == 1:
                         os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.csv"))
                         os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForLowKGE.tss"))
-                        os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.csv"))
-                        os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForLowKGE.tss"))
+                        os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.csv"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForLowKGE.csv"))
+                        os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.tss"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForLowKGE.tss"))
             
                 # check for HighWaterRemoval
                 try:
@@ -91,8 +92,8 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                             if cfg.deap_param.stop_on_low_kgejsd == 1:
                                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.csv"))
                                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighWaterRemoval.tss"))
-                                os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.csv"))
-                                os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighWaterRemoval.tss"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.csv"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForHighWaterRemoval.csv"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.tss"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForHighWaterRemoval.tss"))
                         except:
                             print("Warning: issue in HighWaterRemoval Stop condition")
                             pass                        
@@ -106,6 +107,12 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     rain_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'rainUpslong_term_run.tss'))[1]  
                     snow_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'snowUpslong_term_run.tss'))[1]  
                     
+                    # Skip spinup days:
+                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    transm_loss_data = transm_loss_data[days_to_skip:]
+                    rain_data = rain_data[days_to_skip:]
+                    snow_data = snow_data[days_to_skip:]
+
                     # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
                     transm_loss_data[transm_loss_data==1e31] = np.nan  
                     rain_data[rain_data==1e31] = np.nan  
@@ -134,13 +141,63 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                             if cfg.deap_param.stop_on_low_kgejsd == 1:
                                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.csv"))
                                 os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForHighTL.tss"))
-                                os.rename(os.path.join(out_dir,"chanq_simulated_best.csv"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.csv"))
-                                os.rename(os.path.join(out_dir,"chanq_simulated_best.tss"), os.path.join(out_dir,"chanq_simulated_best_STOPForHighTL.tss"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.csv"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForHighTL.csv"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.tss"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForHighTL.tss"))
                         except:
                             print("Warning: issue in HighTL Stop condition")
                             pass                        
                 except:
                     print("Warning: Could not find all tss files for the HighTL check, the check has not been applyed")
+                    pass
+                
+                # check for differences between ChanqAvgDt and Chanq (instability in MCT)
+                try:
+                    # need to take [1] or we get 2d array
+                    chanqavgdt_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'chanqavgdtlong_term_run.tss'))[1]  
+                    chanq_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'chanqlong_term_run.tss'))[1]  
+                    
+                    # Skip spinup days:
+                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    chanqavgdt_data = chanqavgdt_data[days_to_skip:]
+                    chanq_data = chanq_data[days_to_skip:]
+
+                    # PCRaster will put 1e31 instead of NaN, set to NaN to catch errors
+                    chanqavgdt_data[chanqavgdt_data==1e31] = np.nan  
+                    chanq_data[chanq_data==1e31] = np.nan  
+                    
+                    ##################################################################3
+                    # checking chanqvagdt and chanq for instability in MCT that can can create issues when using inflows
+                    # Only consider elements where ChanQAvgDt >100 or ChanQ >100
+                    dismask = (chanq_data > 100.) | (chanqavgdt_data > 100.)
+                    # Check for ChanQ values that are 10x larger or smaller than ChanQAvgDt
+                    too_large = chanq_data[dismask] > 10 * chanqavgdt_data[dismask]
+                    too_small = chanq_data[dismask] < 0.1 * chanqavgdt_data[dismask]
+
+                    bad = too_large | too_small
+
+                    if np.any(bad):                        
+                        try:
+                            calibstatus_file_path_ChanqAvgDiff = os.path.join(subcatch.path,'CalibrationStatus_ChanqAvgDiff.txt')
+                            message = f"Calibration failed, ChanqAvgDiff, STOP here after longterm run..."
+                            print(message)
+                            
+                            # Open the file in write mode
+                            with open(calibstatus_file_path_ChanqAvgDiff, 'w') as file:
+                                # Write the message to the file
+                                file.write(message)
+
+                            out_dir = subcatch.path_out
+                            if cfg.deap_param.stop_on_low_kgejsd == 1:
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.csv"), os.path.join(out_dir,"streamflow_simulated_best_STOPForChanqAvgDiff.csv"))
+                                os.rename(os.path.join(out_dir,"streamflow_simulated_best.tss"), os.path.join(out_dir,"streamflow_simulated_best_STOPForChanqAvgDiff.tss"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.csv"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForChanqAvgDiff.csv"))
+                                os.rename(os.path.join(out_dir,"chanqavgdt_simulated_best.tss"), os.path.join(out_dir,"chanqavgdt_simulated_best_STOPForChanqAvgDiff.tss"))
+                        except:
+                            print("Warning: issue in ChanqAvgDiff Stop condition")
+                            pass                        
+                
+                except:
+                    print("Warning: Could not find all tss files for the ChanqAvgDiff check, the check has not been applyed")
                     pass
         else:
             raise Exception('Could not find initialize model.')
