@@ -112,7 +112,7 @@ class SubCatchment():
             if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
                 raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
             stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
-            inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
+            inflow_tss = os.path.join(self.path, "inflow", "chanqavgdt.tss")
             if os.path.isfile(inflow_tss):
                 os.remove(inflow_tss)
 
