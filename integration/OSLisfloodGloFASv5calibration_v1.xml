@@ -1665,7 +1665,7 @@
                     </comment>
                 </textvar>
 
-                <textvar name="QInTS" value="$(PathInflow)/chanq%run_rand_id.tss">
+                <textvar name="QInTS" value="$(PathInflow)/chanqavgdt.tss">
                     <comment>
                         OPTIONAL: observed or simulated input hydrographs as
                         time series [cu m / s]

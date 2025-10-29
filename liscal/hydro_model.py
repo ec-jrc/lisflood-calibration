@@ -266,9 +266,9 @@ def stage_inflows(path_subcatch):
         Path to the subcatchment directory.
     """
 
-    inflow_tss = os.path.join(path_subcatch, "inflow", "chanq.tss")
-    inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanq_last_run.tss")
-    inflow_tss_cal = os.path.join(path_subcatch, "inflow", "chanq_cal.tss")
+    inflow_tss = os.path.join(path_subcatch, "inflow", "chanqavgdt.tss")
+    inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanqavgdt_last_run.tss")
+    inflow_tss_cal = os.path.join(path_subcatch, "inflow", "chanqavgdt_cal.tss")
     if os.path.isfile(inflow_tss) or os.path.isfile(inflow_tss_cal):
         print(inflow_tss)
         print(inflow_tss_cal)
