@@ -234,7 +234,7 @@ if __name__=="__main__":
 						for line in f.readlines():
 							(X,Y,value) = line.split()
 							if float(value) > 1: # this means there is overlap, therefore move inlet further downstream
-								pcrasterCommand(pcrcalc + " 'F0 = upstream(F1,scalar(F2))*"+str(subcatchment)+"'", {"F0": tmp3_map, "F1":ldd_map, "F2":tmp2_map}) # move directly connected stations 1 pixel downstream
+								pcrasterCommand(pcrcalc + " 'F0 = upstream(F1,scalar(F2!=0))*"+str(subcatchment)+"'", {"F0": tmp3_map, "F1":ldd_map, "F2":tmp2_map}) # move directly connected stations 1 pixel downstream
 								pcrasterCommand(pcrcalc + " 'F0 = F1'", {"F0": tmp2_map, "F1":tmp3_map})
 						f.close()
 
