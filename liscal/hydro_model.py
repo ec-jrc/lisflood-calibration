@@ -316,11 +316,11 @@ def merge_tss_files(tss_file_list, output_tss_file):
                 for col_name in all_column_names:
                     if col_name in column_index_map:
                         value_index = column_index_map[col_name]
-                        merged_line.append(f"{float(values[value_index]):>15}")  # Format values with width of 15
+                        merged_line.append(f"{float(values[value_index]):>14}")  # Format values with width of 14
                     else:
-                        merged_line.append(f"{np.nan:>15}")  # Fill missing columns with nan
+                        merged_line.append(f"{np.nan:>14}")  # Fill missing columns with nan
 
-                concatenated_data.append(''.join(merged_line) + '\n')
+                concatenated_data.append(' '.join(merged_line) + '\n')
 
         # Write the concatenated data to the output file
         with open(output_tss_file, 'w') as output_file:

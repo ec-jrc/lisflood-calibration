@@ -44,6 +44,10 @@ def main(main_folder, prefix):
     francehist_file = os.path.join(observations_folder, 'FranceHIST', 'FranceHIST.csv')
     francehist_df = pd.read_csv(francehist_file) if os.path.exists(francehist_file) else None
 
+    # Load GloFAS_Asia file once
+    glofasasia_file = os.path.join(observations_folder, 'GloFAS_Asia', 'GloFAS_Asia.csv')
+    glofasasia_df = pd.read_csv(glofasasia_file) if os.path.exists(glofasasia_file) else None
+
     # Load efas Qts_calib_9023_daily.csv file once
     efas_file = os.path.join(observations_folder, 'efas', 'Qts_calib_9023_daily.csv')
     efas_df = pd.read_csv(efas_file,sep='\t') if os.path.exists(efas_file) else None    # this file has tabs to separate columns
@@ -93,6 +97,19 @@ def main(main_folder, prefix):
                     print(f"Warning: Station ID {station_id} not found in FranceHIST.csv.")
             else:
                 print("Warning: FranceHIST.csv not found.")
+
+        elif folder_value == 'GloFAS_Asia':
+            if glofasasia_df is not None:
+                if station_id in glofasasia_df.columns:
+                    # Check if 'day' columns match
+                    if corrected_df['day'].equals(glofasasia_df['day']):
+                        corrected_df[station_id] = glofasasia_df[station_id]
+                    else:
+                        print(f"Warning: Day values do not match for Station ID {station_id} in GloFAS_Asia.csv.")
+                else:
+                    print(f"Warning: Station ID {station_id} not found in GloFAS_Asia.csv.")
+            else:
+                print("Warning: GloFAS_Asia.csv not found.")
 
         elif folder_value == 'efas':
             if efas_df is not None:
