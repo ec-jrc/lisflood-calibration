@@ -54,6 +54,8 @@ if __name__=="__main__":
 	station_txt = os.path.join(path_temp, "station.txt")
 	with open(station_txt, 'w') as f:
 		for index, row in stationdata.iterrows():
+			if index >= 999999:
+				raise Exception("Station ID "+str(index)+" is too high. Maximum allowed station ID is 999999 because of limitations in PCRaster map format.")
 			f.write(str(row['LisfloodX']) + " ")
 			f.write(str(row['LisfloodY']) + " ")
 			f.write(str(float(index)) + "\n")
