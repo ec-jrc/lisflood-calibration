@@ -36,7 +36,7 @@ def export_netcdf(path_result, template, param_map, name):
 	ds.name = name
 	ds.attrs['standard_name'] = name
 	ds.attrs['long_name'] = name
-	ds.values = pcr.pcr2numpy(param_map, np.NaN)
+	ds.values = pcr.pcr2numpy(param_map, np.nan)
 	ds.to_netcdf(os.path.join(path_result, f'{name}.nc'))
 
 

@@ -171,7 +171,7 @@ def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observ
     if model_initialized.lissettings.options['simulateReservoirs']:
         reservoirs = loadmap('ReservoirSites')
         IsChannelPcr = boolean(loadmap('Channels', pcr=True))
-        IsChannel = np.bool8(compressArray(IsChannelPcr))
+        IsChannel = np.bool_(compressArray(IsChannelPcr))
         reservoirs[(reservoirs < 1) | (IsChannel == 0)] = 0
 
         # Get active reservoir sites

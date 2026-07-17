@@ -361,7 +361,7 @@ class ObjectiveKGE():
         bestParetoIndex = pHistory["paretoRank"].nsmallest(1).index
         # Save the pareto front
         paramvals = np.zeros(shape=(1, len(param_ranges)))
-        paramvals[:] = np.NaN
+        paramvals[:] = np.nan
         for ipar, par in enumerate(param_ranges.index):
             paramvals[0][ipar] = pHistory.loc[bestParetoIndex][par]
 

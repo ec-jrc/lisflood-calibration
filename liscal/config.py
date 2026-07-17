@@ -246,7 +246,7 @@ class ConfigCalibration(Config):
                 # check how many lakes are in the catchment
                 self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
                 IsChannelPcr = boolean(loadmap('Channels', pcr=True))
-                IsChannel = np.bool8(compressArray(IsChannelPcr))
+                IsChannel = np.bool_(compressArray(IsChannelPcr))
                 self.LakeSitesC[self.LakeSitesC < 1] = 0
                 self.LakeSitesC[IsChannel == 0] = 0
                 # Get rid of any lakes that are not part of the channel network

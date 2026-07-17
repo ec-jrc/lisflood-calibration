@@ -501,7 +501,7 @@ class CalibrationDeap():
         n_params = len(param_ranges)
         n_obj = len(self.objective_weights)
         paramvals = np.zeros(shape=(n, n_params))
-        paramvals[:] = np.NaN
+        paramvals[:] = np.nan
         invalid_ind = []
         fitnesses = []
         for ind in range(n):
