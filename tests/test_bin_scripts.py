@@ -145,53 +145,78 @@ class TestStationFiltering:
 
     def test_observation_period_days_calculation(self):
         """Test observation period days calculation."""
-        # Create sample observed streamflow with some NaN
+        # Create observed streamflow: 365 values with first 50 as NaN
         dates = pd.date_range('2016-01-01', periods=365, freq='D')
         observed_streamflow = pd.Series(
-            np.random.rand(365) * 100,
+            np.ones(365) * 42.0,
             index=dates
         )
-        # Add NaN values
         observed_streamflow.iloc[0:50] = np.nan
         
-        station_type = 24
+        station_type = 24  # daily: freq = 24/24 = 1
         obs_period_days = stations.observation_period_days(station_type, observed_streamflow)
         
-        # Should be approximately (365 - 50) / 1 = 315 days
-        assert 300 < obs_period_days < 320
+        # Exactly (365 - 50) / 1 = 315 days
+        assert obs_period_days == 315.0
 
-    def test_valid_station_selection(self, sample_stations_data, sample_observed_data):
-        """Test selection of valid stations based on data availability."""
+    def test_valid_station_selection(self, sample_stations_data):
+        """Test selection of valid stations based on data availability.
+        
+        Station 1001: Min_calib_days=100, gets 250 valid days -> VALID
+        Station 1002: Min_calib_days=200, gets 150 valid days -> INVALID (150 < 200)
+        Station 1003: Min_calib_days=50,  gets 300 valid days -> VALID
+        """
         cfg = Mock()
         cfg.forcing_start = datetime(2016, 1, 1)
         cfg.forcing_end = datetime(2016, 12, 31)
         cfg.timestep = 1440
         cfg.observed_discharges = 'dummy.csv'
-        
+
+        # Build observed data with controlled valid-day counts per station
+        # Period after spinup (30 days) is 2016-01-31 to 2016-12-31 = 336 days
+        dates = pd.date_range('2016-01-01', '2016-12-31', freq='D')
+        n = len(dates)
+
+        # Station 1001: first 86 days NaN (after spinup start on day 31, gives 336 - 86 = 250 valid days)
+        data_1001 = np.ones(n) * 50.0
+        data_1001[:86] = np.nan
+
+        # Station 1002: first 186 days NaN (after spinup start on day 31, gives 336 - 186 = 150 valid days)
+        data_1002 = np.ones(n) * 60.0
+        data_1002[:186] = np.nan
+
+        # Station 1003: all valid (336 valid days after spinup)
+        data_1003 = np.ones(n) * 70.0
+
+        observed_data = pd.DataFrame({
+            1001: data_1001,
+            1002: data_1002,
+            1003: data_1003,
+        }, index=dates.strftime('%d/%m/%Y %H:%M'))
+
         stations_meta = sample_stations_data.copy()
-        observed_data = sample_observed_data.copy()
-        
+
         valid_stations = []
         unvalid_stations = []
-        
+
         for index, row in stations_meta.iterrows():
             start_date = (cfg.forcing_start + timedelta(days=int(row['Spinup_days']))).strftime('%d/%m/%Y %H:%M')
             end_date = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-            
-            # Use integer index to access column (observed_data has integer column names)
+
             observed_streamflow = observed_data[index]
             observed_streamflow = observed_streamflow[start_date:end_date]
             obs_period_days = stations.observation_period_days(row['CAL_TYPE'], observed_streamflow)
-            
+
             if obs_period_days >= float(row['Min_calib_days']):
                 valid_stations.append(index)
             else:
                 unvalid_stations.append(index)
-        
-        # Station 1001: Min_calib_days=100, should be valid
-        # Station 1002: Min_calib_days=200, may be valid or invalid depending on data
-        # Station 1003: Min_calib_days=50, should be valid
-        assert 1001 in valid_stations or 1001 in unvalid_stations
+
+        # Station 1001: ~250 valid days >= Min_calib_days=100 -> valid
+        assert 1001 in valid_stations
+        # Station 1002: ~150 valid days < Min_calib_days=200 -> invalid
+        assert 1002 in unvalid_stations
+        # Station 1003: ~300 valid days >= Min_calib_days=50 -> valid
         assert 1003 in valid_stations
 
 
@@ -242,36 +267,35 @@ class TestObservationPeriod:
 
     @pytest.fixture
     def sample_observed_streamflow(self):
-        """Create sample observed streamflow data."""
+        """Create observed streamflow: 730 values with first 100 as NaN."""
         dates = pd.date_range('2016-01-01', periods=730, freq='D')
-        data = pd.Series(np.random.rand(730) * 100, index=dates)
-        # Add NaN values at the beginning
+        data = pd.Series(np.ones(730) * 50.0, index=dates)
         data.iloc[0:100] = np.nan
         return data
 
     def test_observation_period_days(self, sample_observed_streamflow):
         """Test observation_period_days function."""
-        station_type = 24
+        station_type = 24  # daily: freq = 24/24 = 1
         obs_period_days = stations.observation_period_days(station_type, sample_observed_streamflow)
         
-        # Should be approximately (730 - 100) / 1 = 630 days
-        assert 600 < obs_period_days < 660
+        # Exactly (730 - 100) / 1 = 630 days
+        assert obs_period_days == 630.0
 
     def test_observation_period_years(self, sample_observed_streamflow):
         """Test observation_period_years function."""
-        station_type = 24
+        station_type = 24  # daily: freq = 24/24 = 1
         obs_period_years = stations.observation_period_years(station_type, sample_observed_streamflow)
         
-        # Should be approximately 630 / 365.25 years
-        assert 1.5 < obs_period_years < 2.0
+        # Exactly 630 / 365.25 = 1.7248... years
+        assert obs_period_years == 630.0 / 365.25
 
     def test_observation_period_6h_timestep(self, sample_observed_streamflow):
         """Test observation period with 6-hour timestep."""
-        station_type = 6
+        station_type = 6  # 6-hourly: freq = 24/6 = 4
         obs_period_days = stations.observation_period_days(station_type, sample_observed_streamflow)
         
-        # With 6h timestep, freq = 24/6 = 4, so days = steps / 4
-        assert obs_period_days > 0
+        # With 6h timestep, freq = 4, so days = 630 / 4 = 157.5
+        assert obs_period_days == 630.0 / 4.0
 
 
 class TestComputeSplitDate:
@@ -299,6 +323,7 @@ class TestComputeSplitDate:
         obs_period_years = 25.0
         dt = 24
         valid_start = '01/01/2000 00:00'
+        # 10000 daily observations starting 2000-01-01
         observations_filtered = pd.Series(
             range(10000),
             index=pd.date_range('2000-01-01', periods=10000, freq='D')
@@ -309,8 +334,10 @@ class TestComputeSplitDate:
             obs_period_years, dt, valid_start, observations_filtered, num_max_calib_years
         )
         
-        # Should be approximately 20 years before the end
-        assert isinstance(split_date, (str, datetime, pd.Timestamp))
+        # steps_MAXyears = int(20 * 365.25 * 24 / 24) = 7305
+        # split_date = observations_filtered.index[-7305]
+        expected_split_date = observations_filtered.index[-7305]
+        assert split_date == expected_split_date
 
 
 class TestConfigCutMaps:
