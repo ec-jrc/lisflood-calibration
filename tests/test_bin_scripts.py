@@ -539,36 +539,162 @@ class TestHydroModelCache:
 
 
 class TestCAL2HydroDependenciesLogic:
-    """Tests for logic in CAL_2_HYDRO_DEPENDENCIES.py"""
+    """Tests for CAL_2_HYDRO_DEPENDENCIES.py main function."""
 
-    def test_station_id_validation(self):
-        """Test station ID validation (max 999999)."""
-        max_station_id = 999999
-        
-        # Valid station IDs
-        assert 1000 < max_station_id
-        assert 999999 == max_station_id
-        
-        # Invalid station ID
-        invalid_id = 1000000
-        assert invalid_id > max_station_id
+    def test_station_id_too_high_raises(self, tmp_path):
+        """Test that station IDs >= 999999 raise an exception."""
+        from CAL_2_HYDRO_DEPENDENCIES import main
 
-    def test_station_txt_format(self):
-        """Test station text file format."""
-        stationdata = pd.DataFrame({
-            'LisfloodX': [100.5, 200.3],
-            'LisfloodY': [50.2, 60.4]
-        }, index=[1001, 1002])
-        
-        expected_lines = [
-            "100.5 50.2 1001.0\n",
-            "200.3 60.4 1002.0\n"
+        # Create a stations CSV with an invalid ID
+        stations_csv = tmp_path / "stations.csv"
+        stations_csv.write_text(
+            "ObsID,LisfloodX,LisfloodY\n"
+            "999999,100.0,50.0\n"
+        )
+
+        with pytest.raises(Exception, match="too high"):
+            main(str(stations_csv), "dummy.map", str(tmp_path / "out"), str(tmp_path / "tmp"))
+
+    def test_valid_stations_write_station_file(self, tmp_path):
+        """Test that valid stations produce the correct station.txt for col2map."""
+        from CAL_2_HYDRO_DEPENDENCIES import main
+
+        stations_csv = tmp_path / "stations.csv"
+        stations_csv.write_text(
+            "ObsID,LisfloodX,LisfloodY\n"
+            "1001,100.5,50.2\n"
+            "2002,200.3,60.4\n"
+            "5000,300.0,70.0\n"
+        )
+
+        path_temp = tmp_path / "tmp"
+        path_result = tmp_path / "out"
+
+        # Mock pcrasterCommand so no PCRaster is needed — stop after station.txt is written
+        with patch('CAL_2_HYDRO_DEPENDENCIES.pcrasterCommand', side_effect=Exception("STOP")):
+            try:
+                main(str(stations_csv), "dummy.map", str(path_result), str(path_temp))
+            except Exception as e:
+                if "STOP" not in str(e):
+                    raise
+
+        # Verify station.txt was written correctly
+        station_txt = path_temp / "station.txt"
+        assert station_txt.exists()
+        lines = station_txt.read_text().splitlines()
+        assert lines == [
+            "100.5 50.2 1001.0",
+            "200.3 60.4 2002.0",
+            "300.0 70.0 5000.0",
         ]
-        
-        # Verify format
-        for idx, (index, row) in enumerate(stationdata.iterrows()):
-            line = f"{row['LisfloodX']} {row['LisfloodY']} {float(index)}\n"
-            assert line == expected_lines[idx]
+
+    def test_full_main_with_mocked_pcraster(self, tmp_path):
+        """Test the full main flow with mocked PCRaster commands.
+
+        Simulates a scenario with 3 stations where:
+        - Station 1000 (large catchment, SamplingFrequency=1) contains 2000 and 3000
+        - Station 2000 (medium, SamplingFrequency=2) contains 3000
+        - Station 3000 (small, SamplingFrequency=3) is a leaf
+
+        This verifies the station_links CSV output has the correct connectivity.
+        """
+        from CAL_2_HYDRO_DEPENDENCIES import main
+
+        stations_csv = tmp_path / "stations.csv"
+        stations_csv.write_text(
+            "ObsID,LisfloodX,LisfloodY\n"
+            "1000,100.0,50.0\n"
+            "2000,200.0,60.0\n"
+            "3000,300.0,70.0\n"
+        )
+
+        path_temp = tmp_path / "tmp"
+        path_result = tmp_path / "out"
+
+        # Tracking state across mock calls
+        state = {'map2col_seq': 0}
+
+        # The exact map2col call sequence for 3 stations:
+        # 1-3: conflict check (one per station)
+        # 4-6: catchment area (one per station)
+        # 7-9: sampling frequency (one per station)
+        # 10: station 1000 subcatchments (finds 1000, 2000, 3000 in catchment)
+        # 11: inlet overlap check for 2000 connection (value=1, no overlap)
+        # 12: inlet final position for 2000
+        # 13: station 2000 subcatchments (finds 2000, 3000)
+        # 14: inlet overlap check for 3000 connection (value=1, no overlap)
+        # 15: inlet final position for 3000
+        # 16: station 3000 subcatchments (finds 3000 - itself only, no connections)
+        responses = [
+            # Conflict check
+            "100.0 50.0 1000\n",
+            "200.0 60.0 2000\n",
+            "300.0 70.0 3000\n",
+            # Catchment areas
+            "100.0 50.0 5000\n",
+            "200.0 60.0 3000\n",
+            "300.0 70.0 1000\n",
+            # Sampling frequencies
+            "100.0 50.0 1\n",
+            "200.0 60.0 2\n",
+            "300.0 70.0 3\n",
+            # Station 1000: subcatchments in catchment
+            "100.0 50.0 1000\n200.0 60.0 2000\n300.0 70.0 3000\n",
+            # Inlet for 2000 (overlap check: value=1 means no overlap)
+            "150.0 55.0 1\n",
+            # Inlet for 2000 (final position)
+            "150.0 55.0 2000\n",
+            # Station 2000: subcatchments in catchment
+            "200.0 60.0 2000\n300.0 70.0 3000\n",
+            # Inlet for 3000 (overlap check: value=1 means no overlap)
+            "250.0 65.0 1\n",
+            # Inlet for 3000 (final position)
+            "250.0 65.0 3000\n",
+            # Station 3000: subcatchments in catchment (only itself)
+            "300.0 70.0 3000\n",
+        ]
+
+        def mock_pcraster_command(cmd, file_map):
+            """Simulate PCRaster by writing expected outputs to text files."""
+            if 'map2col' not in cmd:
+                return
+
+            output_file = file_map.get('F1')
+            if output_file is None:
+                return
+
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+            idx = state['map2col_seq']
+            if idx < len(responses):
+                content = responses[idx]
+            else:
+                content = "0 0 0\n"
+            state['map2col_seq'] += 1
+
+            with open(output_file, 'w') as f:
+                f.write(content)
+
+        with patch('CAL_2_HYDRO_DEPENDENCIES.pcrasterCommand', side_effect=mock_pcraster_command):
+            main(str(stations_csv), "dummy.map", str(path_result), str(path_temp))
+
+        # Verify stations_links.csv output
+        links_csv = path_result / "stations_links.csv"
+        assert links_csv.exists()
+
+        links_df = pd.read_csv(links_csv, header=0, index_col=0)
+
+        # Station 1000 should have 2000 as direct connection (freq 1+1=2)
+        row_1000 = links_df.loc[1000].dropna().values.tolist()
+        assert 2000 in [int(v) for v in row_1000 if str(v).strip()]
+
+        # Station 2000 should have 3000 as direct connection (freq 2+1=3)
+        row_2000 = links_df.loc[2000].dropna().values.tolist()
+        assert 3000 in [int(v) for v in row_2000 if str(v).strip()]
+
+        # Station 3000 should have no direct connections
+        row_3000 = links_df.loc[3000].dropna().values.tolist()
+        assert row_3000 == []
 
 
 class TestCAL3MaskLogic:
