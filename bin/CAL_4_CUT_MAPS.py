@@ -20,6 +20,54 @@ class ConfigCutMaps(config.Config):
         self.stations_data = self.parser.get('Stations', 'stations_data')
 
 
+def main(settings_file, path_maps, station, use_dask_config=False):
+    """Cut global maps to subcatchment extent.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file.
+    path_maps : str
+        Path to input global maps directory or a single map file.
+    station : str
+        Single station ID (as string) or path to a station list file.
+    use_dask_config : bool, optional
+        Whether to use manual Dask configuration (default False).
+    """
+
+    cfg = ConfigCutMaps(settings_file)
+
+    # Read full list of stations, index is obsid
+    stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
+
+    # Try to convert the input to an integer
+    obsid = None
+    try:
+        obsid = int(station)
+    except ValueError:
+        # If conversion fails, assume it's a file path and check if it exists
+        if os.path.isfile(station):
+            station_list = station
+        else:
+            print("Error: Input is neither a valid integer nor an existing file path.")
+            raise ValueError(f"Input '{station}' is neither a valid integer nor an existing file path.")
+    if obsid is not None:
+        try:
+            station_data = stations_meta.loc[obsid]
+        except KeyError as e:
+            raise Exception('Station {} not found in stations file'.format(obsid))
+    else:
+        # read the list of station to process in parallel
+        try:
+            CatchmentsToProcess = pd.read_csv(station_list, sep=",", header=None)
+            obsid = CatchmentsToProcess[0]
+            obsid = np.array(obsid)
+        except:
+            raise Exception('Error opening station txt: {} not found'.format(station_list))
+
+    cutmaps.cut_maps_stations(cfg, path_maps, obsid, useDaskConfig=use_dask_config)
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -29,37 +77,4 @@ if __name__ == '__main__':
     parser.add_argument('--use-dask-config', action='store_true', help='Flag to use manual Dask configuration')
     args = parser.parse_args()
 
-    settings_file = args.settings_file
-
-    cfg = ConfigCutMaps(settings_file)
-
-    # Read full list of stations, index is obsid
-    stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
-
-    # Calibrate lisflood fo specified station
-    # Try to convert the input to an integer
-    obsid = None
-    try:
-        obsid = int(args.station)
-    except ValueError:
-        # If conversion fails, assume it's a file path and check if it exists
-        if os.path.isfile(args.station):
-            station_list = args.station
-        else:
-            print("Error: Input is neither a valid integer nor an existing file path.")
-            exit(1)
-    if obsid is not None:
-        try:
-            station_data = stations_meta.loc[obsid]
-        except KeyError as e:
-            raise Exception('Station {} not found in stations file'.format(obsid))
-    else:
-        # read the list of station to process in parallel
-        try:
-            CatchmentsToProcess = pd.read_csv(station_list,sep=",",header=None)
-            obsid = CatchmentsToProcess[0]
-            obsid = np.array(obsid)
-        except:
-            raise Exception('Error opening station txt: {} not found'.format(station_list))
-
-    cutmaps.cut_maps_stations(cfg, args.path_maps, obsid, useDaskConfig=args.use_dask_config)
+    main(args.settings_file, args.path_maps, args.station, args.use_dask_config)

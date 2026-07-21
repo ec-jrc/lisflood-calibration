@@ -52,8 +52,10 @@ def main(stations_file, ldd_map, path_result, path_temp):
 	#   Make map with station locations
 	########################################################################
 	print(">> Make map with station locations (outlet.map)...")
-	if not os.path.exists(path_temp): os.makedirs(path_temp)
-	if not os.path.exists(path_result): os.makedirs(path_result)
+	if not os.path.exists(path_temp): 
+		os.makedirs(path_temp)
+	if not os.path.exists(path_result): 
+		os.makedirs(path_result)
 
 	station_txt = os.path.join(path_temp, "station.txt")
 	with open(station_txt, 'w') as f:
