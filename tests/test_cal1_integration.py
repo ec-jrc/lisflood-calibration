@@ -5,7 +5,7 @@ Runs the full script on a subset of real Australia GloFASv5 data (5 stations,
 3 valid + 2 invalid) and compares the output against reference files.
 
 The test data lives in tests/data/CAL_1/ and is self-contained:
-- input/settings.txt          Settings template (placeholders for paths)
+- input/settings.txt               Settings template (placeholders for paths)
 - input/stations_data_subset.csv   5-station metadata
 - input/observations_subset.csv    Observations (2010–2023, ~200KB)
 - reference/stations_data.csv      Expected valid stations output
@@ -14,12 +14,10 @@ The test data lives in tests/data/CAL_1/ and is self-contained:
 
 import os
 import sys
-import pytest
 import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'bin'))
 
-# Paths relative to this file
 TEST_DIR = os.path.dirname(__file__)
 CAL1_DATA = os.path.join(TEST_DIR, 'data', 'CAL_1')
 INPUT_DIR = os.path.join(CAL1_DATA, 'input')
@@ -88,8 +86,8 @@ class TestCAL1FilterStations:
         assert os.path.isfile(str(tmp_path / 'stations_data.csv'))
         assert os.path.isfile(str(tmp_path / 'stations_data_invalid.csv'))
 
-    def test_written_csv_matches_returned_dataframe(self, tmp_path):
-        """The CSV written to disk can be re-read and matches the returned DataFrame."""
+    def test_written_valid_csv_matches_returned_dataframe(self, tmp_path):
+        """The valid CSV written to disk matches the returned DataFrame."""
         from CAL_1_FILTER_STATIONS import main
 
         settings_file = _create_settings(tmp_path)
@@ -99,18 +97,6 @@ class TestCAL1FilterStations:
 
         written_df = pd.read_csv(str(tmp_path / 'stations_data.csv'), index_col='ObsID')
         pd.testing.assert_frame_equal(valid_df, written_df)
-
-    def test_valid_station_columns_preserved(self, tmp_path):
-        """All original metadata columns are preserved in the output."""
-        from CAL_1_FILTER_STATIONS import main
-
-        settings_file = _create_settings(tmp_path)
-        stations_csv = os.path.join(INPUT_DIR, 'stations_data_subset.csv')
-
-        valid_df, _ = main(settings_file, stations_csv, '1')
-
-        ref_valid = pd.read_csv(os.path.join(REF_DIR, 'stations_data.csv'), index_col='ObsID')
-        assert list(valid_df.columns) == list(ref_valid.columns)
 
     def test_written_invalid_csv_matches_reference(self, tmp_path):
         """The written stations_data_invalid.csv content matches the reference."""
@@ -126,3 +112,15 @@ class TestCAL1FilterStations:
 
         pd.testing.assert_frame_equal(written_invalid, ref_invalid)
         pd.testing.assert_frame_equal(invalid_df, ref_invalid)
+
+    def test_valid_station_columns_preserved(self, tmp_path):
+        """All original metadata columns are preserved in the valid output."""
+        from CAL_1_FILTER_STATIONS import main
+
+        settings_file = _create_settings(tmp_path)
+        stations_csv = os.path.join(INPUT_DIR, 'stations_data_subset.csv')
+
+        valid_df, _ = main(settings_file, stations_csv, '1')
+
+        ref_valid = pd.read_csv(os.path.join(REF_DIR, 'stations_data.csv'), index_col='ObsID')
+        assert list(valid_df.columns) == list(ref_valid.columns)
