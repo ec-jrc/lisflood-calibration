@@ -1,0 +1,3 @@
+Parameter,MinValue,MaxValue
+UpperZoneTimeConstant,0.0,1.0
+LowerZoneTimeConstant,0.0,1.0
