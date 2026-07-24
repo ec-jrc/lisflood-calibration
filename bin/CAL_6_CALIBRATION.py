@@ -136,6 +136,34 @@ def calibrate_subcatchment(cfg, obsid, subcatch):
         print("pareto_front.csv already exists! Moving on...")
 
 
+def main(settings_file, station, n_cpus=1, seed=None):
+    """Run calibration for a specified station.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file.
+    station : str or int
+        Station OBSID to process.
+    n_cpus : int, optional
+        Number of CPUs to use (default 1).
+    seed : int or str or None, optional
+        Seed value for random numbers generation in DEAP.
+    """
+
+    print('Running calibration using {} cpus'.format(n_cpus))
+
+    cfg = config.ConfigCalibration(settings_file, n_cpus, seed)
+
+    obsid = int(station)
+
+    subcatch = subcatchment.SubCatchment(cfg, obsid)
+
+    calibrate_subcatchment(cfg, obsid, subcatch)
+
+    print("==================== END ====================")
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -145,17 +173,4 @@ if __name__ == '__main__':
     parser.add_argument('--seed', help='Seed value for random numbers generation in deap')
     args = parser.parse_args()
 
-    settings_file = args.settings_file
-
-    print('Running calibration using {} cpus'.format(args.n_cpus))
-
-    cfg = config.ConfigCalibration(settings_file, args.n_cpus, args.seed)
-
-    # Calibrate lisflood fo specified station
-    obsid = int(args.station)
-
-    subcatch = subcatchment.SubCatchment(cfg, obsid)
-
-    calibrate_subcatchment(cfg, obsid, subcatch)
-
-    print("==================== END ====================")
+    main(args.settings_file, args.station, args.n_cpus, args.seed)

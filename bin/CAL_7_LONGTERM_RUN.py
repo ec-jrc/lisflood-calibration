@@ -10,7 +10,7 @@ from liscal import templates, calibration, config, subcatchment, objective, hydr
 
 
 
-def longtermrun_subcatchment(cfg, obsid, station_data):
+def longtermrun_subcatchment(cfg, obsid, subcatch):
 
     print("=================== "+str(obsid)+" ====================")
     if os.path.exists(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")) or \
@@ -108,7 +108,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     snow_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'snowUpslong_term_run.tss'))[1]  
                     
                     # Skip spinup days:
-                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    days_to_skip = int(float(subcatch.data['Spinup_days']))
                     transm_loss_data = transm_loss_data[days_to_skip:]
                     rain_data = rain_data[days_to_skip:]
                     snow_data = snow_data[days_to_skip:]
@@ -157,7 +157,7 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
                     chanq_data = utils.read_tss(os.path.join(subcatch.path_out, "long_term_run", 'chanqlong_term_run.tss'))[1]  
                     
                     # Skip spinup days:
-                    days_to_skip = int(float(station_data.data['Spinup_days']))
+                    days_to_skip = int(float(subcatch.data['Spinup_days']))
                     chanqavgdt_data = chanqavgdt_data[days_to_skip:]
                     chanq_data = chanq_data[days_to_skip:]
 
@@ -205,6 +205,28 @@ def longtermrun_subcatchment(cfg, obsid, station_data):
         raise Exception('Could not find optimnal parameters for long term run. Please calibrate to generate pareto_front.csv first.')
 
 
+def main(settings_file, station):
+    """Run long-term simulation for a specified station.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file.
+    station : str or int
+        Station OBSID to process.
+    """
+
+    cfg = config.ConfigCalibration(settings_file)
+
+    obsid = int(station)
+
+    subcatch = subcatchment.SubCatchment(cfg, obsid)
+
+    longtermrun_subcatchment(cfg, obsid, subcatch)
+
+    print("==================== END ====================")
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -212,15 +234,4 @@ if __name__ == '__main__':
     parser.add_argument('station', help='Station OBSID to process')
     args = parser.parse_args()
 
-    settings_file = args.settings_file
-
-    cfg = config.ConfigCalibration(settings_file)
-
-    # Long term run for specified station
-    obsid = int(args.station)
-
-    subcatch = subcatchment.SubCatchment(cfg, obsid)
-
-    longtermrun_subcatchment(cfg, obsid, subcatch)
-
-    print("==================== END ====================")
+    main(args.settings_file, args.station)
