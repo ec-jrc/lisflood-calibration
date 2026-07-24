@@ -36,11 +36,23 @@ def _create_settings(tmp_path):
     tmp_catchments = str(tmp_path / 'catchments')
     shutil.copytree(os.path.join(INPUT_DIR, 'catchments'), tmp_catchments)
 
+    # Resolve XML template: replace {TABLES_DIR} placeholder
+    tables_dir = os.path.join(tmp_catchments, '7838', 'tables')
+    xml_src = os.path.join(INPUT_DIR, 'templates', 'OSLisfloodGloFASv5calibration_v1.xml')
+    xml_dst = str(tmp_path / 'template.xml')
+    xml_content = open(xml_src).read()
+    xml_content = xml_content.replace('{TABLES_DIR}/', tables_dir + '/')
+    with open(xml_dst, 'w') as f:
+        f.write(xml_content)
+
     content = template.replace('{INPUT_DIR}', INPUT_DIR)
-    # Override subcatchment_path to point to the tmp copy
     content = content.replace(
         f'subcatchment_path = {INPUT_DIR}/catchments',
         f'subcatchment_path = {tmp_catchments}',
+    )
+    content = content.replace(
+        f'LISFLOODSettings = {INPUT_DIR}/templates/OSLisfloodGloFASv5calibration_v1.xml',
+        f'LISFLOODSettings = {xml_dst}',
     )
     settings_file = str(tmp_path / 'settings.txt')
     with open(settings_file, 'w') as f:
