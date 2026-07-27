@@ -98,3 +98,77 @@ class TestCAL7LongtermRun:
         # Compare streamflow against reference (tolerance for floating point)
         ref_df = pd.read_csv(os.path.join(REF_DIR, 'streamflow_simulated_best_cal7.csv'), index_col=0)
         pd.testing.assert_frame_equal(df, ref_df, atol=1e-4, rtol=1e-4)
+
+
+def _create_settings_with_reservoirs(tmp_path):
+    """Create resolved settings with reservoir_events enabled."""
+    tmp_catchments = str(tmp_path / 'catchments')
+    shutil.copytree(os.path.join(INPUT_DIR, 'catchments'), tmp_catchments)
+
+    # Copy pareto_front.csv from CAL_6 reference
+    shutil.copy2(
+        os.path.join(REF_DIR, 'pareto_front_cal6.csv'),
+        os.path.join(tmp_catchments, '7838', 'pareto_front.csv'),
+    )
+
+    # Resolve XML template
+    xml_src = os.path.join(INPUT_DIR, 'templates', 'OSLisfloodGloFASv5calibration_v1.xml')
+    xml_dst = str(tmp_path / 'template.xml')
+    xml_content = open(xml_src).read()
+    xml_content = xml_content.replace('{TABLES_DIR}/', TABLES_DIR + '/')
+    with open(xml_dst, 'w') as f:
+        f.write(xml_content)
+
+    # Resolve settings WITH reservoir_events
+    template = open(os.path.join(INPUT_DIR, 'settings_with_reservoirs.txt')).read()
+    content = template.replace('{INPUT_DIR}', INPUT_DIR)
+    content = content.replace(
+        f'subcatchment_path = {INPUT_DIR}/catchments',
+        f'subcatchment_path = {tmp_catchments}',
+    )
+    content = content.replace(
+        f'LISFLOODSettings = {INPUT_DIR}/templates/OSLisfloodGloFASv5calibration_v1.xml',
+        f'LISFLOODSettings = {xml_dst}',
+    )
+    settings_file = str(tmp_path / 'settings.txt')
+    with open(settings_file, 'w') as f:
+        f.write(content)
+
+    return settings_file, tmp_catchments
+
+
+class TestCAL7LongtermRunWithReservoirs:
+    """Integration test for CAL_7 with reservoir_events creating 2 subperiods."""
+
+    def test_longterm_run_with_reservoir_subperiods(self, tmp_path):
+        """Run CAL_7 with a reservoir event in 2018, verify 2 subperiods are created."""
+        from CAL_7_LONGTERM_RUN import main
+
+        settings_file, tmp_catchments = _create_settings_with_reservoirs(tmp_path)
+        main(settings_file, '7838')
+
+        catchment_dir = os.path.join(tmp_catchments, '7838')
+        out_dir = os.path.join(catchment_dir, 'out')
+        station_dir = os.path.join(catchment_dir, 'station')
+
+        # Check output files exist
+        assert os.path.isfile(os.path.join(out_dir, 'streamflow_simulated_best.csv')), \
+            "Missing streamflow_simulated_best.csv"
+        assert os.path.isfile(os.path.join(out_dir, 'chanqavgdt_simulated_best.csv')), \
+            "Missing chanqavgdt_simulated_best.csv"
+
+        # Check that 2 ReservoirMap subperiod files were created
+        subperiod_0 = os.path.join(station_dir, 'ReservoirMap_Subperiod_0.nc')
+        subperiod_1 = os.path.join(station_dir, 'ReservoirMap_Subperiod_1.nc')
+        assert os.path.isfile(subperiod_0), "Missing ReservoirMap_Subperiod_0.nc"
+        assert os.path.isfile(subperiod_1), "Missing ReservoirMap_Subperiod_1.nc"
+
+        # Verify streamflow output has data
+        df = pd.read_csv(os.path.join(out_dir, 'streamflow_simulated_best.csv'), index_col=0)
+        assert len(df) > 0
+        assert '7838' in df.columns
+        assert df['7838'].notna().sum() > 0
+
+        # Compare against reference with tolerance
+        ref_df = pd.read_csv(os.path.join(REF_DIR, 'streamflow_simulated_best_cal7_reservoir.csv'), index_col=0)
+        pd.testing.assert_frame_equal(df, ref_df, atol=1e-4, rtol=1e-4)

@@ -60,4 +60,4 @@ ObsID,StationName,Provider ID,Country code,StationLat,StationLon,Height,Height U
 6710,Burtundy,1077,AU,-33.7433,142.2687,,,647200.0,km2,,Darling,Murray,2,6710,573187.9485,142.275,-33.725,NO,False,True,False,False,False,,,,,,,,,,,,,True,False,False,False,24,,2,,,,,,,,1,1095,1460
 6711,Penrith,1077,AU,-33.748,150.683,,,11000.0,km2,,Nepean,Coastal,2,6711,11214.16192,150.675,-33.725,NO,False,True,False,False,False,,,,,,,,,,,,,True,False,False,False,24,,2,,,,,,,,1,1095,1460
 6716,Lock 1 Downstream,1077,AU,-34.3509,139.6158,,,955018.0,km2,,Murray,Murray,2,6716,892211.3638,139.625,-34.375,NO,False,True,False,False,False,,,,,,,,,,,,,True,False,False,False,24,,2,,,,,,,,1,1095,1460
-7838,Pine Plantation,1085,AU,-32.06875,116.292746,,,642.0,km2,,Darkin,Coastal,2,7838,758.53,116.225,-32.075,NO,False,True,False,False,False,,,,,,,,,,,,,True,False,False,False,24,,2,,,,,,,,1,1095,1460
+7838,Pine Plantation,1085,AU,-32.06875,116.292746,,,642.0,km2,,Darkin,Coastal,2,7838,758.53,116.225,-32.075,NO,False,True,False,False,False,,,,,,,,,,,,,True,False,False,False,24,,2,,,,,,,,1,30,100

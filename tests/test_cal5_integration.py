@@ -115,3 +115,74 @@ class TestCAL5ExtractStation:
 
         assert os.path.isfile(os.path.join(subcatch_path, '100', 'station', 'observations.csv'))
         assert os.path.isfile(os.path.join(subcatch_path, '200', 'station', 'observations.csv'))
+
+
+# --- CAL_5 with reservoir_events (uses real 7838 data from CAL_5c_6_7) ---
+
+import shutil
+
+CAL5c67_DATA = os.path.join(TEST_DIR, 'data', 'CAL_5c_6_7')
+CAL5c67_INPUT = os.path.join(CAL5c67_DATA, 'input')
+CAL5c67_REF = os.path.join(CAL5c67_DATA, 'reference')
+CAL5c67_TABLES = os.path.join(CAL5c67_INPUT, 'catchments', '7838', 'tables')
+
+
+def _create_settings_with_reservoirs(tmp_path):
+    """Create resolved settings with reservoir_events for station 7838."""
+    tmp_catchments = str(tmp_path / 'catchments')
+    shutil.copytree(os.path.join(CAL5c67_INPUT, 'catchments'), tmp_catchments)
+
+    # Resolve XML template
+    xml_src = os.path.join(CAL5c67_INPUT, 'templates', 'OSLisfloodGloFASv5calibration_v1.xml')
+    xml_dst = str(tmp_path / 'template.xml')
+    xml_content = open(xml_src).read()
+    xml_content = xml_content.replace('{TABLES_DIR}/', CAL5c67_TABLES + '/')
+    with open(xml_dst, 'w') as f:
+        f.write(xml_content)
+
+    # Resolve settings WITH reservoir_events
+    template = open(os.path.join(CAL5c67_INPUT, 'settings_with_reservoirs.txt')).read()
+    content = template.replace('{INPUT_DIR}', CAL5c67_INPUT)
+    content = content.replace(
+        f'subcatchment_path = {CAL5c67_INPUT}/catchments',
+        f'subcatchment_path = {tmp_catchments}',
+    )
+    content = content.replace(
+        f'LISFLOODSettings = {CAL5c67_INPUT}/templates/OSLisfloodGloFASv5calibration_v1.xml',
+        f'LISFLOODSettings = {xml_dst}',
+    )
+    settings_file = str(tmp_path / 'settings.txt')
+    with open(settings_file, 'w') as f:
+        f.write(content)
+
+    return settings_file, tmp_catchments
+
+
+class TestCAL5WithReservoirEvents:
+    """Integration test for CAL_5 with reservoir_events creating filtered observations."""
+
+    def test_extract_station_with_reservoir_filtering(self, tmp_path):
+        """Run CAL_5 with reservoir_events and verify observations are filtered."""
+        from CAL_5_EXTRACT_STATION import main
+
+        settings_file, tmp_catchments = _create_settings_with_reservoirs(tmp_path)
+        main(settings_file, '7838')
+
+        station_dir = os.path.join(tmp_catchments, '7838', 'station')
+
+        # Check output files
+        assert os.path.isfile(os.path.join(station_dir, 'observations.csv'))
+        assert os.path.isfile(os.path.join(station_dir, 'station_data.csv'))
+
+        # FilteredReservoirMap.nc should be created (reservoir is active)
+        assert os.path.isfile(os.path.join(station_dir, 'FilteredReservoirMap.nc')), \
+            "Missing FilteredReservoirMap.nc — reservoir filtering did not run"
+
+        # Obs_start should be adjusted due to reservoir event (2018 construction)
+        result = pd.read_csv(os.path.join(station_dir, 'station_data.csv'), index_col=0)
+        ref = pd.read_csv(os.path.join(CAL5c67_REF, 'station_data_after_cal5_reservoir.csv'), index_col=0)
+
+        # Compare Obs_start/Obs_end/Split_date
+        assert result.loc['Obs_start'].values[0] == ref.loc['Obs_start'].values[0]
+        assert result.loc['Obs_end'].values[0] == ref.loc['Obs_end'].values[0]
+        assert int(float(result.loc['N_data'].values[0])) == int(float(ref.loc['N_data'].values[0]))
