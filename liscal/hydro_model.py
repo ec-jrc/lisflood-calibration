@@ -10,7 +10,7 @@ import lisf1
 from lisflood.global_modules.decorators import Cache
 from lisflood.global_modules.settings import LisSettings
 
-from liscal import stations, utils
+from liscal import stations, utils, reservoirs as reservoir_module
 
 
 class HydrologicalModel():
@@ -170,21 +170,86 @@ class HydrologicalModel():
         with self.lock_mgr.lock:
             self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
-        # return only obectives with non zero weight!
-        non_zero_indices = [index for index, weight in enumerate(self.objective.weights) if weight != 0]
-        objectives=list(objectives)
-        # the KGE formula is aKGE = 1 - np.sqrt((r - 1) ** 2 + (B - 1) ** 2 + (y - 1) ** 2) 
-        # THUS: r (corr), B (bias) and y terms need to be adjusted to be minimized:
-        objectives[1] = (objectives[1]-1)**2    # r (corr)
-        objectives[2] = (objectives[2]-1)**2    # B (bias)
-        objectives[3] = (objectives[3]-1)**2    # y
-        filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]     
-        #add JSD to objective vector
-        if 5 in non_zero_indices:
-            filtered_objectives.append(additional_metrics["JSD"])
-        if 6 in non_zero_indices:
-            filtered_objectives.append(additional_metrics["KGE_JSD"])   # KGE_JSD
-        return filtered_objectives              
+        # Delegate objective filtering to the objective class
+        return self.objective.filter_objectives_for_deap(objectives, additional_metrics)
+
+
+def filter_param_ranges(cfg, model_initialized, split_lake_params):
+    """
+    Filter parameter ranges based on the initialized LISFLOOD model state.
+
+    Removes parameters from calibration that are not relevant for the current
+    subcatchment (e.g., no lakes, no reservoirs, no snow, etc.). Also handles
+    the split_lake_params feature which creates per-lake LakeMultiplier parameters.
+
+    This function uses lisflood/PCRaster imports and belongs in hydro_model.py
+    to keep those heavy dependencies isolated from config.py.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        Configuration object whose param_ranges will be modified in place.
+    model_initialized : HydrologicalModel
+        Initialized model with loaded LISFLOOD settings (lissettings).
+    split_lake_params : bool
+        Whether to create per-lake LakeMultiplier parameters.
+    """
+    from lisflood.global_modules.add1 import loadmap, compressArray
+    from pcraster import boolean
+    import pandas
+
+    # Preserve original param_ranges before filtering
+    cfg.original_param_ranges = cfg.param_ranges.copy()
+
+    # Lakes
+    if model_initialized.lissettings.options['simulateLakes'] == False:
+        if 'LakeMultiplier' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("LakeMultiplier", inplace=True)
+    else:
+        if split_lake_params is True:
+            # Check how many lakes are in the catchment
+            cfg.LakeSitesC = loadmap('LakeSites')
+            IsChannelPcr = boolean(loadmap('Channels', pcr=True))
+            IsChannel = np.bool_(compressArray(IsChannelPcr))
+            cfg.LakeSitesC[cfg.LakeSitesC < 1] = 0
+            cfg.LakeSitesC[IsChannel == 0] = 0
+
+            # Mask lake sites when using sub-catchments mask
+            cfg.LakeSitesCC = np.compress(cfg.LakeSitesC > 0, cfg.LakeSitesC).astype(int)
+
+            if cfg.LakeSitesCC.size > 1:
+                # Get one param for each lake
+                if 'LakeMultiplier' in cfg.param_ranges.index:
+                    lake_multiplier_values = cfg.param_ranges.loc['LakeMultiplier']
+                    cfg.param_ranges.drop('LakeMultiplier', inplace=True)
+                    for lake_id in cfg.LakeSitesCC:
+                        new_row_name = f'LakeMultiplier_{lake_id}'
+                        cfg.param_ranges.loc[new_row_name] = lake_multiplier_values
+
+    # Reservoirs
+    if model_initialized.lissettings.options['simulateReservoirs'] == False:
+        if 'ReservoirFloodStorage' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("ReservoirFloodStorage", inplace=True)
+        if 'ReservoirFloodOutflowFactor' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
+
+    # MCT Routing
+    if model_initialized.lissettings.options['MCTRouting'] == False:
+        if 'CalChanMan3' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("CalChanMan3", inplace=True)
+
+    # Snow: skip SnowMeltCoef if min daily avg temp > TempSnow threshold
+    station_data_file = os.path.join(model_initialized.subcatch.path_station, 'station_data.csv')
+    StationDataFile = pandas.read_csv(station_data_file, index_col=0)
+    if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
+        if 'SnowMeltCoef' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("SnowMeltCoef", inplace=True)
+
+    # Aridity: skip TransSub if min Aridity Index >= 0.5
+    if cfg.use_aridity_index_check:
+        if float(StationDataFile.loc["min_AridIdx"]) >= 0.5:
+            if 'TransSub' in cfg.param_ranges.index:
+                cfg.param_ranges.drop("TransSub", inplace=True)
 
 
 def read_parameters(path_subcatch):
@@ -276,71 +341,18 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss, inflow_tss_cal)
         os.rename(inflow_tss_last_run, inflow_tss)
 
-# utility function for merging tss files from dynamic reservoir warmstart routine
-# to be moved in a new file reservoir.py, together with all dynamic reservoir management code
+# Compatibility shims - these functions have moved to liscal.reservoirs
 def merge_tss_files(tss_file_list, output_tss_file):
-    concatenated_data = []
-    all_column_names = set()
-    file_data = []
-
-    for file_path in tss_file_list:
-        if not os.path.exists(file_path):
-            print(f'{file_path} not found. Skipping...')
-        else:
-            with open(file_path, 'r') as file:
-                lines = file.readlines()
-
-            # Remove empty lines at the end of the file
-            lines = [line for line in lines if line.strip()]
-
-            # Parse header to determine metadata lines and column count
-            header_lines, data_start_index, n_columns, column_names = parse_tss_header(lines)
-            all_column_names.update(column_names)
-            file_data.append((header_lines, data_start_index, column_names, lines[data_start_index:]))
-    if len(file_data)>0:
-        # Sort column names to have a consistent order
-        all_column_names = sorted(all_column_names)
-
-        # Build the final merged data
-        merged_header = create_merged_header(file_data[0][0], all_column_names)
-        concatenated_data.extend(merged_header)
-
-        for _, data_start_index, column_names, data_lines in file_data:
-            column_index_map = {name: i for i, name in enumerate(column_names)}
-            for line in data_lines:
-                parts = line.split()
-                timestep = parts[0]
-                values = parts[1:]
-                merged_line = [f"{timestep:>9}"]  # Format the timestep with width of 9
-
-                for col_name in all_column_names:
-                    if col_name in column_index_map:
-                        value_index = column_index_map[col_name]
-                        merged_line.append(f"{float(values[value_index]):>14}")  # Format values with width of 14
-                    else:
-                        merged_line.append(f"{np.nan:>14}")  # Fill missing columns with nan
-
-                concatenated_data.append(' '.join(merged_line) + '\n')
-
-        # Write the concatenated data to the output file
-        with open(output_tss_file, 'w') as output_file:
-            output_file.writelines(concatenated_data)
-
-        print(f'Merged file created: {output_tss_file}')
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module.merge_tss_files(tss_file_list, output_tss_file)
 
 def parse_tss_header(lines):
-    # Read header to get number of columns and metadata
-    n_columns = int(lines[1].strip()) - 1     # exclude timestep from columns
-    column_names = [lines[i].strip() for i in range(3, 3 + n_columns)]
-    data_start_index = 3 + n_columns
-    return lines[:data_start_index], data_start_index, n_columns, column_names
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module._parse_tss_header(lines)
 
 def create_merged_header(header_lines, all_column_names):
-    # Create a new header with all column names
-    merged_header = header_lines[:3]  # Keep the first three lines (timeseries, number of columns, timestep)
-    merged_header[1] = f"{len(all_column_names) + 1}\n"  # Update column count + timestep
-    merged_header.extend([name + '\n' for name in all_column_names])
-    return merged_header
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module._create_merged_header(header_lines, all_column_names)
 
 def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
@@ -390,44 +402,12 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered
         instsettings = LisSettings.instance()
         includeLakes, includeMCT = instsettings.options['simulateLakes'], instsettings.options['MCTRouting']
 
-        # generate subperiods settings files        
-        warmstart_run_files = lis_template.write_warmstart_settings_files(run_id, run_file, subcatch.path_station, subperiods, includeLakes, includeMCT)
-        # run different periods with warm start
-        idx=0
-        list_of_variable_to_merge = None
-        var_files = {}
-        original_var_tss_name = {}
-        for idx, warmstart_run_file in enumerate(warmstart_run_files):
-            settings = LisSettings(warmstart_run_file, "")
-            if idx>0:
-                rsfil_map_name = settings.binding['ReservoirFillEnd']
-                rsfil_map_name = rsfil_map_name[:-3] if rsfil_map_name.lower().endswith('.nc') else rsfil_map_name
-                # copy the ReservoirFill end map to a backup before editing it for the next run
-                cmd = f'cp {rsfil_map_name}.nc {rsfil_map_name}_ws_{idx-1}.nc'
-                utils.run_cmd(cmd)
-                sub_start, _ = subperiods[idx]
-                map_name=os.path.basename(rsfil_map_name)       # map_name will not contain ".nc"
-                stations.update_rsfil_netcdf_map(map_name, filtered_reservoir_events, settings, sub_start)
-            else:
-                list_of_variable_to_merge = [k for k in settings.report_timeseries.keys()]
-                for varName in list_of_variable_to_merge:
-                    var_files[varName] = []
-                    original_var_tss_name[varName] = None
-            lisf1.main(warmstart_run_file, '-q')
-            # rename chanq, dischage and other tss files to keep info for the final merge
-            for varName in list_of_variable_to_merge:
-                original_var_tss_name[varName] = settings.binding[varName]
-                var_tss_name = original_var_tss_name[varName][:-4] if original_var_tss_name[varName].lower().endswith('.tss') else original_var_tss_name[varName]
-                var_tss_name_dest = f'{var_tss_name}_ws_{idx}.tss'
-                cmd = f'mv {var_tss_name}.tss {var_tss_name_dest}'
-                utils.run_cmd(cmd)
-                var_files[varName].append(var_tss_name_dest)
-
-        # merge dis and chanq files
-        for varName in list_of_variable_to_merge:
-            merge_tss_files(var_files[varName], original_var_tss_name[varName])
-            
-            
+        # Delegate the warm-start subperiod logic to the reservoirs module
+        reservoir_module.run_longterm_with_subperiods(
+            subcatch, lis_template, run_id, run_file,
+            subperiods, filtered_reservoir_events,
+            includeLakes, includeMCT
+        )
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)

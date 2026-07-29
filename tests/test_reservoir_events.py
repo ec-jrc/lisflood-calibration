@@ -1,5 +1,5 @@
 """
-Unit tests for reservoir events processing logic in liscal/stations.py.
+Unit tests for reservoir events processing logic in liscal/reservoirs.py.
 
 Tests cover:
 - process_reservoir_periods: Splitting calibration/long-run periods around
@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from unittest.mock import Mock, patch, MagicMock, call
 
-from liscal import stations
+from liscal import reservoirs
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ class TestProcessReservoirPeriodsNoSimulation:
     def test_returns_original_period_non_longrun(self, mock_model_no_reservoirs, reservoir_events_df):
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
-        result = stations.process_reservoir_periods(
+        result = reservoirs.process_reservoir_periods(
             mock_model_no_reservoirs, reservoir_events_df, 24, None,
             valid_start, valid_end, Min_calib_days=365, isLongRun=False
         )
@@ -85,7 +85,7 @@ class TestProcessReservoirPeriodsNoSimulation:
     def test_returns_none_for_longrun(self, mock_model_no_reservoirs, reservoir_events_df):
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
-        result = stations.process_reservoir_periods(
+        result = reservoirs.process_reservoir_periods(
             mock_model_no_reservoirs, reservoir_events_df, 24, None,
             valid_start, valid_end, Min_calib_days=365, isLongRun=True
         )
@@ -99,10 +99,10 @@ class TestProcessReservoirPeriodsNoSimulation:
 class TestProcessReservoirPeriodsCalibration:
     """Non-longrun mode: find the best recent period after the last reservoir event."""
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_single_event_trims_start(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                       mock_model, observations_filtered):
         """With one event in the middle, the best period should start after that event."""
@@ -122,7 +122,7 @@ class TestProcessReservoirPeriodsCalibration:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        result_start, result_end = stations.process_reservoir_periods(
+        result_start, result_end = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, observations_filtered,
             valid_start, valid_end, Min_calib_days=100, isLongRun=False
         )
@@ -134,10 +134,10 @@ class TestProcessReservoirPeriodsCalibration:
         mock_create_map.assert_called_once()
         assert mock_create_map.call_args[0][0] == "FilteredReservoirMap"
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_no_events_in_range_returns_full_period(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                                      mock_model, observations_filtered):
         """If no reservoir events fall within valid_start..valid_end, the full period is returned."""
@@ -156,7 +156,7 @@ class TestProcessReservoirPeriodsCalibration:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        result_start, result_end = stations.process_reservoir_periods(
+        result_start, result_end = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, observations_filtered,
             valid_start, valid_end, Min_calib_days=100, isLongRun=False
         )
@@ -168,10 +168,10 @@ class TestProcessReservoirPeriodsCalibration:
         assert result_end_dt >= pd.Timestamp('2015-12-30')
         mock_create_map.assert_called_once()
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_two_events_picks_most_recent_valid_period(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                                        mock_model, observations_filtered):
         """With two events, the algorithm should pick the most recent period with enough observations."""
@@ -190,7 +190,7 @@ class TestProcessReservoirPeriodsCalibration:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2016 06:00'
 
-        result_start, result_end = stations.process_reservoir_periods(
+        result_start, result_end = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, observations_filtered,
             valid_start, valid_end, Min_calib_days=100, isLongRun=False
         )
@@ -200,10 +200,10 @@ class TestProcessReservoirPeriodsCalibration:
         assert result_start_dt >= pd.Timestamp('2012-01-01')
         mock_create_map.assert_called_once()
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_raises_when_no_period_has_enough_observations(self, mock_loadmap, mock_boolean, mock_compress,
                                                             mock_create_map, mock_model):
         """If no period after any event has enough observations, an exception is raised."""
@@ -226,15 +226,15 @@ class TestProcessReservoirPeriodsCalibration:
         valid_end = '31/12/2015 06:00'
 
         with pytest.raises(Exception, match='unable to find best period'):
-            stations.process_reservoir_periods(
+            reservoirs.process_reservoir_periods(
                 mock_model, events_df, 24, short_obs,
                 valid_start, valid_end, Min_calib_days=365, isLongRun=False
             )
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_no_reservoirs_in_catchment(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                         mock_model, observations_filtered):
         """When ReservoirSitesCC is empty, the period passes through unchanged."""
@@ -252,7 +252,7 @@ class TestProcessReservoirPeriodsCalibration:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        result_start, result_end = stations.process_reservoir_periods(
+        result_start, result_end = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, observations_filtered,
             valid_start, valid_end, Min_calib_days=100, isLongRun=False
         )
@@ -269,10 +269,10 @@ class TestProcessReservoirPeriodsCalibration:
 class TestProcessReservoirPeriodsLongRun:
     """Long-run mode: split the full period into subperiods at each reservoir event."""
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_two_events_creates_three_subperiods(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                                   mock_model):
         """Two events in range should produce three subperiods."""
@@ -290,7 +290,7 @@ class TestProcessReservoirPeriodsLongRun:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2016 06:00'
 
-        subperiods, result_df = stations.process_reservoir_periods(
+        subperiods, result_df = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, None,
             valid_start, valid_end, Min_calib_days=None, isLongRun=True
         )
@@ -303,10 +303,10 @@ class TestProcessReservoirPeriodsLongRun:
         map_names = [c[0][0] for c in mock_create_map.call_args_list]
         assert map_names == ['ReservoirMap_Subperiod_0', 'ReservoirMap_Subperiod_1', 'ReservoirMap_Subperiod_2']
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_no_events_creates_one_subperiod(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                               mock_model):
         """No events in range should produce a single subperiod covering the whole range."""
@@ -324,7 +324,7 @@ class TestProcessReservoirPeriodsLongRun:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        subperiods, result_df = stations.process_reservoir_periods(
+        subperiods, result_df = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, None,
             valid_start, valid_end, Min_calib_days=None, isLongRun=True
         )
@@ -334,10 +334,10 @@ class TestProcessReservoirPeriodsLongRun:
         assert subperiods[0][1] == pd.Timestamp('2015-12-31 06:00')
         assert mock_create_map.call_count == 1
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_longrun_returns_filtered_df(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                           mock_model):
         """The returned DataFrame should be filtered to only matching FIDs."""
@@ -356,7 +356,7 @@ class TestProcessReservoirPeriodsLongRun:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2016 06:00'
 
-        subperiods, result_df = stations.process_reservoir_periods(
+        subperiods, result_df = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, None,
             valid_start, valid_end, Min_calib_days=None, isLongRun=True
         )
@@ -365,10 +365,10 @@ class TestProcessReservoirPeriodsLongRun:
         assert 201 in result_df['FID'].values
         assert 999 not in result_df['FID'].values
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_longrun_no_reservoirs_returns_none(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                                  mock_model):
         """When no reservoir sites exist in catchment, longrun returns (None, None)."""
@@ -386,7 +386,7 @@ class TestProcessReservoirPeriodsLongRun:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        result = stations.process_reservoir_periods(
+        result = reservoirs.process_reservoir_periods(
             mock_model, events_df, 24, None,
             valid_start, valid_end, Min_calib_days=None, isLongRun=True
         )
@@ -394,10 +394,10 @@ class TestProcessReservoirPeriodsLongRun:
         assert result == (None, None)
         mock_create_map.assert_not_called()
 
-    @patch('liscal.stations.create_netcdf_map')
-    @patch('liscal.stations.compressArray')
-    @patch('liscal.stations.boolean')
-    @patch('liscal.stations.loadmap')
+    @patch('liscal.reservoirs.create_netcdf_map')
+    @patch('liscal.reservoirs.compressArray')
+    @patch('liscal.reservoirs.boolean')
+    @patch('liscal.reservoirs.loadmap')
     def test_subperiod_boundaries_respect_timestep(self, mock_loadmap, mock_boolean, mock_compress, mock_create_map,
                                                     mock_model):
         """Subperiod starts (except the first) should be offset by dt hours from the event."""
@@ -416,7 +416,7 @@ class TestProcessReservoirPeriodsLongRun:
         valid_start = '01/01/2005 06:00'
         valid_end = '31/12/2015 06:00'
 
-        subperiods, _ = stations.process_reservoir_periods(
+        subperiods, _ = reservoirs.process_reservoir_periods(
             mock_model, events_df, dt, None,
             valid_start, valid_end, Min_calib_days=None, isLongRun=True
         )
@@ -434,8 +434,8 @@ class TestProcessReservoirPeriodsLongRun:
 class TestCreateNetcdfMap:
     """Tests for create_netcdf_map: active reservoir identification."""
 
-    @patch('liscal.stations.write_netcdf_header')
-    @patch('liscal.stations.uncompress_array')
+    @patch('liscal.reservoirs.write_netcdf_header')
+    @patch('liscal.reservoirs.uncompress_array')
     def test_active_reservoirs_identified_correctly(self, mock_uncompress, mock_write_header):
         """Reservoirs active during the period should be included in the map."""
         mock_nf = MagicMock()
@@ -446,7 +446,7 @@ class TestCreateNetcdfMap:
         model.subcatch.path_station = '/tmp/test'
         model.lissettings = Mock()
 
-        reservoirs = np.array([0, 101, 102, 103])
+        reservoir_map = np.array([0, 101, 102, 103])
 
         events_df = pd.DataFrame({
             'FID': [101, 102, 103],
@@ -457,7 +457,7 @@ class TestCreateNetcdfMap:
         period_start = pd.Timestamp('2005-01-01')
         period_end = pd.Timestamp('2015-12-31')
 
-        stations.create_netcdf_map("TestMap", reservoirs, events_df, model, period_start, period_end)
+        reservoirs.create_netcdf_map("TestMap", reservoir_map, events_df, model, period_start, period_end)
 
         # Verify the map was written
         mock_write_header.assert_called_once()
@@ -472,8 +472,8 @@ class TestCreateNetcdfMap:
         # 103: constructed 2020, no demolition -> NOT active (CONSTR 2020 is not < period_end 2015)
         # So active should be {101, 102}
 
-    @patch('liscal.stations.write_netcdf_header')
-    @patch('liscal.stations.uncompress_array')
+    @patch('liscal.reservoirs.write_netcdf_header')
+    @patch('liscal.reservoirs.uncompress_array')
     def test_demolished_before_period_excluded(self, mock_uncompress, mock_write_header):
         """A reservoir demolished before the period starts should be excluded."""
         mock_nf = MagicMock()
@@ -484,7 +484,7 @@ class TestCreateNetcdfMap:
         model.subcatch.path_station = '/tmp/test'
         model.lissettings = Mock()
 
-        reservoirs = np.array([0, 101, 0])
+        reservoir_map = np.array([0, 101, 0])
 
         events_df = pd.DataFrame({
             'FID': [101],
@@ -495,7 +495,7 @@ class TestCreateNetcdfMap:
         period_start = pd.Timestamp('2005-01-01')
         period_end = pd.Timestamp('2015-12-31')
 
-        stations.create_netcdf_map("TestMap", reservoirs, events_df, model, period_start, period_end)
+        reservoirs.create_netcdf_map("TestMap", reservoir_map, events_df, model, period_start, period_end)
 
         # The filtered map should have -9999 everywhere (no active reservoirs)
         # We verify by checking what was passed to uncompress_array
@@ -510,10 +510,10 @@ class TestCreateNetcdfMap:
 class TestUpdateRsfilNetcdfMap:
     """Tests for update_rsfil_netcdf_map: identifying new reservoirs at a subperiod start."""
 
-    @patch('liscal.stations.write_netcdf_header')
-    @patch('liscal.stations.uncompress_array')
-    @patch('liscal.stations.loadmap_base')
-    @patch('liscal.stations.LisSettings')
+    @patch('liscal.reservoirs.write_netcdf_header')
+    @patch('liscal.reservoirs.uncompress_array')
+    @patch('liscal.reservoirs.loadmap_base')
+    @patch('liscal.reservoirs.LisSettings')
     def test_identifies_new_reservoirs_for_period(self, mock_lis_settings, mock_loadmap_base,
                                                    mock_uncompress, mock_write_header):
         """New reservoirs constructed in the subperiod start year should be identified."""
@@ -542,7 +542,7 @@ class TestUpdateRsfilNetcdfMap:
         period_start = pd.Timestamp('2012-01-01')
 
         # This should identify FID 202 as new (constructed in 2012)
-        stations.update_rsfil_netcdf_map("ReservoirMap_Subperiod_1", events_df, settings, period_start)
+        reservoirs.update_rsfil_netcdf_map("ReservoirMap_Subperiod_1", events_df, settings, period_start)
 
         # Verify loadmap_base was called for ReservoirSites and ReservoirFillEnd
         assert mock_loadmap_base.call_count == 2

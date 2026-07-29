@@ -234,63 +234,21 @@ class ConfigCalibration(Config):
             self.pcraster_cmd[execname] = execname
 
     def filter_param_ranges_after_init(self, model_initialized, split_lake_params):
-        # Adjust param_ranges list if lakes or reservoirs are not included into the current catchment
-        self.original_param_ranges = self.param_ranges.copy()
-        if model_initialized.lissettings.options['simulateLakes']==False:
-            if 'LakeMultiplier' in self.param_ranges.index:
-                self.param_ranges.drop("LakeMultiplier", inplace=True)
-        else:
-            if split_lake_params==True:
-                from lisflood.global_modules.add1 import loadmap, compressArray
-                from pcraster import boolean
-                # check how many lakes are in the catchment
-                self.LakeSitesC = loadmap('LakeSites')               # moved here to use the caching feature during calibration
-                IsChannelPcr = boolean(loadmap('Channels', pcr=True))
-                IsChannel = np.bool_(compressArray(IsChannelPcr))
-                self.LakeSitesC[self.LakeSitesC < 1] = 0
-                self.LakeSitesC[IsChannel == 0] = 0
-                # Get rid of any lakes that are not part of the channel network
+        """
+        Filter parameter ranges based on the initialized LISFLOOD model state.
 
-                # mask lakes sites when using sub-catchments mask
-                self.LakeSitesCC = np.compress(self.LakeSitesC > 0, self.LakeSitesC).astype(int)
+        Moved to hydro_model.filter_param_ranges() but kept here as a delegate
+        for backward compatibility with CAL_6 and CAL_7 scripts.
 
-                if self.LakeSitesCC.size > 1:
-                    # get one param for each lake
-                    if 'LakeMultiplier' in self.param_ranges.index:
-                        # Retrieve the original LakeMultiplier row values
-                        lake_multiplier_values = self.param_ranges.loc['LakeMultiplier']
-                        
-                        # Drop the original LakeMultiplier row
-                        self.param_ranges.drop('LakeMultiplier', inplace=True)
-                        
-                        # Add a new LakeMultiplier row for each lake
-                        for lake_id in self.LakeSitesCC:
-                            new_row_name = f'LakeMultiplier_{lake_id}'
-                            self.param_ranges.loc[new_row_name] = lake_multiplier_values
-
-        if model_initialized.lissettings.options['simulateReservoirs']==False:
-            if 'ReservoirFloodStorage' in self.param_ranges.index:
-                self.param_ranges.drop("ReservoirFloodStorage", inplace=True)
-            if 'ReservoirFloodOutflowFactor' in self.param_ranges.index:
-                self.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
-        if model_initialized.lissettings.options['MCTRouting']==False:
-            if 'CalChanMan3' in self.param_ranges.index:
-                self.param_ranges.drop("CalChanMan3", inplace=True)
-
-        # Adjust param_ranges list if min Daily Avg Temp > 1 so that SnowMelt coefficient should not be calibrated for the current catchment
-        station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
-        StationDataFile=pandas.read_csv(station_data_file,index_col=0)
-        if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
-            if 'SnowMeltCoef' in self.param_ranges.index:
-                self.param_ranges.drop("SnowMeltCoef", inplace=True)
-
-        if self.use_aridity_index_check == True:
-            # Adjust param_ranges list if min Aridity Index > 0.5 so that TransLoss coefficient should not be calibrated for the current catchment
-            station_data_file=os.path.join(os.path.join(model_initialized.subcatch.path_station,'station_data.csv'))
-            StationDataFile=pandas.read_csv(station_data_file,index_col=0)
-            if float(StationDataFile.loc["min_AridIdx"]) >= 0.5:
-                if 'TransSub' in self.param_ranges.index:
-                    self.param_ranges.drop("TransSub", inplace=True)
+        Parameters
+        ----------
+        model_initialized : HydrologicalModel
+            Initialized model with loaded LISFLOOD settings.
+        split_lake_params : bool
+            Whether to create per-lake LakeMultiplier parameters.
+        """
+        from liscal.hydro_model import filter_param_ranges
+        filter_param_ranges(self, model_initialized, split_lake_params)
 
 class PlotParameters():
 

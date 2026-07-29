@@ -1,0 +1,15 @@
+ParameterName,MinValue,MaxValue,DefaultValue
+UpperZoneTimeConstant,0.01,40,10
+LowerZoneTimeConstant,40,730,100
+GwPercValue,0.01,2,0.8
+LZThreshold,0,30,10
+b_Xinanjiang,0.01,5,0.5
+PowerPrefFlow,0.5,8,4
+SnowMeltCoef,2.5,6.5,4
+CalChanMan1,0.5,5,1
+LakeMultiplier,0.5,2,1
+ReservoirFloodStorage,0.2,0.99,0.75
+ReservoirFloodOutflowFactor,0.1,0.5,0.3
+GwLoss,0,1,0
+CalChanMan3,0.5,5,1
+TransSub,0,0.15,0

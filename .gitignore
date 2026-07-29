@@ -1,3 +1,5 @@
+.kiro/
+.vscode/
 .idea/
 _site/
 .sass-cache/

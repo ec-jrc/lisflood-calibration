@@ -76,6 +76,55 @@ class ObjectiveKGE():
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
+    @property
+    def is_kge_jsd(self):
+        """True if the primary objective is KGE_JSD (not plain KGE)."""
+        return (self.weights[0] == 0) and (self.weights[6] != 0)
+
+    @property
+    def kge_column(self):
+        """Column name for the primary KGE metric in paramsHistory."""
+        return "KGE_JSD" if self.is_kge_jsd else "Kling Gupta Efficiency"
+
+    @property
+    def kge_rank_name(self):
+        """Rank column name for the primary KGE metric."""
+        return "KGEJSDRank" if self.is_kge_jsd else "KGERank"
+
+    def filter_objectives_for_deap(self, objectives, additional_metrics):
+        """
+        Transform raw objective components into DEAP-ready fitness values.
+
+        Takes the raw KGE components [KGE, r, B, y, sae] and additional metrics,
+        applies the (x-1)^2 transformation for correlation/bias/spread terms,
+        and returns only the objectives with non-zero weight.
+
+        Parameters
+        ----------
+        objectives : tuple or list
+            Raw KGE components: [KGE, correlation, bias, spread, sae]
+        additional_metrics : dict
+            Additional computed metrics (may include 'JSD', 'KGE_JSD', etc.)
+
+        Returns
+        -------
+        list
+            Filtered objectives ready for DEAP fitness assignment.
+        """
+        non_zero_indices = [index for index, weight in enumerate(self.weights) if weight != 0]
+        objectives = list(objectives)
+        # Transform corr, bias, y to be minimized: (x - 1)^2
+        objectives[1] = (objectives[1] - 1) ** 2   # r (corr)
+        objectives[2] = (objectives[2] - 1) ** 2   # B (bias)
+        objectives[3] = (objectives[3] - 1) ** 2   # y
+        filtered_objectives = [objectives[i] for i in non_zero_indices if i < 5]
+        # Add JSD to objective vector
+        if 5 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["JSD"])
+        if 6 in non_zero_indices:
+            filtered_objectives.append(additional_metrics["KGE_JSD"])
+        return filtered_objectives
+
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
         parameters = [None] * len(param_ranges)
@@ -198,18 +247,37 @@ class ObjectiveKGE():
 
         kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
 
-        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
-
         additional_metrics = {}
         if compute_additional_metrics:
-            additional_metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
-            additional_metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
-            additional_metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
-            additional_metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
-            additional_metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
-            additional_metrics["KGE_JSD"],_,_,_,_,additional_metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt = dt)            
+            additional_metrics = self._compute_additional_metrics(Qsim, Qobs)
 
         return kge_components, additional_metrics
+
+    def _compute_additional_metrics(self, Qsim, Qobs):
+        """
+        Compute additional hydrological metrics beyond the core KGE components.
+
+        Parameters
+        ----------
+        Qsim : np.ndarray
+            Simulated streamflow array.
+        Qobs : np.ndarray
+            Observed streamflow array.
+
+        Returns
+        -------
+        dict
+            Dictionary of additional metric names to values.
+        """
+        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
+        metrics = {}
+        metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
+        metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
+        metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
+        metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
+        metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
+        metrics["KGE_JSD"], _, _, _, _, metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt=dt)
+        return metrics
 
     def compute_evap_index(self, run_id, precip_budyko, PET_budyko, etactBudyko_tss):
         """
@@ -313,12 +381,8 @@ class ObjectiveKGE():
         return pHistory
 
     def write_ranked_solution(self, pHistory, path_out=None):
-        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
-            KGEcolumn="KGE_JSD"
-            KGERankName="KGEJSDRank"
-        else:
-            KGEcolumn="Kling Gupta Efficiency"
-            KGERankName="KGERank"
+        KGEcolumn = self.kge_column
+        KGERankName = self.kge_rank_name
         if path_out is None:
             path_subcatch = self.subcatch.path
         else:
@@ -443,9 +507,7 @@ class ObjectiveKGE():
         pHistory = self.read_param_history()
         pHistory_ranked = self.write_ranked_solution(pHistory)
 
-        isKGE_JSD=False
-        if (self.weights[0] == 0) and (self.weights[6] != 0): # we are using KGE_JSD objective
-            isKGE_JSD=True
+        isKGE_JSD = self.is_kge_jsd
 
         if isKGE_JSD:   # in this case we perform the check on Correlation
             # Select max correlation value of the whole param history csv file
