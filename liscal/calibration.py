@@ -128,31 +128,18 @@ class Criteria():
 
         self.effmax_tol = deap_param.effmax_tol  # 0.003
 
-        # Initialise statistics arrays
-        self.effmax = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.effmin = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.effavg = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.effstd = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        gen_shape = (self.max_gen + 1, self.n_obj)
+        gen_shape_1d = (self.max_gen + 1,)
 
-        # Initialise population statistics arrays
-        self.popmax = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.popmin = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.popavg = np.full((self.max_gen + 1, self.n_obj), np.nan)
-        self.popstd = np.full((self.max_gen + 1, self.n_obj), np.nan)
+        # Per-objective statistics: hall of fame (eff) and selected population (pop)
+        # Each is a dict with keys: max, min, avg, std
+        self.eff = {s: np.full(gen_shape, np.nan) for s in ('max', 'min', 'avg', 'std')}
+        self.pop = {s: np.full(gen_shape, np.nan) for s in ('max', 'min', 'avg', 'std')}
 
-        # Initialise KGE statistics arrays
-        self.effmax_KGE = np.full((self.max_gen + 1), np.nan)
-        self.effmin_KGE = np.full((self.max_gen + 1), np.nan)
-        self.effavg_KGE = np.full((self.max_gen + 1), np.nan)
-        self.effstd_KGE = np.full((self.max_gen + 1), np.nan)
-        self.popmax_KGE = np.full((self.max_gen + 1), np.nan)
-        self.popmin_KGE = np.full((self.max_gen + 1), np.nan)
-        self.popavg_KGE = np.full((self.max_gen + 1),  np.nan)
-        self.popstd_KGE = np.full((self.max_gen + 1), np.nan)
-        self.popnum_KGE = np.full((self.max_gen + 1), np.nan)
-        self.popavg_KGE_filtered = np.full((self.max_gen + 1), np.nan)
-        self.popstd_KGE_filtered = np.full((self.max_gen + 1), np.nan)
-        self.popnum_KGE_filtered = np.full((self.max_gen + 1), np.nan)
+        # Scalar KGE statistics per generation (derived from the primary KGE metric)
+        self.eff_KGE = {s: np.full(gen_shape_1d, np.nan) for s in ('max', 'min', 'avg', 'std')}
+        self.pop_KGE = {s: np.full(gen_shape_1d, np.nan) for s in ('max', 'min', 'avg', 'std', 'num')}
+        self.pop_KGE_filtered = {s: np.full(gen_shape_1d, np.nan) for s in ('avg', 'std', 'num')}
 
         self.conditions = {"maxGen": False, "StallFit": False, "StatisticalStallFit": False}
 
@@ -182,30 +169,30 @@ class Criteria():
             print(">> Termination criterion maxGen fulfilled.")
             self.conditions['maxGen'] = True
 
-        if gen >= self.min_gen and (gen >= self.gen_offset) and (self.effmax_KGE[gen] - self.effmax_KGE[gen - self.gen_offset]) < self.effmax_tol:
+        if gen >= self.min_gen and (gen >= self.gen_offset) and (self.eff_KGE['max'][gen] - self.eff_KGE['max'][gen - self.gen_offset]) < self.effmax_tol:
             if self.apply_statistical_stall_check:
                 statistical_gen_offset=self.gen_offset
                 #statistical_gen_offset=1
                 # CR optional stopping condition: even if the no-improvement KGE criterion is fulfilled, check the statistics of the latest gen_offset population to check if any overall improvement is going on
                 # Calculate t-test over the last `gen_offset` generations
                 if self.use_filtered_population == True:
-                    mean_current = self.popavg_KGE_filtered[gen]
-                    std_current = self.popstd_KGE_filtered[gen]
-                    n_current = self.popnum_KGE_filtered[gen]
+                    mean_current = self.pop_KGE_filtered['avg'][gen]
+                    std_current = self.pop_KGE_filtered['std'][gen]
+                    n_current = self.pop_KGE_filtered['num'][gen]
 
                     # Compute weighted average of means and stds for the previous "gen_offset" generations
-                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE_filtered[gen-statistical_gen_offset:gen],
-                                                                    self.popstd_KGE_filtered[gen-statistical_gen_offset:gen], 
-                                                                    self.popnum_KGE_filtered[gen-statistical_gen_offset:gen])
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.pop_KGE_filtered['avg'][gen-statistical_gen_offset:gen],
+                                                                    self.pop_KGE_filtered['std'][gen-statistical_gen_offset:gen], 
+                                                                    self.pop_KGE_filtered['num'][gen-statistical_gen_offset:gen])
                 else:
-                    mean_current = self.popavg_KGE[gen]
-                    std_current = self.popstd_KGE[gen]
-                    n_current = self.popnum_KGE[gen] 
+                    mean_current = self.pop_KGE['avg'][gen]
+                    std_current = self.pop_KGE['std'][gen]
+                    n_current = self.pop_KGE['num'][gen] 
                 
                     # Compute weighted average of means and stds for the previous "gen_offset" generations
-                    mean_previous, std_previous, n_previous = self.combine_stats(self.popavg_KGE[gen-statistical_gen_offset:gen],
-                                                                    self.popstd_KGE[gen-statistical_gen_offset:gen], 
-                                                                    self.popnum_KGE[gen-statistical_gen_offset:gen])
+                    mean_previous, std_previous, n_previous = self.combine_stats(self.pop_KGE['avg'][gen-statistical_gen_offset:gen],
+                                                                    self.pop_KGE['std'][gen-statistical_gen_offset:gen], 
+                                                                    self.pop_KGE['num'][gen-statistical_gen_offset:gen])
                 
                 # Perform t-test
                 t_stat, p_val = ttest_ind_from_stats(mean_current, std_current, n_current, mean_previous, std_previous, n_previous)
@@ -236,18 +223,20 @@ class Criteria():
         # Loop through the different objective functions and calculate some statistics from the current selected population
         # N.B: population is already selected using best self.mu individuals from previous population + new offspring items
         for ii in range(self.n_obj):
-            self.popmax[gen, ii] = np.amax([population[x].fitness.values[ii] for x in range(len(population))])
-            self.popmin[gen, ii] = np.amin([population[x].fitness.values[ii] for x in range(len(population))])
-            self.popavg[gen, ii] = np.average([population[x].fitness.values[ii] for x in range(len(population))])
-            self.popstd[gen, ii] = np.std([population[x].fitness.values[ii] for x in range(len(population))])
+            values = [population[x].fitness.values[ii] for x in range(len(population))]
+            self.pop['max'][gen, ii] = np.amax(values)
+            self.pop['min'][gen, ii] = np.amin(values)
+            self.pop['avg'][gen, ii] = np.average(values)
+            self.pop['std'][gen, ii] = np.std(values)
 
     def update_statistics(self, gen, halloffame):
         # Loop through the different objective functions and calculate some statistics from the Pareto optimal population
         for ii in range(self.n_obj):
-            self.effmax[gen, ii] = np.amax([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            self.effmin[gen, ii] = np.amin([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            self.effavg[gen, ii] = np.average([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
-            self.effstd[gen, ii] = np.std([halloffame[x].fitness.values[ii] for x in range(len(halloffame))])
+            values = [halloffame[x].fitness.values[ii] for x in range(len(halloffame))]
+            self.eff['max'][gen, ii] = np.amax(values)
+            self.eff['min'][gen, ii] = np.amin(values)
+            self.eff['avg'][gen, ii] = np.average(values)
+            self.eff['std'][gen, ii] = np.std(values)
 
     def compute_halloffame_KGE(self, original_weights, halloffame):
         if (original_weights[0] != 0):      # KGE
@@ -260,86 +249,50 @@ class Criteria():
         return effKGEs
 
     def compute_effmax_pop_KGE(self, gen, original_weights, halloffame, population):
-        if (original_weights[0] != 0):  # KGE as objective
-            self.effmax_KGE[gen]=self.effmax[gen,0]
-            self.effmin_KGE[gen]=self.effmin[gen,0]
-            self.effavg_KGE[gen]=self.effavg[gen,0]
-            self.effstd_KGE[gen]=self.effstd[gen,0]
-            self.popmax_KGE[gen]=self.popmax[gen,0]
-            self.popmin_KGE[gen]=self.popmin[gen,0]
-            self.popavg_KGE[gen]=self.popavg[gen,0]
-            self.popstd_KGE[gen]=self.popstd[gen,0]
-            self.popnum_KGE[gen]=len(population)
-            # Filter outliers from the current generation population
-            current_data = [ind.fitness.values[0] for ind in population]
-            current_filtered = self.filter_outliers(current_data)
-            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
-            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
-            self.popnum_KGE_filtered[gen]=len(current_filtered)
+        # Determine the KGE source based on the objective configuration
+        if (original_weights[0] != 0):  # KGE as direct objective
+            effKGEs = [halloffame[x].fitness.values[0] for x in range(len(halloffame))]
+            popKGEs = [population[x].fitness.values[0] for x in range(len(population))]
         elif (original_weights[6] != 0):  # KGE_JSD as objective
-            KGE_JSDpos=np.count_nonzero(original_weights[:6])
-            self.effmax_KGE[gen]=self.effmax[gen,KGE_JSDpos]
-            self.effmin_KGE[gen]=self.effmin[gen,KGE_JSDpos]
-            self.effavg_KGE[gen]=self.effavg[gen,KGE_JSDpos]
-            self.effstd_KGE[gen]=self.effstd[gen,KGE_JSDpos]
-            self.popmax_KGE[gen]=self.popmax[gen,KGE_JSDpos]
-            self.popmin_KGE[gen]=self.popmin[gen,KGE_JSDpos]
-            self.popavg_KGE[gen]=self.popavg[gen,KGE_JSDpos]
-            self.popstd_KGE[gen]=self.popstd[gen,KGE_JSDpos]
-            self.popnum_KGE[gen]=len(population)
-            # Filter outliers from the current generation population
-            current_data = [ind.fitness.values[KGE_JSDpos] for ind in population]
-            current_filtered = self.filter_outliers(current_data)
-            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
-            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
-            self.popnum_KGE_filtered[gen]=len(current_filtered)
+            obj_idx = np.count_nonzero(original_weights[:6])
+            effKGEs = [halloffame[x].fitness.values[obj_idx] for x in range(len(halloffame))]
+            popKGEs = [population[x].fitness.values[obj_idx] for x in range(len(population))]
         elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
-            assert(original_weights[0]==0)  # here the KGE obj is not in effmax vector, thus effmax[gen,0] is the correlation
-            effKGEs=self.compute_halloffame_KGE(original_weights, halloffame)
-            self.effmax_KGE[gen]=np.amax(effKGEs)
-            self.effmin_KGE[gen]=np.amin(effKGEs)
-            self.effavg_KGE[gen]=np.average(effKGEs)
-            self.effstd_KGE[gen]=np.std(effKGEs)
-            popKGEs=[1-np.sqrt(population[x].fitness.values[0] + population[x].fitness.values[1] + population[x].fitness.values[2]) for x in range(len(population))]
-            self.popmax_KGE[gen]=np.amax(popKGEs)
-            self.popmin_KGE[gen]=np.amin(popKGEs)
-            self.popavg_KGE[gen]=np.average(popKGEs)
-            self.popstd_KGE[gen]=np.std(popKGEs)
-            self.popnum_KGE[gen]=len(popKGEs)
-            # Filter outliers from the current generation population
-            current_filtered = self.filter_outliers(popKGEs)
-            self.popavg_KGE_filtered[gen]=np.mean(current_filtered)
-            self.popstd_KGE_filtered[gen]=np.std(current_filtered)
-            self.popnum_KGE_filtered[gen]=len(current_filtered)            
+            # Multi-objective: reconstruct KGE from components
+            assert(original_weights[0] == 0)
+            effKGEs = self.compute_halloffame_KGE(original_weights, halloffame)
+            popKGEs = [1 - np.sqrt(population[x].fitness.values[0] + population[x].fitness.values[1] + population[x].fitness.values[2]) for x in range(len(population))]
         else:
             raise Exception('At least the KGE, KGE_JSD or the combination of the terms r, B and y are needed as objectives')
 
-        strJSD=""
-        if (original_weights[0] == 0) and (original_weights[6] != 0): # we are using KGE_JSD objective
-            strJSD="_JSD"
-        print(">> gen: " + str(gen) + ", HallOfFame items: {}, population items: {}".format(len(halloffame), len(population)))
-        print(">> gen: " + str(gen) + ", effmax_KGE{:s}: {:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
-                                                                                                                self.effmax_KGE[gen], 
-                                                                                                                self.effmin_KGE[gen],
-                                                                                                                self.effavg_KGE[gen],
-                                                                                                                self.effstd_KGE[gen]))
-        print(">> gen: " + str(gen) + ", selected population with offsprings: KGE{:s} max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(strJSD,
-                                                                                                                            self.popmax_KGE[gen], 
-                                                                                                                            self.popmin_KGE[gen],
-                                                                                                                            self.popavg_KGE[gen],
-                                                                                                                            self.popstd_KGE[gen]))
-        print(">> gen: " + str(gen) + ", selected population with offsprings filtered: KGE{:s} avg={:.3f}, std={:.3f}, num={}".format(strJSD,
-                                                                                                                            self.popavg_KGE_filtered[gen],
-                                                                                                                            self.popstd_KGE_filtered[gen],
-                                                                                                                            self.popnum_KGE_filtered[gen]))
+        # Store statistics
+        for stat, func in [('max', np.amax), ('min', np.amin), ('avg', np.average), ('std', np.std)]:
+            self.eff_KGE[stat][gen] = func(effKGEs)
+            self.pop_KGE[stat][gen] = func(popKGEs)
+        self.pop_KGE['num'][gen] = len(popKGEs)
+
+        # Filter outliers from the current generation population
+        current_filtered = self.filter_outliers(popKGEs)
+        self.pop_KGE_filtered['avg'][gen] = np.mean(current_filtered)
+        self.pop_KGE_filtered['std'][gen] = np.std(current_filtered)
+        self.pop_KGE_filtered['num'][gen] = len(current_filtered)
+
+        strJSD = "_JSD" if (original_weights[0] == 0 and original_weights[6] != 0) else ""
+        print(">> gen: {}, HallOfFame items: {}, population items: {}".format(gen, len(halloffame), len(population)))
+        print(">> gen: {}, effmax_KGE{}: {:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(
+            gen, strJSD, self.eff_KGE['max'][gen], self.eff_KGE['min'][gen], self.eff_KGE['avg'][gen], self.eff_KGE['std'][gen]))
+        print(">> gen: {}, selected population with offsprings: KGE{} max={:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(
+            gen, strJSD, self.pop_KGE['max'][gen], self.pop_KGE['min'][gen], self.pop_KGE['avg'][gen], self.pop_KGE['std'][gen]))
+        print(">> gen: {}, selected population with offsprings filtered: KGE{} avg={:.3f}, std={:.3f}, num={}".format(
+            gen, strJSD, self.pop_KGE_filtered['avg'][gen], self.pop_KGE_filtered['std'][gen], int(self.pop_KGE_filtered['num'][gen])))
 
     def write_front_history(self, path_subcatch, gen):
         front_history = pandas.DataFrame()
         front_history['gen'] = range(gen)
-        front_history['effmax_KGE'] = self.effmax_KGE[0:gen]
-        front_history['effmin_KGE'] = self.effmin_KGE[0:gen]
-        front_history['effstd_KGE'] = self.effstd_KGE[0:gen]
-        front_history['effavg_KGE'] = self.effavg_KGE[0:gen]
+        front_history['effmax_KGE'] = self.eff_KGE['max'][0:gen]
+        front_history['effmin_KGE'] = self.eff_KGE['min'][0:gen]
+        front_history['effstd_KGE'] = self.eff_KGE['std'][0:gen]
+        front_history['effavg_KGE'] = self.eff_KGE['avg'][0:gen]
         front_history.to_csv(os.path.join(path_subcatch, "front_history.csv"))
 
 
@@ -681,4 +634,4 @@ class CalibrationDeap():
         # Save history of the change in objective function scores during calibration to csv file
         self.criteria.write_front_history(path_subcatch, lock_mgr.get_gen())
 
-        return self.criteria.effmax[lock_mgr.get_gen()-1]
+        return self.criteria.eff['max'][lock_mgr.get_gen()-1]
