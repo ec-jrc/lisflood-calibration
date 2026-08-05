@@ -239,10 +239,10 @@ class Criteria():
             self.eff['std'][gen, ii] = np.std(values)
 
     def compute_halloffame_KGE(self, original_weights, halloffame):
-        if (original_weights[0] != 0):      # KGE
+        if (original_weights["KGE"] != 0):      # KGE
             effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
-        elif (original_weights[6] != 0):    # KGE_JSD
-            KGE_JSDpos=np.count_nonzero(original_weights[:6])
+        elif (original_weights["KGE_JSD"] != 0):    # KGE_JSD
+            KGE_JSDpos=sum(1 for k in ("KGE","CORR","BIAS","Y","SAE") if original_weights[k] != 0)
             effKGEs=[halloffame[x].fitness.values[KGE_JSDpos] for x in range(len(halloffame))]
         else:
             effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
@@ -250,16 +250,16 @@ class Criteria():
 
     def compute_effmax_pop_KGE(self, gen, original_weights, halloffame, population):
         # Determine the KGE source based on the objective configuration
-        if (original_weights[0] != 0):  # KGE as direct objective
+        if (original_weights["KGE"] != 0):  # KGE as direct objective
             effKGEs = [halloffame[x].fitness.values[0] for x in range(len(halloffame))]
             popKGEs = [population[x].fitness.values[0] for x in range(len(population))]
-        elif (original_weights[6] != 0):  # KGE_JSD as objective
-            obj_idx = np.count_nonzero(original_weights[:6])
+        elif (original_weights["KGE_JSD"] != 0):  # KGE_JSD as objective
+            obj_idx = sum(1 for k in ("KGE","CORR","BIAS","Y","SAE") if original_weights[k] != 0)
             effKGEs = [halloffame[x].fitness.values[obj_idx] for x in range(len(halloffame))]
             popKGEs = [population[x].fitness.values[obj_idx] for x in range(len(population))]
-        elif (original_weights[1] != 0 and original_weights[2] != 0 and original_weights[3] != 0):
+        elif (original_weights["CORR"] != 0 and original_weights["BIAS"] != 0 and original_weights["Y"] != 0):
             # Multi-objective: reconstruct KGE from components
-            assert(original_weights[0] == 0)
+            assert(original_weights["KGE"] == 0)
             effKGEs = self.compute_halloffame_KGE(original_weights, halloffame)
             popKGEs = [1 - np.sqrt(population[x].fitness.values[0] + population[x].fitness.values[1] + population[x].fitness.values[2]) for x in range(len(population))]
         else:
@@ -277,7 +277,7 @@ class Criteria():
         self.pop_KGE_filtered['std'][gen] = np.std(current_filtered)
         self.pop_KGE_filtered['num'][gen] = len(current_filtered)
 
-        strJSD = "_JSD" if (original_weights[0] == 0 and original_weights[6] != 0) else ""
+        strJSD = "_JSD" if (original_weights["KGE"] == 0 and original_weights["KGE_JSD"] != 0) else ""
         print(">> gen: {}, HallOfFame items: {}, population items: {}".format(gen, len(halloffame), len(population)))
         print(">> gen: {}, effmax_KGE{}: {:.3f}, min={:.3f}, avg={:.3f}, std={:.3f}".format(
             gen, strJSD, self.eff_KGE['max'][gen], self.eff_KGE['min'][gen], self.eff_KGE['avg'][gen], self.eff_KGE['std'][gen]))
@@ -356,7 +356,7 @@ class CalibrationDeap():
 
         self.objective_weights = objective_weights
         # use only objectives with non zero weights in DEAP!
-        filtered_objective_weights = [weight for weight in objective_weights if weight != 0]
+        filtered_objective_weights = [w for w in objective_weights.values() if w != 0]
         self.criteria = Criteria(deap_param, len(filtered_objective_weights))
 
         self.cxpb = deap_param.cxpb
@@ -470,7 +470,10 @@ class CalibrationDeap():
             newInd = creator.Individual(list(paramvals[ind]))  # creates a totally empty individual
 
             # add objectives (from file) to current individual
-            non_zero_indices = [index for index, weight in enumerate(self.objective_weights) if weight != 0]
+            # TODO: This mapping assumes KGE-based metrics are always present in paramsHistory.
+            # To support fully custom objectives, the objective class should provide its own
+            # method to reconstruct fitness values from history rows.
+            non_zero_keys = [k for k, w in self.objective_weights.items() if w != 0]
 
             # columns written in update_parameter_history in the same order and names:
             # [Kling Gupta Efficiency], then [Correlation], [Signal ratio (s/o) (Bias)], [Noise ratio (s/o) (Spread)], [sae]
@@ -479,11 +482,13 @@ class CalibrationDeap():
             objectives[1] = (objectives[1]-1)**2    # r (corr)
             objectives[2] = (objectives[2]-1)**2    # B (bias)
             objectives[3] = (objectives[3]-1)**2    # y
-            filtered_objectives = [objectives[i] for i in non_zero_indices if i<5]
-            if 5 in non_zero_indices:
-                filtered_objectives.append(pHistory.iloc[ind].loc['JSD'])   # JSD
-            if 6 in non_zero_indices:
-                filtered_objectives.append(pHistory.iloc[ind].loc['KGE_JSD'])   # KGE_JSD
+            # Map weight keys to column indices in the 5-element objectives slice
+            key_to_col_idx = {"KGE": 0, "CORR": 1, "BIAS": 2, "Y": 3, "SAE": 4}
+            filtered_objectives = [objectives[key_to_col_idx[k]] for k in non_zero_keys if k in key_to_col_idx]
+            if "JSD" in non_zero_keys:
+                filtered_objectives.append(pHistory.iloc[ind].loc['JSD'])
+            if "KGE_JSD" in non_zero_keys:
+                filtered_objectives.append(pHistory.iloc[ind].loc['KGE_JSD'])
             newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)

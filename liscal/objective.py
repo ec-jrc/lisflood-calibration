@@ -7,123 +7,35 @@ from liscal import hydro_stats, utils
 from liscal.stations import time_step_from_type
 
 
-class ObjectiveKGE():
+class Objective():
     """
-    A class representing the objective function based on the Kling-Gupta Efficiency (KGE) metric.
+    Base class for objective functions used in calibration.
 
-    Attributes
-    ----------
-    cfg : ConfigCalibration
-        A global configuration settings object.
-    subcatch : Subcatchment
-        Subcatchment information and data.
-    param_ranges : DataFrame
-        Parameter ranges for the model.
-    weights : list
-        Weights for different components of the KGE.
-    observed_streamflow : DataFrame
-        Observed streamflow data.
+    Provides shared methods for all objective subclasses and abstract stubs
+    for properties and methods that must be implemented by subclasses
+    (ObjectiveKGE, ObjectiveKGEJSD, ObjectiveMulti).
 
-    Methods
-    -------
-    get_parameters(Individual)
-        Converts an individual's genes to actual parameter values.
-    read_observed_streamflow(observations_file)
-        Reads observed streamflow data from a CSV file.
-    read_simulated_streamflow_best()
-        Reads the best simulated streamflow data.
-    read_simulated_streamflow(run_id, start, end)
-        Reads simulated streamflow data for a given run.
-    resample_streamflows(start, end, simulated_streamflow, observed_streamflow)
-        Resamples streamflow data to align simulated and observed streamflows.
-    compute_objectives(run_id, start, end, simulated_streamflow, compute_additional_metrics=False)
-        Computes the KGE and its components for a given simulation.
-    compute_statistics(start, end, simulated_streamflow)
-        Computes various statistics for a given simulation.
-    update_parameter_history(run_id, parameters, fKGEComponents, evap_objective, additional_metrics, gen, run)
-        Updates the parameter history log.
-    read_param_history()
-        Reads the parameter history from a log file.
-    write_ranked_solution(pHistory, path_out=None)
-        Ranks solutions based on different metrics and writes the ranked solutions to a file.
-    write_pareto_front(pHistory, path_out=None)
-        Writes the pareto front to a file.
-    process_results()
-        Processes and writes results after model execution.
+    Uses raise NotImplementedError instead of ABC metaclass.
     """
 
     def __init__(self, cfg, subcatch, read_observations=True):
         self.cfg = cfg
         self.subcatch = subcatch
         self.param_ranges = cfg.param_ranges
-            
-        # Initialize weights, assuming 0 for not included, and +1/-1 based on maximization/minimization
-        # objective vector in fKGE obective function: [aKGE, r (corr), B, y, se (sae), JSD, KGE_JSD]
-        # the final objective vector is [KGE, (r-1)^2, (B-1)^2, (y-1)^1, sae, JSD, KGE_JSD]
-        # THUS: only KGE and KGE_JSD shoud be maximized, while other terms need to be minimized
-        self.weights = [
-            1 if 'KGE' in cfg.deap_param.objectives_list else 0,           # Maximize KGE
-            -1 if 'CORR' in cfg.deap_param.objectives_list else 0,         # Minimize corr
-            -1 if 'BIAS' in cfg.deap_param.objectives_list else 0,         # Minimize bias
-            -1 if 'Y' in cfg.deap_param.objectives_list else 0,            # Minimize y
-            -1 if 'SAE' in cfg.deap_param.objectives_list else 0,          # Minimize sae
-            -1 if 'JSD' in cfg.deap_param.objectives_list else 0,          # Minimize JSD
-            1 if 'KGE_JSD' in cfg.deap_param.objectives_list else 0        # Maximize KGE_JSD
-        ]
-    
 
         if read_observations:
             observations_file = os.path.join(subcatch.path_station, 'observations.csv')
             self.observed_streamflow = self.read_observed_streamflow(observations_file)
 
     @property
-    def is_kge_jsd(self):
-        """True if the primary objective is KGE_JSD (not plain KGE)."""
-        return (self.weights[0] == 0) and (self.weights[6] != 0)
-
-    @property
-    def kge_column(self):
-        """Column name for the primary KGE metric in paramsHistory."""
-        return "KGE_JSD" if self.is_kge_jsd else "Kling Gupta Efficiency"
-
-    @property
-    def kge_rank_name(self):
-        """Rank column name for the primary KGE metric."""
-        return "KGEJSDRank" if self.is_kge_jsd else "KGERank"
+    def weights(self):
+        raise NotImplementedError("Subclasses must define weights")
 
     def filter_objectives_for_deap(self, objectives, additional_metrics):
-        """
-        Transform raw objective components into DEAP-ready fitness values.
+        raise NotImplementedError("Subclasses must implement filter_objectives_for_deap")
 
-        Takes the raw KGE components [KGE, r, B, y, sae] and additional metrics,
-        applies the (x-1)^2 transformation for correlation/bias/spread terms,
-        and returns only the objectives with non-zero weight.
-
-        Parameters
-        ----------
-        objectives : tuple or list
-            Raw KGE components: [KGE, correlation, bias, spread, sae]
-        additional_metrics : dict
-            Additional computed metrics (may include 'JSD', 'KGE_JSD', etc.)
-
-        Returns
-        -------
-        list
-            Filtered objectives ready for DEAP fitness assignment.
-        """
-        non_zero_indices = [index for index, weight in enumerate(self.weights) if weight != 0]
-        objectives = list(objectives)
-        # Transform corr, bias, y to be minimized: (x - 1)^2
-        objectives[1] = (objectives[1] - 1) ** 2   # r (corr)
-        objectives[2] = (objectives[2] - 1) ** 2   # B (bias)
-        objectives[3] = (objectives[3] - 1) ** 2   # y
-        filtered_objectives = [objectives[i] for i in non_zero_indices if i < 5]
-        # Add JSD to objective vector
-        if 5 in non_zero_indices:
-            filtered_objectives.append(additional_metrics["JSD"])
-        if 6 in non_zero_indices:
-            filtered_objectives.append(additional_metrics["KGE_JSD"])
-        return filtered_objectives
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
+        raise NotImplementedError("Subclasses must implement compute_objectives")
 
     def get_parameters(self, Individual):
         param_ranges = self.param_ranges
@@ -239,46 +151,6 @@ class ObjectiveKGE():
 
         return date_range, Qsim, Qobs
 
-    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
-
-        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
-        if len(Qobs) != len(Qsim):
-            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
-
-        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
-
-        additional_metrics = {}
-        if compute_additional_metrics:
-            additional_metrics = self._compute_additional_metrics(Qsim, Qobs)
-
-        return kge_components, additional_metrics
-
-    def _compute_additional_metrics(self, Qsim, Qobs):
-        """
-        Compute additional hydrological metrics beyond the core KGE components.
-
-        Parameters
-        ----------
-        Qsim : np.ndarray
-            Simulated streamflow array.
-        Qobs : np.ndarray
-            Observed streamflow array.
-
-        Returns
-        -------
-        dict
-            Dictionary of additional metric names to values.
-        """
-        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
-        metrics = {}
-        metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
-        metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
-        metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
-        metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
-        metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
-        metrics["KGE_JSD"], _, _, _, _, metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt=dt)
-        return metrics
-
     def compute_evap_index(self, run_id, precip_budyko, PET_budyko, etactBudyko_tss):
         """
         computing evaporative index and budyko compliance
@@ -293,26 +165,6 @@ class ObjectiveKGE():
         etactBudyko[etactBudyko==1e31] = np.nan
         evap_index=hydro_stats.evap_index_BUDYKO(precip_budyko,etactBudyko.sum(),PET_budyko)
         return evap_index
-
-    def compute_statistics(self, start, end, simulated_streamflow):
-
-        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
-        if len(Qobs) != len(Qsim):
-            raise Exception("Observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
-
-        stats = {}
-        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
-        stats['kge'] = kge_components[0]
-        stats['corr'] = kge_components[1]
-        stats['bias'] = kge_components[2]
-        stats['spread'] = kge_components[3]
-        stats['sae'] = kge_components[4]
-        stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs)
-
-        index = pd.to_datetime(date_range, format='%d/%m/%Y %H:%M')
-        Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
-
-        return Q, stats
 
     def update_parameter_history(self, run_id, parameters, fKGEComponents, EVAP_index, additional_metrics, gen, run):
 
@@ -379,6 +231,76 @@ class ObjectiveKGE():
         path_subcatch = self.subcatch.path
         pHistory = pd.read_csv(os.path.join(path_subcatch, "paramsHistory.csv"), sep=",")[3:]
         return pHistory
+
+
+
+class ObjectiveKGEBase(Objective):
+    """Intermediate base class for all KGE-based objective functions.
+
+    Consolidates KGE-related shared logic (statistics computation, ranked
+    solution writing, Pareto front generation, summary file writing) so that
+    future non-KGE objectives can inherit from Objective directly without
+    KGE-specific baggage.
+    """
+
+    @property
+    def kge_column(self):
+        raise NotImplementedError("Subclasses must define kge_column")
+
+    @property
+    def kge_rank_name(self):
+        raise NotImplementedError("Subclasses must define kge_rank_name")
+
+    @property
+    def is_kge_jsd(self):
+        """True if the primary objective is KGE_JSD (not plain KGE)."""
+        return (self.weights["KGE"] == 0) and (self.weights["KGE_JSD"] != 0)
+
+    def compute_statistics(self, start, end, simulated_streamflow):
+
+        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
+        if len(Qobs) != len(Qsim):
+            raise Exception("Observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        stats = {}
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+        stats['kge'] = kge_components[0]
+        stats['corr'] = kge_components[1]
+        stats['bias'] = kge_components[2]
+        stats['spread'] = kge_components[3]
+        stats['sae'] = kge_components[4]
+        stats['nse'] = hydro_stats.NS(s=Qsim, o=Qobs)
+
+        index = pd.to_datetime(date_range, format='%d/%m/%Y %H:%M')
+        Q = pd.DataFrame(data={'Sim': Qsim, 'Obs': Qobs}, index=index)
+
+        return Q, stats
+
+    def _compute_additional_metrics(self, Qsim, Qobs):
+        """
+        Compute additional hydrological metrics beyond the core KGE components.
+
+        Parameters
+        ----------
+        Qsim : np.ndarray
+            Simulated streamflow array.
+        Qobs : np.ndarray
+            Observed streamflow array.
+
+        Returns
+        -------
+        dict
+            Dictionary of additional metric names to values.
+        """
+        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
+        metrics = {}
+        metrics["NSE"] = hydro_stats.NS(s=Qsim, o=Qobs)
+        metrics["FDC_FHV"] = hydro_stats.fdc_fhv(sim=Qsim, obs=Qobs)
+        metrics["FDC_FLV"] = hydro_stats.fdc_flv(sim=Qsim, obs=Qobs)
+        metrics["FDC_mFHV"] = hydro_stats.mFHV(s=Qsim, o=Qobs)
+        metrics["FDC_mFLV"] = hydro_stats.mFLV(s=Qsim, o=Qobs)
+        metrics["KGE_JSD"], _, _, _, _, metrics["JSD"] = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt=dt)
+        return metrics
 
     def write_ranked_solution(self, pHistory, path_out=None):
         KGEcolumn = self.kge_column
@@ -465,196 +387,244 @@ class ObjectiveKGE():
             # Write the message to the file
             file.write(message)
 
-    # select best calibration strategy between KGEJSD (1st or 2nd) and KGE
-    def select_best_calib(self, 
-        JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd,
-        CORR_bestKGE, KGE_bestKGE
-    ):
-        # Determine which KGEJSD run to select
-        if ((JSD_1st <= 0.1) and (JSD_2nd <= 0.1)) or ((JSD_1st > 0.1) and (JSD_2nd > 0.1)):
-            if (CORR_1st - CORR_2nd > 0.05) or ((abs(CORR_1st - CORR_2nd) <= 0.05) and (KGE_1st > KGE_2nd)):
-                KGE_bestKGEJSD = KGE_1st
-                CORR_bestKGEJSD = CORR_1st
-                JSD_bestKGEJSD = JSD_1st
-                bestKGEJSDtoResume = "1st"
-            else:
-                KGE_bestKGEJSD = KGE_2nd
-                CORR_bestKGEJSD = CORR_2nd
-                JSD_bestKGEJSD = JSD_2nd
-                bestKGEJSDtoResume = "2nd"
+
+class ObjectiveKGE(ObjectiveKGEBase):
+    """
+    Objective subclass for single-KGE calibration.
+
+    Uses only the Kling-Gupta Efficiency as the fitness metric.
+    Inherits all shared methods from Objective and implements the
+    type-specific properties and methods with hardcoded KGE-only behavior.
+    """
+
+    @property
+    def weights(self):
+        return {"KGE": 1, "CORR": 0, "BIAS": 0, "Y": 0, "SAE": 0, "JSD": 0, "KGE_JSD": 0}
+
+    @property
+    def kge_column(self):
+        return "Kling Gupta Efficiency"
+
+    @property
+    def kge_rank_name(self):
+        return "KGERank"
+
+    def filter_objectives_for_deap(self, objectives, additional_metrics):
+        """Return single-element list: [KGE value]."""
+        return [objectives[0]]
+
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
+        """Compute KGE components only. Calls fKGE."""
+        date_range, Qsim, Qobs = self.resample_streamflows(start, end, simulated_streamflow, self.observed_streamflow)
+        if len(Qobs) != len(Qsim):
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+
+        additional_metrics = {}
+        if compute_additional_metrics:
+            additional_metrics = self._compute_additional_metrics(Qsim, Qobs)
+
+        return kge_components, additional_metrics
+
+
+class ObjectiveKGEJSD(ObjectiveKGEBase):
+    """
+    Objective subclass for single-KGE_JSD calibration.
+
+    Uses the combined KGE-JSD metric as the fitness metric.
+    Always calls both fKGE and fKGE_JSD since the JSD value is needed
+    for the fitness function.
+    """
+
+    @property
+    def weights(self):
+        return {"KGE": 0, "CORR": 0, "BIAS": 0, "Y": 0, "SAE": 0, "JSD": 0, "KGE_JSD": 1}
+
+    @property
+    def kge_column(self):
+        return "KGE_JSD"
+
+    @property
+    def kge_rank_name(self):
+        return "KGEJSDRank"
+
+    def filter_objectives_for_deap(self, objectives, additional_metrics):
+        """Return single-element list: [KGE_JSD value]."""
+        return [additional_metrics["KGE_JSD"]]
+
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
+        """Compute KGE + JSD components. Always calls both fKGE and fKGE_JSD."""
+        date_range, Qsim, Qobs = self.resample_streamflows(
+            start, end, simulated_streamflow, self.observed_streamflow
+        )
+        if len(Qobs) != len(Qsim):
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+
+        # Always compute JSD since it's the fitness metric
+        dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
+        kge_jsd, _, _, _, _, jsd = hydro_stats.fKGE_JSD(s=Qsim, o=Qobs, dt=dt)
+
+        additional_metrics = {"KGE_JSD": kge_jsd, "JSD": jsd}
+        if compute_additional_metrics:
+            extra = self._compute_additional_metrics(Qsim, Qobs)
+            # Merge without overwriting KGE_JSD/JSD which are already computed
+            for k, v in extra.items():
+                if k not in additional_metrics:
+                    additional_metrics[k] = v
+
+        return kge_components, additional_metrics
+
+
+class ObjectiveMulti(ObjectiveKGEBase):
+    """
+    Objective subclass for multi-objective calibration.
+
+    Handles arbitrary combinations of objectives (KGE, CORR, BIAS, Y, SAE, JSD, KGE_JSD).
+    Weights are computed from cfg.deap_param.objectives_list.
+    Applies (x-1)^2 transform to CORR/BIAS/Y for minimization in DEAP.
+    """
+
+    def __init__(self, cfg, subcatch, read_observations=True):
+        super().__init__(cfg, subcatch, read_observations)
+        # Pre-compute weights from cfg
+        obj_list = cfg.deap_param.objectives_list
+        self._weights = {
+            "KGE": 1 if 'KGE' in obj_list else 0,
+            "CORR": -1 if 'CORR' in obj_list else 0,
+            "BIAS": -1 if 'BIAS' in obj_list else 0,
+            "Y": -1 if 'Y' in obj_list else 0,
+            "SAE": -1 if 'SAE' in obj_list else 0,
+            "JSD": -1 if 'JSD' in obj_list else 0,
+            "KGE_JSD": 1 if 'KGE_JSD' in obj_list else 0,
+        }
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @property
+    def kge_column(self):
+        if self._weights["KGE_JSD"] != 0 and self._weights["KGE"] == 0:
+            return "KGE_JSD"
+        return "Kling Gupta Efficiency"
+
+    @property
+    def kge_rank_name(self):
+        if self._weights["KGE_JSD"] != 0 and self._weights["KGE"] == 0:
+            return "KGEJSDRank"
+        return "KGERank"
+
+    def filter_objectives_for_deap(self, objectives, additional_metrics):
+        """
+        Apply (x-1)^2 transform to CORR/BIAS/Y, filter by non-zero weights,
+        append JSD/KGE_JSD if active.
+
+        Parameters
+        ----------
+        objectives : tuple
+            A 5-tuple: (KGE, corr, bias, spread, SAE)
+        additional_metrics : dict
+            Dictionary containing 'JSD' and/or 'KGE_JSD' values if computed.
+
+        Returns
+        -------
+        list
+            Filtered list of objective values for DEAP fitness evaluation.
+        """
+        # Map the 5-tuple to their dict keys
+        component_map = {
+            "KGE": objectives[0],
+            "CORR": objectives[1],
+            "BIAS": objectives[2],
+            "Y": objectives[3],
+            "SAE": objectives[4],
+        }
+        # Transform components for minimization
+        component_map["CORR"] = (component_map["CORR"] - 1) ** 2
+        component_map["BIAS"] = (component_map["BIAS"] - 1) ** 2
+        component_map["Y"] = (component_map["Y"] - 1) ** 2
+
+        filtered = [component_map[k] for k in ("KGE", "CORR", "BIAS", "Y", "SAE")
+                    if self._weights[k] != 0]
+        if self._weights["JSD"] != 0:
+            filtered.append(additional_metrics["JSD"])
+        if self._weights["KGE_JSD"] != 0:
+            filtered.append(additional_metrics["KGE_JSD"])
+        return filtered
+
+    def compute_objectives(self, run_id, start, end, simulated_streamflow, compute_additional_metrics=False):
+        """
+        Compute KGE, and if JSD/KGE_JSD in objectives, also compute fKGE_JSD.
+
+        Parameters
+        ----------
+        run_id : str or int
+            Identifier for the current run.
+        start : str
+            Start date string in '%d/%m/%Y %H:%M' format.
+        end : str
+            End date string in '%d/%m/%Y %H:%M' format.
+        simulated_streamflow : pd.Series
+            Simulated streamflow time series.
+        compute_additional_metrics : bool, optional
+            Whether to compute extra metrics (NSE, FDC, etc.). Default False.
+
+        Returns
+        -------
+        tuple
+            (kge_components, additional_metrics) where kge_components is the
+            output of fKGE and additional_metrics is a dict of extra metrics.
+        """
+        date_range, Qsim, Qobs = self.resample_streamflows(
+            start, end, simulated_streamflow, self.observed_streamflow
+        )
+        if len(Qobs) != len(Qsim):
+            raise Exception("run_id: "+str(run_id)+": observed and simulated streamflow arrays have different number of elements ("+str(len(Qobs))+" and "+str(len(Qsim))+" elements, respectively)")
+
+        kge_components = hydro_stats.fKGE(s=Qsim, o=Qobs)
+
+        additional_metrics = {}
+        # Compute JSD if any JSD-related objective is active
+        if self._weights["JSD"] != 0 or self._weights["KGE_JSD"] != 0:
+            dt = time_step_from_type(self.subcatch.data["CAL_TYPE"])
+            kge_jsd, _, _, _, _, jsd = hydro_stats.fKGE_JSD(
+                s=Qsim, o=Qobs, dt=dt
+            )
+            additional_metrics["KGE_JSD"] = kge_jsd
+            additional_metrics["JSD"] = jsd
+
+        if compute_additional_metrics:
+            extra = self._compute_additional_metrics(Qsim, Qobs)
+            # Don't overwrite JSD values if already computed
+            for k, v in extra.items():
+                if k not in additional_metrics:
+                    additional_metrics[k] = v
+
+        return kge_components, additional_metrics
+
+
+def create_objective(cfg, subcatch, read_observations=True):
+    """
+    Factory function: create the appropriate Objective subclass
+    based on the configured objectives_list.
+    """
+    objectives_list = cfg.deap_param.objectives_list
+
+    if not objectives_list:
+        raise ValueError(
+            "objectives_list is empty. At least one objective must be configured."
+        )
+
+    if len(objectives_list) == 1:
+        if objectives_list[0] == 'KGE':
+            return ObjectiveKGE(cfg, subcatch, read_observations)
+        elif objectives_list[0] == 'KGE_JSD':
+            return ObjectiveKGEJSD(cfg, subcatch, read_observations)
         else:
-            if JSD_1st <= 0.1:
-                KGE_bestKGEJSD = KGE_1st
-                CORR_bestKGEJSD = CORR_1st
-                JSD_bestKGEJSD = JSD_1st
-                bestKGEJSDtoResume = "1st"
-            else:
-                KGE_bestKGEJSD = KGE_2nd
-                CORR_bestKGEJSD = CORR_2nd
-                JSD_bestKGEJSD = JSD_2nd
-                bestKGEJSDtoResume = "2nd"
-
-        # Determine if the long run should execute using KGE
-        # if both KGEJSD calibration failed for the JSD value, and KGE or Corr of the calibKGE are strictly superior, take it and reject KGEJSD calibration.
-        # if at least one JSD is <= 0.1, execute the long run using the KGE when delta_corr>0.05 or delta_KGE>0.05, otherwise resume KGEJSD calibration folders        
-        select_KGE = ((JSD_bestKGEJSD > 0.1) and ((CORR_bestKGE > CORR_bestKGEJSD) or (KGE_bestKGE > KGE_bestKGEJSD))) or \
-                     ((JSD_bestKGEJSD <= 0.1) and ((CORR_bestKGE - CORR_bestKGEJSD > 0.05) or (KGE_bestKGE - KGE_bestKGEJSD > 0.05)))
-
-        return select_KGE, bestKGEJSDtoResume, KGE_bestKGEJSD, CORR_bestKGEJSD, JSD_bestKGEJSD
-
-    def process_results(self, runType = "KGEJSD_1st", compare_KGSJSD = False):
-
-        pHistory = self.read_param_history()
-        pHistory_ranked = self.write_ranked_solution(pHistory)
-
-        isKGE_JSD = self.is_kge_jsd
-
-        if isKGE_JSD:   # in this case we perform the check on Correlation
-            # Select max correlation value of the whole param history csv file
-            maxCORRhistory = pHistory["Correlation"].max()  # store the maximum value of the correlation
-            # Select max KGE value of the whole param history csv file
-            maxKGEhistory = pHistory["Kling Gupta Efficiency"].max()  # store the maximum value of the KGE
-        
-            # get Correlation, KGE and JSD of the selected KGEJSD calibrated parameter set
-            bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
-            CORR_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
-            KGE_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
-            JSD_bestKGEJSD = pHistory_ranked.loc[bestParetoIndex]["JSD"].values[0]
-
-            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd > 0:
-                calibstatus_file_path_KGEJSDLow = os.path.join(self.subcatch.path,'CalibrationStatus_1st_run_KGEJSDLow.txt')
-                message = "KGEJSD 1st calibration failed, low KGE, running longterm run and STOP here..."
-                print(message)
-                
-                # Open the file in write mode
-                with open(calibstatus_file_path_KGEJSDLow, 'w') as file:
-                    # Write the message to the file
-                    file.write(message)
-                    
-            if KGE_bestKGEJSD < -0.41 and runType == "KGEJSD_1st" and self.cfg.deap_param.stop_on_low_kgejsd == 1:
-                self.write_pareto_front(pHistory_ranked, isKGE_JSD)
-                self.write_summary_file(selObjFun = runType)
-                return False, "KGEJSD_Low" # exit here, writing the final pareto_front.csv file to execute longterm run (will stop subcatchments after longterm run execution)
-            else:
-                # if maxCORRhistory - CORR_bestKGEJSD > 0.095 or maxKGEhistory - KGE_bestKGEJSD > 0.095 or JSD_bestKGEJSD > 0.1, stop here with a warning and a text file, avoiding to write the pareto_front file
-                if (maxCORRhistory - CORR_bestKGEJSD > 0.095) or (maxKGEhistory - KGE_bestKGEJSD > 0.095) or (JSD_bestKGEJSD > 0.1):
-                    # the check has failed here, thus rename the files and folder to prepare restarting the calibration with KGE
-                    renamed_pathout = self.subcatch.path_out + "_" + runType
-                    os.rename(self.subcatch.path_out, renamed_pathout)
-                    settings_dir = os.path.join(self.subcatch.path, 'settings')
-                    renamed_settings_dir = settings_dir + "_" + runType
-                    os.rename(settings_dir, renamed_settings_dir)
-
-                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks.csv"), os.path.join(self.subcatch.path,"pHistoryWRanks_" + runType + ".csv"))
-                    os.rename(os.path.join(self.subcatch.path,"paramsHistory.csv"), os.path.join(self.subcatch.path,"paramsHistory_" + runType + ".csv"))
-                    os.rename(os.path.join(self.subcatch.path,"front_history.csv"), os.path.join(self.subcatch.path,"front_history_" + runType + ".csv"))
-                    os.rename(os.path.join(self.subcatch.path,"runs_log.csv"), os.path.join(self.subcatch.path,"runs_log_" + runType + ".csv"))
-
-                    paretofront_filename = "pareto_front_" + runType + ".csv"
-                    message = f"WARNING!\n" \
-                        f"Max correlation value in param history = {maxCORRhistory}\n" \
-                        f"Selected kge-jsd calibrated item correlation value = {CORR_bestKGEJSD}\n" \
-                        f"Max KGE value in param history = {maxKGEhistory}\n" \
-                        f"Selected kge-jsd calibrated item KGE value = {KGE_bestKGEJSD}\n" \
-                        f"Selected kge-jsd calibrated item JSD value = {JSD_bestKGEJSD}\n" \
-                        f"Repeating the calibration with 'KGE objective function'\n" \
-                        f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
-                    print(message)
-                    file_path = os.path.join(renamed_pathout,"CorrelationIssue_Warning_message" + runType + ".txt")
-                    # Open the file in write mode
-                    with open(file_path, 'w') as file:
-                        # Write the message to the file
-                        file.write(message)
-
-                    self.write_pareto_front(pHistory_ranked, isKGE_JSD, None, paretofront_filename)
-                    return False, "KGEJSD_Failed" # exit here, without writing the final pareto_front.csv file, thus stopping next linked catchments
-        else:
-            if compare_KGSJSD:
-                # this is the new calibration run using KGE, and we should compare the results with KDEJSD_1st and KGEJSD_2nd:
-                
-                pHistory_ranked_KGSJSD_1st = pd.read_csv(os.path.join(self.subcatch.path, "pHistoryWRanks_KGEJSD_1st.csv"), sep=",")
-                pHistory_ranked_KGSJSD_2nd = pd.read_csv(os.path.join(self.subcatch.path, "pHistoryWRanks_KGEJSD_2nd.csv"), sep=",")
-
-                # get Correlation and KGE of the selected KGE calibrated parameter set
-                bestParetoIndex = pHistory_ranked["paretoRank"].nsmallest(1).index
-                CORR_bestKGE = pHistory_ranked.loc[bestParetoIndex]["Correlation"].values[0]            
-                KGE_bestKGE = pHistory_ranked.loc[bestParetoIndex]["Kling Gupta Efficiency"].values[0]
-
-                # get Correlation and KGE of the selected KGEJSD_1st calibrated parameter set
-                bestParetoIndex_KGSJSD_1st = pHistory_ranked_KGSJSD_1st["paretoRank"].nsmallest(1).index
-                CORR_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Correlation"].values[0]            
-                KGE_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["Kling Gupta Efficiency"].values[0]
-                JSD_bestKGEJSD_1st = pHistory_ranked_KGSJSD_1st.loc[bestParetoIndex_KGSJSD_1st]["JSD"].values[0]
-
-                # get Correlation and KGE of the selected KGEJSD_2nd calibrated parameter set
-                bestParetoIndex_KGSJSD_2nd = pHistory_ranked_KGSJSD_2nd["paretoRank"].nsmallest(1).index
-                CORR_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Correlation"].values[0]            
-                KGE_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["Kling Gupta Efficiency"].values[0]
-                JSD_bestKGEJSD_2nd = pHistory_ranked_KGSJSD_2nd.loc[bestParetoIndex_KGSJSD_2nd]["JSD"].values[0]
-                
-                select_KGE, bestKGEJSDtoResume, KGE_bestKGEJSD, CORR_bestKGEJSD, JSD_bestKGEJSD = self.select_best_calib(JSD_bestKGEJSD_1st, JSD_bestKGEJSD_2nd, \
-                                                                                                                         CORR_bestKGEJSD_1st, CORR_bestKGEJSD_2nd, \
-                                                                                                                         KGE_bestKGEJSD_1st, KGE_bestKGEJSD_2nd, \
-                                                                                                                         CORR_bestKGE, KGE_bestKGE)
-                
-                if select_KGE:
-                    # All good, continue using the current folders and running the long run with the KGE calibration
-                    self.write_pareto_front(pHistory_ranked, isKGE_JSD)
-                    self.write_summary_file(selObjFun = "KGE")
-                    return True, ""
-                else:
-                    # rename current folders and files to _KGE
-                    renamed_pathout = self.subcatch.path_out + "_KGE"
-                    os.rename(self.subcatch.path_out, renamed_pathout)
-                    settings_dir = os.path.join(self.subcatch.path, 'settings')
-                    renamed_settings_dir = settings_dir + "_KGE"
-                    os.rename(settings_dir, renamed_settings_dir)
-
-                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks.csv"), os.path.join(self.subcatch.path,"pHistoryWRanks_KGE.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"paramsHistory.csv"), os.path.join(self.subcatch.path,"paramsHistory_KGE.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"front_history.csv"), os.path.join(self.subcatch.path,"front_history_KGE.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"runs_log.csv"), os.path.join(self.subcatch.path,"runs_log_KGE.csv"))
-                    
-                    # resume KGEJSD calibration folders
-                    
-                    resumed_pathout = self.subcatch.path_out + "_KGEJSD_" + bestKGEJSDtoResume
-                    os.rename(resumed_pathout, self.subcatch.path_out)
-                    settings_dir = os.path.join(self.subcatch.path, 'settings')
-                    resumed_settings_dir = settings_dir + "_KGEJSD_" + bestKGEJSDtoResume
-                    os.rename(resumed_settings_dir, settings_dir)
-
-                    paretofront_filename = "pareto_front_KGE.csv"
-                    message = f"WARNING!\n" \
-                        f"Selected kge calibrated item correlation value = {CORR_bestKGE}\n" \
-                        f"Selected kge calibrated item  KGE value = {KGE_bestKGE}\n" \
-                        f"Selected kge-jsd 1st calibrated item correlation value = {CORR_bestKGEJSD_1st}\n" \
-                        f"Selected kge-jsd 1st calibrated item KGE value = {KGE_bestKGEJSD_1st}\n" \
-                        f"Selected kge-jsd 1st calibrated item JSD value = {JSD_bestKGEJSD_1st}\n" \
-                        f"Selected kge-jsd 2nd calibrated item correlation value = {CORR_bestKGEJSD_2nd}\n" \
-                        f"Selected kge-jsd 2nd calibrated item KGE value = {KGE_bestKGEJSD_2nd}\n" \
-                        f"Selected kge-jsd 2nd calibrated item JSD value = {JSD_bestKGEJSD_2nd}\n" \
-                        f"Resuming the calibration with 'KGEJSD objective function', {bestKGEJSDtoResume} attempt\n" \
-                        f"(pareto_front written in {self.subcatch.path} -> {paretofront_filename})\n"
-                    print(message)
-                    file_path = os.path.join(renamed_pathout,"ResumedKGEJSD_Warning_message_" + bestKGEJSDtoResume + ".txt")
-                    # Open the file in write mode
-                    with open(file_path, 'w') as file:
-                        # Write the message to the file
-                        file.write(message)
-
-                    self.write_pareto_front(pHistory_ranked, isKGE_JSD, None, paretofront_filename)
-
-                    # resume KGEJSD calibration files
-                    os.rename(os.path.join(self.subcatch.path,"pareto_front_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"pareto_front.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"pHistoryWRanks_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"pHistoryWRanks.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"paramsHistory_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"paramsHistory.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"front_history_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"front_history.csv"))
-                    os.rename(os.path.join(self.subcatch.path,"runs_log_KGEJSD_" + bestKGEJSDtoResume + ".csv"), os.path.join(self.subcatch.path,"runs_log.csv"))
-
-                    self.write_summary_file(selObjFun = "KGEJSD_" + bestKGEJSDtoResume)
-                    return True, "" 
-
-        self.write_pareto_front(pHistory_ranked, isKGE_JSD)
-        self.write_summary_file(selObjFun = "KGE" if isKGE_JSD==False else "KGEJSD")
-        return True, ""
-
+            # Single non-standard objective → treat as multi
+            return ObjectiveMulti(cfg, subcatch, read_observations)
+    else:
+        return ObjectiveMulti(cfg, subcatch, read_observations)

@@ -216,8 +216,7 @@ def test_stats(dummy_cfg):
 
 def test_select_best_calib_strategy(dummy_cfg):
 
-    subcatch = subcatchment.SubCatchment(dummy_cfg, 380, station_data={}, initialise=False)
-    obj = objective.ObjectiveKGE(dummy_cfg, subcatch, read_observations=False)
+    from bin.CAL_6_CALIBRATION import select_best_calib
 
     # Test case where both JSDs are <= 0.1 and CORR_1st is significantly better then CORR_2nd, but KGE_bestKGE is better then KGE_1st
     JSD_1st = 0.05
@@ -230,7 +229,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.76
 
     expected_result = (True, "1st", KGE_1st, CORR_1st, JSD_1st)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where both JSDs are <= 0.1 and CORR_2nd is significantly better then CORR_1st, but KGE_bestKGE is better then KGE_1st
     JSD_1st = 0.05
@@ -243,7 +242,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.76
 
     expected_result = (True, "2nd", KGE_2nd, CORR_2nd, JSD_2nd)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where both JSDs are > 0.1, CORR are similare and KGE_2nd is better then KGE_1st, but CORR_bestKGE is better then CORR_2nd
     JSD_1st = 0.2
@@ -256,7 +255,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.60
 
     expected_result = (True, "2nd", KGE_2nd, CORR_2nd, JSD_2nd)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where both JSDs are > 0.1, CORR are similar and KGE_1st is better then KGE_2nd, but CORR_bestKGE is better then CORR_2nd
     JSD_1st = 0.2
@@ -269,7 +268,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.60
 
     expected_result = (True, "1st", KGE_1st, CORR_1st, JSD_1st)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where only JSD_1st <= 0.1 and KGE_bestKGE IS NOT significantly better then KGE_1st
     JSD_1st = 0.05
@@ -282,7 +281,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.62
 
     expected_result = (False, "1st", KGE_1st, CORR_1st, JSD_1st)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where only JSD_1st <= 0.1 and KGE_bestKGE IS significantly better then KGE_1st
     JSD_1st = 0.05
@@ -295,7 +294,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.68
 
     expected_result = (True, "1st", KGE_1st, CORR_1st, JSD_1st)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where only JSD_2nd <= 0.1 and KGE_bestKGE IS NOT significantly better then KGE_2nd
     JSD_1st = 0.2
@@ -308,7 +307,7 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.68
 
     expected_result = (False, "2nd", KGE_2nd, CORR_2nd, JSD_2nd)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
 
     # Test case where only JSD_2nd <= 0.1 and KGE_bestKGE IS significantly better then KGE_2nd
     JSD_1st = 0.2
@@ -321,4 +320,4 @@ def test_select_best_calib_strategy(dummy_cfg):
     KGE_bestKGE = 0.76
 
     expected_result = (True, "2nd", KGE_2nd, CORR_2nd, JSD_2nd)
-    assert obj.select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result
+    assert select_best_calib(JSD_1st, JSD_2nd, CORR_1st, CORR_2nd, KGE_1st, KGE_2nd, CORR_bestKGE, KGE_bestKGE) == expected_result

@@ -27,7 +27,7 @@ def longtermrun_subcatchment(cfg, obsid, subcatch):
 
         lock_mgr = calibration.LockManager(cfg.num_cpus)
 
-        obj = objective.ObjectiveKGE(cfg, subcatch)
+        obj = objective.create_objective(cfg, subcatch)
 
         model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
 
