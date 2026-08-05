@@ -68,7 +68,7 @@ def main(settings_file, station, no_check=False):
             subcatch = subcatchment.SubCatchment(cfg, obsid, station_data=station_data, create_links=False)
             lis_template = templates.LisfloodSettingsTemplate(cfg, subcatch)
             lock_mgr = calibration.LockManager(cfg.num_cpus)
-            obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+            obj = objective.create_objective(cfg, subcatch, read_observations=False)
             model = hydro_model.HydrologicalModel(cfg, subcatch, lis_template, lock_mgr, obj)
             # load forcings and input maps in cache
             # required to find reservoir

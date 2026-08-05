@@ -84,7 +84,7 @@ def scaling_subcatchment(cfg, obsid, subcatch, n_runs):
 
     lock_mgr.set_gen(cfg.num_cpus)
 
-    obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+    obj = objective.create_objective(cfg, subcatch, read_observations=False)
 
     model = ScalingModel(cfg, subcatch, lis_template, lock_mgr, obj)
 

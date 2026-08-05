@@ -29,7 +29,7 @@ if __name__ == '__main__':
         print('Cannot find file {}'.format(os.path.join(subcatch.path, "out", "streamflow_simulated_best.csv")))
         raise Exception('Calibration not complete! Cannot generate products...')
 
-    obj = objective.ObjectiveKGE(cfg, subcatch)
+    obj = objective.create_objective(cfg, subcatch)
 
     products.create_products(cfg, subcatch, obj)
 
