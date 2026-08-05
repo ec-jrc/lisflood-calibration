@@ -53,7 +53,7 @@ def create_param_mapping(interstation, param_ranges, all_catchment_data, useNNin
         param_values = id_to_param_series.reindex(range(max_id + 1), fill_value=default_value).values
         
         # Start with default values for all
-        param_maps[param] = np.full(interstation.shape, default_value)
+        param_maps[param] = np.full(interstation.shape, default_value, dtype=np.float64)
                 
         # Only assign values for valid indices
         valid_indices = interstation[valid_mask].astype(int)
@@ -86,9 +86,65 @@ def export_netcdf(path_result, interstation_ds, param_map, name):
             }}
         )
 
-if __name__=="__main__":
+def main(interstation_path, output_path, params_path, calibrated_path, regionalisation_path, useNN=False):
+    """Generate parameter maps from CSV calibration results using nearest-neighbor interpolation.
+
+    Parameters
+    ----------
+    interstation_path : str
+        Path to interstation_regions.nc NetCDF file.
+    output_path : str
+        Output folder for parameter NetCDF maps.
+    params_path : str
+        Path to calibration parameters ranges CSV file.
+    calibrated_path : str
+        Path to calibrated parameters CSV file.
+    regionalisation_path : str
+        Path to regionalisation CSV file.
+    useNN : bool, optional
+        Use nearest neighbor interpolation for invalid points (-1). Default False.
+    """
 
     print("=================== START ===================")
+
+    path_result = output_path
+
+    if not os.path.exists(path_result):
+        os.makedirs(path_result)
+
+    print(">> Loading parameter ranges...")
+    param_ranges = pd.read_csv(params_path, sep=",", index_col=0)
+
+    print(">> Loading calibrated parameters...")
+    calibrated_data = pd.read_csv(calibrated_path, sep=",", index_col=0)
+
+    print(">> Loading regionalized parameters...")
+    regionalized_data = pd.read_csv(regionalisation_path, sep=",", index_col=0)
+
+    # TEMP fix for EFASv6: as the intertation map contains regionalized IDs that are subtracted by 9000000, we need to subtract 9000000 to the IDs in theregionalized data to match them with the interstation map
+    #regionalized_data.index = regionalized_data.index - 9000000
+
+    all_catchment_data = pd.concat([calibrated_data, regionalized_data])
+
+    print(">> Reading interstation regions map...")
+    interstation_ds = xr.open_dataset(interstation_path)
+    interstation = interstation_ds['Band1'].values
+
+    # Handle empty rows before processing
+    handle_empty_rows(interstation, all_catchment_data)
+
+    # Replace IDs with parameter values using np.take
+    param_maps = create_param_mapping(interstation, param_ranges, all_catchment_data, useNNintepolation=useNN)
+
+    print("Exporting NetCDF files...")
+    for param in param_ranges.index:
+        export_netcdf(path_result, interstation_ds, param_maps[param], param)
+
+    print("==================== END ====================")
+
+
+if __name__=="__main__":
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--interstation', '-i', required=True, help='Path to interstation_regions.nc')
     parser.add_argument('--output', '-o', required=True, help='Output folder')
@@ -98,40 +154,4 @@ if __name__=="__main__":
     parser.add_argument('--useNN', action='store_true', help='Use nearest neighbor interpolation for invalid points (-1) instead of setting them to NaN')
     args = parser.parse_args()
 
-    path_interstation = args.interstation
-    path_result = args.output
-    
-    if not os.path.exists(path_result):
-        os.makedirs(path_result)
-
-    ParamRangesPath = args.params
-
-    print(">> Loading parameter ranges...")
-    param_ranges = pd.read_csv(ParamRangesPath, sep=",", index_col=0)
-
-    print(">> Loading calibrated parameters...")
-    calibrated_data = pd.read_csv(args.calibrated, sep=",", index_col=0)
-
-    print(">> Loading regionalized parameters...")
-    regionalized_data = pd.read_csv(args.regionalisation, sep=",", index_col=0)
-
-    # TEMP fix for EFASv6: as the intertation map contains regionalized IDs that are subtracted by 9000000, we need to subtract 9000000 to the IDs in theregionalized data to match them with the interstation map
-    #regionalized_data.index = regionalized_data.index - 9000000
-
-    all_catchment_data = pd.concat([calibrated_data, regionalized_data])
-    
-    print(">> Reading interstation regions map...")
-    interstation_ds = xr.open_dataset(path_interstation)
-    interstation = interstation_ds['Band1'].values
-
-    # Handle empty rows before processing
-    handle_empty_rows(interstation, all_catchment_data)
-
-    # Replace IDs with parameter values using np.take
-    param_maps = create_param_mapping(interstation, param_ranges, all_catchment_data, useNNintepolation=args.useNN)
-
-    print("Exporting NetCDF files...")
-    for param in param_ranges.index:
-            export_netcdf(path_result, interstation_ds, param_maps[param], param)
-
-    print("==================== END ====================")
+    main(args.interstation, args.output, args.params, args.calibrated, args.regionalisation, args.useNN)

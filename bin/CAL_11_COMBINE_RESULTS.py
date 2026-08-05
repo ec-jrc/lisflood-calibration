@@ -68,16 +68,17 @@ def get_mask(cutmaps_dir, catch_id):
     return shapefile_catchment
 
 
-if __name__ == '__main__':
+def main(settings_file, cutmaps_path):
+    """Combine calibration results into summary CSV and GeoJSON.
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('settings_file', help='Calibration settings file')
-    parser.add_argument('cutmaps_path', help='Cutmaps main path')
-    args = parser.parse_args()
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file (e.g. .../calibration/settings.txt).
+    cutmaps_path : str
+        Path to cutmaps main directory containing per-catchment maps.
+    """
 
-    settings_file = args.settings_file
-    cutmaps_path = args.cutmaps_path
-    
     # get the main directory from where inputs and outputs will be read/saved
     main_dir = settings_file.replace('/calibration/settings.txt', '')
     
@@ -109,7 +110,8 @@ if __name__ == '__main__':
     # combine all results
     calibration_data = pd.concat(calibration_data, axis=0)
 
-    # merge with the metadata and save final sv file
+    # merge with the metadata and save final csv file
+    os.makedirs(os.path.join(main_dir, 'calibration/summary'), exist_ok=True)
     data_all = pd.merge(left=metadata_stations, right=calibration_data, left_on='ObsID', right_index=True, how='outer')
     data_all.to_csv(os.path.join(main_dir, 'calibration/summary/calibration_summary.csv'))
 
@@ -136,3 +138,13 @@ if __name__ == '__main__':
         data_all.to_file(os.path.join(main_dir, 'calibration/summary/calibration_summary.json'), driver="GeoJSON")
 
     print("==================== END ====================")
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_file', help='Calibration settings file')
+    parser.add_argument('cutmaps_path', help='Cutmaps main path')
+    args = parser.parse_args()
+
+    main(args.settings_file, args.cutmaps_path)

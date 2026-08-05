@@ -21,7 +21,7 @@ def set_calibrated_parameters(param_ranges, index, path_subcatch, params, inters
 
 	# Assign these to maps
 	for ii in range(len(param_ranges)):
-		if lakes_reservoirs_default and param_ranges.index[ii] in ['LakeMultiplier', 'adjust_Normal_Flood', 'ReservoirRnormqMult']:
+		if lakes_reservoirs_default and param_ranges.index[ii] in ['LakeMultiplier', 'ReservoirFloodStorage', 'ReservoirFloodOutflowFactor']:
 			paramvalue = param_ranges.iloc[ii,2]
 		else:
 			paramvalue = pareto_front["param_"+str(ii).zfill(2)+"_"+param_ranges.index[ii]][0]
@@ -40,27 +40,35 @@ def export_netcdf(path_result, template, param_map, name):
 	ds.to_netcdf(os.path.join(path_result, f'{name}.nc'))
 
 
-if __name__=="__main__":
+def main(stations_path, catchments_path, output_path, params_path, template=None, regionalisation=None):
+	"""Generate calibrated parameter maps from pareto_front.csv results.
+
+	Parameters
+	----------
+	stations_path : str
+		Path to stations folder containing interstation_regions.map and stations_data.csv.
+	catchments_path : str
+		Path to catchments folder.
+	output_path : str
+		Output folder for parameter maps.
+	params_path : str
+		Path to calibration parameters ranges CSV file.
+	template : str, optional
+		Path to NetCDF template for exporting parameter maps.
+	regionalisation : str, optional
+		Path to regionalisation CSV file for donor catchments.
+	"""
 
 	print("=================== START ===================")
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--stations', '-s', required=True, help='Path to stations folder containing interstation_regions.map and stations_data.csv')
-	parser.add_argument('--catchments', '-c', required=True, help='Path to catchments folder')
-	parser.add_argument('--output', '-o', required=True, help='Output folder')
-	parser.add_argument('--params', '-p', required=True, help='Path to calibration parameters ranges csv file')
-	parser.add_argument('--template', '-t', help='Path to NetCDF template')
-	parser.add_argument('--regionalisation', '-r', help='Path to regionalisation csv file')
-	args = parser.parse_args()
 
-	path_stations = args.stations
-	path_result = args.output
-	template = args.template
-	
+	path_stations = stations_path
+	path_result = output_path
+
 	if not os.path.exists(path_result):
 		os.makedirs(path_result)
 
-	ParamRangesPath = args.params
-	SubCatchmentPath = args.catchments
+	ParamRangesPath = params_path
+	SubCatchmentPath = catchments_path
 
 	########################################################################
 	#   Make stationdata array from the qgis csv
@@ -94,9 +102,9 @@ if __name__=="__main__":
 	print ("---------------------------------------------")
 	print ("Number of calibrated catchments with pareto_front.csv: "+str(count_front)+"!")
 	print ("---------------------------------------------")
-	if args.regionalisation:
+	if regionalisation:
 		count_reg_front = 0
-		donors_data = pandas.read_csv(args.regionalisation, sep=",", index_col=0)
+		donors_data = pandas.read_csv(regionalisation, sep=",", index_col=0)
 		for index, row in donors_data.iterrows():
 			donor_id = row['DonorID']
 			print(index, donor_id)
@@ -119,3 +127,17 @@ if __name__=="__main__":
 			export_netcdf(path_result, template, params[param], param_ranges.index[ii])
 
 	print ("==================== END ====================")
+
+
+if __name__=="__main__":
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--stations', '-s', required=True, help='Path to stations folder containing interstation_regions.map and stations_data.csv')
+	parser.add_argument('--catchments', '-c', required=True, help='Path to catchments folder')
+	parser.add_argument('--output', '-o', required=True, help='Output folder')
+	parser.add_argument('--params', '-p', required=True, help='Path to calibration parameters ranges csv file')
+	parser.add_argument('--template', '-t', help='Path to NetCDF template')
+	parser.add_argument('--regionalisation', '-r', help='Path to regionalisation csv file')
+	args = parser.parse_args()
+
+	main(args.stations, args.catchments, args.output, args.params, args.template, args.regionalisation)

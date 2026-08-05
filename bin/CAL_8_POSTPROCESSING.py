@@ -6,19 +6,20 @@ from liscal import subcatchment, objective, products
 from liscal.config import ConfigPostProcessing
 
 
-if __name__ == '__main__':
+def main(settings_file, station):
+    """Run post-processing for a calibrated station.
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('settings_file', help='Calibration settings file')
-    parser.add_argument('station', help='Station OBSID to process')
-    args = parser.parse_args()
-
-    settings_file = args.settings_file
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file.
+    station : str or int
+        Station OBSID to process.
+    """
 
     cfg = ConfigPostProcessing(settings_file)
 
-    # Calibrate lisflood fo specified station
-    obsid = int(args.station)
+    obsid = int(station)
 
     print("=================== "+str(obsid)+" ====================")
     
@@ -34,3 +35,13 @@ if __name__ == '__main__':
     products.create_products(cfg, subcatch, obj)
 
     print("==================== END ====================")
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_file', help='Calibration settings file')
+    parser.add_argument('station', help='Station OBSID to process')
+    args = parser.parse_args()
+
+    main(args.settings_file, args.station)
