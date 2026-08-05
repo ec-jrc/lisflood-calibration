@@ -11,6 +11,14 @@ from deap import algorithms, base, creator, tools
 
 from scipy.stats import ttest_ind_from_stats
 
+# Canonical order of KGE-based metric keys used across the calibration module.
+# These map to the first 5 columns written by update_parameter_history:
+# [Kling Gupta Efficiency, Correlation, Signal ratio (s/o) (Bias), Noise ratio (s/o) (Spread), sae]
+# TODO: To support fully custom (non-KGE) objectives, the objective class should
+# provide its own method to reconstruct fitness values from history rows, removing
+# the dependency on this fixed tuple.
+KGE_METRIC_KEYS = ("KGE", "CORR", "BIAS", "Y", "SAE")
+
 class LockManager():
     """
     A class to manage locks and counters in a multiprocessing environment.
@@ -242,7 +250,7 @@ class Criteria():
         if (original_weights["KGE"] != 0):      # KGE
             effKGEs=[halloffame[x].fitness.values[0] for x in range(len(halloffame))]
         elif (original_weights["KGE_JSD"] != 0):    # KGE_JSD
-            KGE_JSDpos=sum(1 for k in ("KGE","CORR","BIAS","Y","SAE") if original_weights[k] != 0)
+            KGE_JSDpos=sum(1 for k in KGE_METRIC_KEYS if original_weights[k] != 0)
             effKGEs=[halloffame[x].fitness.values[KGE_JSDpos] for x in range(len(halloffame))]
         else:
             effKGEs=[1-np.sqrt(halloffame[x].fitness.values[0] + halloffame[x].fitness.values[1] + halloffame[x].fitness.values[2]) for x in range(len(halloffame))]
@@ -254,7 +262,7 @@ class Criteria():
             effKGEs = [halloffame[x].fitness.values[0] for x in range(len(halloffame))]
             popKGEs = [population[x].fitness.values[0] for x in range(len(population))]
         elif (original_weights["KGE_JSD"] != 0):  # KGE_JSD as objective
-            obj_idx = sum(1 for k in ("KGE","CORR","BIAS","Y","SAE") if original_weights[k] != 0)
+            obj_idx = sum(1 for k in KGE_METRIC_KEYS if original_weights[k] != 0)
             effKGEs = [halloffame[x].fitness.values[obj_idx] for x in range(len(halloffame))]
             popKGEs = [population[x].fitness.values[obj_idx] for x in range(len(population))]
         elif (original_weights["CORR"] != 0 and original_weights["BIAS"] != 0 and original_weights["Y"] != 0):
@@ -475,20 +483,22 @@ class CalibrationDeap():
             # method to reconstruct fitness values from history rows.
             non_zero_keys = [k for k, w in self.objective_weights.items() if w != 0]
 
-            # columns written in update_parameter_history in the same order and names:
-            # [Kling Gupta Efficiency], then [Correlation], [Signal ratio (s/o) (Bias)], [Noise ratio (s/o) (Spread)], [sae]
-            objectives=pHistory.iloc[ind].loc['Kling Gupta Efficiency':][:min(5,n_obj)]
-            # actual objectives are (r - 1) ** 2, (B - 1) ** 2 and (y - 1) ** 2
-            objectives[1] = (objectives[1]-1)**2    # r (corr)
-            objectives[2] = (objectives[2]-1)**2    # B (bias)
-            objectives[3] = (objectives[3]-1)**2    # y
-            # Map weight keys to column indices in the 5-element objectives slice
-            key_to_col_idx = {"KGE": 0, "CORR": 1, "BIAS": 2, "Y": 3, "SAE": 4}
-            filtered_objectives = [objectives[key_to_col_idx[k]] for k in non_zero_keys if k in key_to_col_idx]
-            if "JSD" in non_zero_keys:
-                filtered_objectives.append(pHistory.iloc[ind].loc['JSD'])
-            if "KGE_JSD" in non_zero_keys:
-                filtered_objectives.append(pHistory.iloc[ind].loc['KGE_JSD'])
+            # Columns written by update_parameter_history (fixed order):
+            # [Kling Gupta Efficiency, Correlation, Signal ratio (s/o) (Bias), Noise ratio (s/o) (Spread), sae]
+            # followed by additional metrics columns (JSD, KGE_JSD, etc.)
+            COL_IDX = {k: i for i, k in enumerate(KGE_METRIC_KEYS)}
+
+            objectives = pHistory.iloc[ind].loc['Kling Gupta Efficiency':][:len(KGE_METRIC_KEYS)]
+            # Transform for minimization: (x-1)^2 for CORR, BIAS, Y
+            objectives[1] = (objectives[1] - 1) ** 2    # r (corr)
+            objectives[2] = (objectives[2] - 1) ** 2    # B (bias)
+            objectives[3] = (objectives[3] - 1) ** 2    # y
+
+            filtered_objectives = [objectives[COL_IDX[k]] for k in non_zero_keys if k in COL_IDX]
+            # Additional metrics stored by name in paramsHistory
+            for k in non_zero_keys:
+                if k not in COL_IDX and k in pHistory.columns:
+                    filtered_objectives.append(pHistory.iloc[ind].loc[k])
             newInd.fitness.values = filtered_objectives
 
             invalid_ind.append(newInd)
