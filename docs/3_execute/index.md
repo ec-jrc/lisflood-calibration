@@ -14,11 +14,14 @@ Scripts involved in this step:
 Scripts involved in this step:
     - [CAL_5_EXTRACT_STATION.py](CAL_5_EXTRACT_STATION.md): extracts station metadata and observation for a specified catchment.
     - [CAL_5b_SET_PRERUN_IN_SETTINGS.py](CAL_5b_SET_PRERUN_IN_SETTINGS.md) (optional): to set prerun date in settings file from station metadata.
+    - [CAL_5c_FORCING_STATS.py](CAL_5c_FORCING_STATS.md) (optional): computes forcing statistics (Budyko, aridity, temperature) for the catchment.
     - [CAL_6_CALIBRATION.py](CAL_6_CALIBRATION.md): runs the calibration for a specified catchment.
     - [CAL_7_LONGTERM_RUN.py](CAL_7_LONGTERM_RUN.md): runs the long term run for a specified catchment using the calibrated parameters.
     - [CAL_8_POSTPROCESSING.py](CAL_8_POSTPROCESSING.md) (optional): computes calibration statistics for the catchment.
     - [CAL_9_DIAGNOSTICS.py](CAL_9_DIAGNOSTICS.md) (optional): computes calibration diagnostics for a list of catchments.
 5. Once all the catchments have been calibrated, we can compute the global parameter map:
     - [CAL_10_PARAMETER_MAPS.py](CAL_10_PARAMETER_MAPS.md): concatenates all the catchments calibrated parameters into PCRaster parameters maps.
+    - [CAL_10_PARAMETER_MAPS_FROMCSV.py](CAL_10_PARAMETER_MAPS_FROMCSV.md): generates parameter maps from CSV calibration results using nearest-neighbor interpolation.
+    - [CAL_11_COMBINE_RESULTS.py](CAL_11_COMBINE_RESULTS.md): combines calibration results into a summary CSV and GeoJSON file.
 
 These scripts need to be run in sequence. Note that steps 3 and 4 are executed per catchment (or station). As the process can be heavy, it is up to the user to dispatch the workflow on the computing architecture and to make sure the upstream catchnments are run first. An example of workflow using PBS scheduling can be found in CAL_6-7_PERFORM_CAL_PBS.py.

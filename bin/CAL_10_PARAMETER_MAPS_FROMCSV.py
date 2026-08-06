@@ -79,7 +79,8 @@ def export_netcdf(path_result, interstation_ds, param_map, name):
     )
     ds[name].attrs['standard_name'] = name
     ds[name].attrs['long_name'] = name
-    ds.to_netcdf(os.path.join(path_result, f'{name}_EFASv6.nc'),
+    #ds.to_netcdf(os.path.join(path_result, f'{name}_EFASv6.nc'),
+    ds.to_netcdf(os.path.join(path_result, f'{name}_GloFASv5.nc'),
         encoding={
             name: {
                 'zlib': True

@@ -17,4 +17,4 @@ Modified by Feyera Aga Hirpa in 2015 (JRC) feyera.hirpa@ouce.ox.ac.uk.
  
 Modified by Valerio Lorini (valerio.lorini@ec.europa.eu) and Alfieri Lorenzo (lorenzo.alfieri@ec.europa.eu) in 2018.
 
-The calibration tools were completely refactored by ECMWF (corentin.carton@ecmwf.int) for the EFAS 5.0 and GloFAS 4.0 releases in 2023.
+The calibration tools were completely refactored by ECMWF (corentin.carton@ecmwf.int) for the EFAS 5.0 and GloFAS 4.0 releases in 2023 and updated by JRC for the EFAS 6.0 and GloFAS 5.0 releases in 2026
