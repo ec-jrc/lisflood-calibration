@@ -10,6 +10,8 @@ Scripts involved in this step:
 Scripts involved in this step:
     - [CAL_3_MASK.py](CAL_3_MASK.md): extracts the mask of the stations.
     - [CAL_4_CUT_MAPS.py](CAL_4_CUT_MAPS.md): cuts all the static and forcing maps from the mask computed in the previous step.
+    - [CAL_4b_CUT_MAPS_list.py](CAL_4_CUT_MAPS.md#note): loops CAL_4 over a list of catchments sequentially.
+    - [CAL_4c_CUT_MAPS_parallel.py](CAL_4c_CUT_MAPS_parallel.md): parallel version of CAL_4b, processing multiple catchments concurrently.
 4. From these maps, calibrate the catchment with respect to the observations at the station outlet of the catchment.
 Scripts involved in this step:
     - [CAL_5_EXTRACT_STATION.py](CAL_5_EXTRACT_STATION.md): extracts station metadata and observation for a specified catchment.

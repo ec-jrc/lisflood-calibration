@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""CAL_4c: Parallel version of CAL_4b_CUT_MAPS_list.
+
+Cuts global maps to subcatchment extents for a list of stations,
+processing multiple stations in parallel using ThreadPoolExecutor.
+Internally calls CAL_4_CUT_MAPS for each station.
+"""
 import argparse
 import pandas as pd
 import os
@@ -8,8 +14,6 @@ import concurrent.futures
 
 from liscal import config
 
-file_CatchmentsToProcess = os.path.normpath(sys.argv[3])
-print(file_CatchmentsToProcess)
 
 class ConfigCutMaps(config.Config):
 
@@ -17,13 +21,32 @@ class ConfigCutMaps(config.Config):
         super().__init__(settings_file, print_settings=False)
 
         # paths
-        self.subcatchment_path = self.parser.get('Path','subcatchment_path')
+        self.subcatchment_path = self.parser.get('Path', 'subcatchment_path')
 
         # stations
         self.stations_data = self.parser.get('Stations', 'stations_data')
 
 
-def process_station(obsid, stations_meta, settings_file, path_maps, cfg, new_prog_name):
+def process_station(obsid, stations_meta, settings_file, path_maps, cfg, cal4_script_path):
+    """Process a single station by calling CAL_4_CUT_MAPS via os.system.
+
+    Skips stations that already have all maps cut (checks file existence).
+
+    Parameters
+    ----------
+    obsid : int
+        Station observation ID.
+    stations_meta : pd.DataFrame
+        Full stations metadata DataFrame indexed by ObsID.
+    settings_file : str
+        Path to calibration settings file.
+    path_maps : str
+        Path to global maps directory or single map file.
+    cfg : ConfigCutMaps
+        Configuration object with subcatchment_path.
+    cal4_script_path : str
+        Full path to the CAL_4_CUT_MAPS.py script.
+    """
     try:
         station_data = stations_meta.loc[obsid]
     except KeyError:
@@ -32,7 +55,7 @@ def process_station(obsid, stations_meta, settings_file, path_maps, cfg, new_pro
     subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
     path_subcatch_maps = os.path.join(subcatchment_path, 'maps')
 
-    cmd = f"python {new_prog_name} {settings_file} {path_maps} {obsid} --use-dask-config"
+    cmd = f"python {cal4_script_path} {settings_file} {path_maps} {obsid} --use-dask-config"
     at_least_one_file_to_process = False
 
     if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
@@ -63,19 +86,24 @@ def process_station(obsid, stations_meta, settings_file, path_maps, cfg, new_pro
         print(f">> Calling \"{cmd}\"")
         os.system(cmd)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('settings_file', help='Calibration pre-processing settings file')
-    parser.add_argument('path_maps', help='Input global maps directory')
-    parser.add_argument('station_list', help='List of Station OBSID to process')
-    parser.add_argument('--max-workers', type=int, default=None, help='Maximum number of workers for parallel processing')
-    args = parser.parse_args()
 
-    settings_file = args.settings_file
+def main(settings_file, path_maps, station_list, max_workers=None):
+    """Cut global maps for a list of stations in parallel.
 
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration settings file.
+    path_maps : str
+        Path to global maps directory or single map file.
+    station_list : str
+        Path to a text file listing station IDs (one per line).
+    max_workers : int or None, optional
+        Maximum number of parallel workers. Default None (auto).
+    """
     cfg = ConfigCutMaps(settings_file)
 
-    CatchmentsToProcess = pd.read_csv(file_CatchmentsToProcess, sep=",", header=None)
+    CatchmentsToProcess = pd.read_csv(station_list, sep=",", header=None)
     Series = CatchmentsToProcess[0]
     Series = np.array(Series)
     print(Series)
@@ -84,24 +112,37 @@ if __name__ == '__main__':
     stations_meta = pd.read_csv(cfg.stations_data, sep=",", index_col='ObsID')
     stationdata_sorted = stations_meta.sort_values(by=['DrainingArea.km2.LDD'], ascending=True)
 
-    full_path_to_prog = sys.argv[0]
-    prog_name = parser.prog
-    new_prog_name = full_path_to_prog.replace(prog_name, "CAL_4_CUT_MAPS.py")
+    # Determine path to CAL_4_CUT_MAPS.py (same directory as this script)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    cal4_script_path = os.path.join(script_dir, "CAL_4_CUT_MAPS.py")
 
     # Use ThreadPoolExecutor to run in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for index, row in stationdata_sorted.iterrows():
             catchment = index
-            Series = CatchmentsToProcess[0]
-            if len(Series[Series == catchment]) == 0:  # Only process catchments whose ID is in the CatchmentsToProcess.txt file
+            if len(Series[Series == catchment]) == 0:
                 continue
 
             obsid = int(index)
             print(obsid)
 
-            # Submit the task to the executor
-            futures.append(executor.submit(process_station, obsid, stations_meta, settings_file, args.path_maps, cfg, new_prog_name))
+            futures.append(executor.submit(
+                process_station, obsid, stations_meta, settings_file, path_maps, cfg, cal4_script_path
+            ))
 
-        # Optionally, wait for all futures to complete
         concurrent.futures.wait(futures)
+
+    print("==================== END ====================")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_file', help='Calibration pre-processing settings file')
+    parser.add_argument('path_maps', help='Input global maps directory')
+    parser.add_argument('station_list', help='List of Station OBSID to process')
+    parser.add_argument('--max-workers', type=int, default=None,
+                        help='Maximum number of workers for parallel processing')
+    args = parser.parse_args()
+
+    main(args.settings_file, args.path_maps, args.station_list, args.max_workers)

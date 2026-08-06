@@ -7,7 +7,7 @@ import gc
 
 
 # Specify the directory path
-root_dir = '/BGFS/DISASTER/russcar/cal_workflow_2025/catchments/Africa/'
+root_dir = '<PATH>/catchments/Africa/'
 
 headcatchments_Africa_nolakes_nores =[]
 headcatchments_Africa_nolakes_nores_directories=[]

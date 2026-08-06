@@ -76,7 +76,7 @@ for catchmentID in interstationID:
    continent = selectedT[-3]
    basin = selectedT[-2]
    
-   calibKGE_file = pandas.read_csv("/BGFS/DISASTER/grimast/calibration3arcmin_workflow/catchments/v5_allresultsfromLeonardo_23dec2025/"+continent[:]+'/'+basin[:]+'/'+str(catchmentID)+'/pHistoryWRanks.csv')
+   calibKGE_file = pandas.read_csv("<PATH>/calibration3arcmin_workflow/catchments/v5_allresultsfromLeonardo_23dec2025/"+continent[:]+'/'+basin[:]+'/'+str(catchmentID)+'/pHistoryWRanks.csv')
    calibKGE=calibKGE_file['Kling Gupta Efficiency'][0]
    if calibKGE>-0.41:
       headcatchments_ALL_nolakes_nores_minKGE041.append(catchmentID)
@@ -107,7 +107,7 @@ interstationID_directories = headcatchments_ALL_nolakes_nores_minKGE041_director
 # TARGET catchments
 '''
 # global basins  = IN THIS EXPERIMENT, global basins = selected calibrated catchments (LEAVE ONE OUT CROSS VALIDATION EXPERIMENT)
-# globalbasins = rxr.open_rasterio('/BGFS/DISASTER/grimast/DEFAULT_PAR/globalbasins.tif') ---> Global uncalibrated basins for the application of the regionalization
+# globalbasins = rxr.open_rasterio('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/globalbasins.tif') ---> Global uncalibrated basins for the application of the regionalization
 nf2=Dataset(foldername+"interstation_regions_ALL.nc",'r',format='NETCDF4_CLASSIC') #
 globalbasins2 = nf2.variables['interstation_regions'][:]
 globalbasins = globalbasins2 * 0.0
@@ -180,51 +180,51 @@ for ID in np.arange(len(interstationID)):  # donors: headcatchments, no lakes, n
      
      # CLIMATE
      # aridity index ## ALL FROM GloFASv4 FOLDER !!!!
-     AIdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/AI.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     AIdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/AI.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      AI_catch=[]
      AI_catch=AIdata[points[0],points[1]]
      AI_average[ID]=np.mean(AI_catch)
      AI_median[ID]=np.percentile(AI_catch,50.0)
      # Mean Annual Precipitation
-     MAPdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/sqrtMAP.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     MAPdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/sqrtMAP.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      MAP_catch=[]
      MAP_catch=MAPdata[points[0],points[1]]
      MAP_average[ID]=np.mean(MAP_catch)
      MAP_median[ID]=np.percentile(MAP_catch,50.0)     
      # POCC
-     POCCdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/POCC.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     POCCdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/POCC.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      POCC_catch=[]
      POCC_catch=POCCdata[points[0],points[1]]
      POCC_average[ID]=np.mean(POCC_catch)
      POCC_median[ID]=np.percentile(POCC_catch,50.0)    
      # SNOW
-     SNOWdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/FSNOW.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     SNOWdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/FSNOW.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      SNOW_catch=[]
      SNOW_catch=SNOWdata[points[0],points[1]]
      SNOW_average[ID]=np.mean(SNOW_catch)
      SNOW_median[ID]=np.percentile(SNOW_catch,50.0) 
      # GEOLOGY and SOIL    
      # geopermeability
-     GEOPERMdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/GEOPERM.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     GEOPERMdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/GEOPERM.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      GEOPERM_catch=[]
      GEOPERM_catch=GEOPERMdata[points[0],points[1]]
      GEOPERM_average[ID]=np.mean(GEOPERM_catch)
      GEOPERM_median[ID]=np.percentile(GEOPERM_catch,50.0)     
      # clay
-     CLAYdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/CLAY.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     CLAYdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/CLAY.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      CLAY_catch=[]
      CLAY_catch=CLAYdata[points[0],points[1]]
      CLAY_average[ID]=np.mean(CLAY_catch)
      CLAY_median[ID]=np.percentile(CLAY_catch,50.0)
      # topography     
      # slope
-     SLOPEdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/SLOPE.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     SLOPEdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/SLOPE.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      SLOPE_catch=[]
      SLOPE_catch=SLOPEdata[points[0],points[1]]
      SLOPE_average[ID]=np.mean(SLOPE_catch)
      SLOPE_median[ID]=np.percentile(SLOPE_catch,50.0)
      # elevation
-     ELEVdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/ELEV.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     ELEVdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/ELEV.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      ELEV_catch=[]
      ELEV_catch=ELEVdata[points[0],points[1]]
      ELEV_average[ID]=np.mean(ELEV_catch)
@@ -273,51 +273,51 @@ for ID in np.arange(len(globalbasinsID_selected)):
      centroid1_globalbasinsID_selected[ID,:] = (sum(y) / len(y), sum(x) / len(x))
 
      # aridity index
-     AIdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/AI.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     AIdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/AI.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      AI_catch=[]
      AI_catch=AIdata[points[0],points[1]]
      AI_average_globalbasins[ID]=np.mean(AI_catch)
      AI_median_globalbasins[ID]=np.percentile(AI_catch,50.0)
      # Mean Annual Precipitation
-     MAPdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/sqrtMAP.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     MAPdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/sqrtMAP.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      MAP_catch=[]
      MAP_catch=MAPdata[points[0],points[1]]
      MAP_average_globalbasins[ID]=np.mean(MAP_catch)
      MAP_median_globalbasins[ID]=np.percentile(MAP_catch,50.0)     
      # POCC
-     POCCdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/POCC.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     POCCdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/POCC.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      POCC_catch=[]
      POCC_catch=POCCdata[points[0],points[1]]
      POCC_average_globalbasins[ID]=np.mean(POCC_catch)
      POCC_median_globalbasins[ID]=np.percentile(POCC_catch,50.0)    
      # SNOW
-     SNOWdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/FSNOW.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     SNOWdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/FSNOW.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      SNOW_catch=[]
      SNOW_catch=SNOWdata[points[0],points[1]]
      SNOW_average_globalbasins[ID]=np.mean(SNOW_catch)
      SNOW_median_globalbasins[ID]=np.percentile(SNOW_catch,50.0)      
      # GEOLOGY and SOIL    
      # geopermeability
-     GEOPERMdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/GEOPERM.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     GEOPERMdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/GEOPERM.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      GEOPERM_catch=[]
      GEOPERM_catch=GEOPERMdata[points[0],points[1]]
      GEOPERM_average_globalbasins[ID]=np.mean(GEOPERM_catch)
      GEOPERM_median_globalbasins[ID]=np.percentile(GEOPERM_catch,50.0)  
      # clay
-     CLAYdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/CLAY.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     CLAYdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/CLAY.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      CLAY_catch=[]
      CLAY_catch=CLAYdata[points[0],points[1]]
      CLAY_average_globalbasins[ID]=np.mean(CLAY_catch)
      CLAY_median_globalbasins[ID]=np.percentile(CLAY_catch,50.0)
      # topography     
      # slope
-     SLOPEdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/SLOPE.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     SLOPEdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/SLOPE.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      SLOPE_catch=[]
      SLOPE_catch=SLOPEdata[points[0],points[1]]
      SLOPE_average_globalbasins[ID]=np.mean(SLOPE_catch)
      SLOPE_median_globalbasins[ID]=np.percentile(SLOPE_catch,50.0)     
      # elevation
-     ELEVdata=np.load('/BGFS/DISASTER/grimast/DEFAULT_PAR_Global_REGIONALIZATON/ELEV.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
+     ELEVdata=np.load('<PATH>/DEFAULT_PAR_Global_REGIONALIZATON/ELEV.npy', mmap_mode=None, allow_pickle=False, fix_imports=True, encoding='ASCII')
      ELEV_catch=[]
      ELEV_catch=ELEVdata[points[0],points[1]]
      ELEV_average_globalbasins[ID]=np.mean(ELEV_catch)

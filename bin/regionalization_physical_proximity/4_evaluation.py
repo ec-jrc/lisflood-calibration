@@ -15,7 +15,7 @@ from pandas import ExcelFile
 from datetime import datetime
 from liscal import hydro_stats
   
-ctachmentslistfile=pandas.read_csv("/BGFS/DISASTER/grimast/PARAM_TRANSFER_GloFASv5_headcatchments/IDs_closest_noLakes_noRes_minKGE041_corrections.csv", sep=",", index_col=0) 
+ctachmentslistfile=pandas.read_csv("<PATH>/PARAM_TRANSFER_GloFASv5_headcatchments/IDs_closest_noLakes_noRes_minKGE041_corrections.csv", sep=",", index_col=0) 
 
 catchments= np.array(ctachmentslistfile['stationID'])[:]
 
@@ -23,7 +23,7 @@ print(catchments)
 
 print('Number of catchments that we still need to evaluate = ',len(catchments))
 
-foldername = "/BGFS/DISASTER/grimast/PARAM_TRANSFER_GloFASv5_headcatchments/HEADCATCHMENTS_noLakes_noRes_minKGE041/"
+foldername = "<PATH>/PARAM_TRANSFER_GloFASv5_headcatchments/HEADCATCHMENTS_noLakes_noRes_minKGE041/"
 
 
 start_ev=datetime(1975,1,2)

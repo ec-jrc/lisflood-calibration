@@ -16,13 +16,13 @@ from liscal import hydro_stats
 
     
     
-ctachmentslistfile=pandas.read_csv("/BGFS/DISASTER/grimast/PARAM_TRANSFER_GloFASv5_headcatchments/experiment_results_HEADCATCHMENTS_noLakes_noRes_minKGE041_geography_geographyclimate_JDKGE_calib.csv", sep=",", index_col=0) 
+ctachmentslistfile=pandas.read_csv("<PATH>/PARAM_TRANSFER_GloFASv5_headcatchments/experiment_results_HEADCATCHMENTS_noLakes_noRes_minKGE041_geography_geographyclimate_JDKGE_calib.csv", sep=",", index_col=0) 
 
 print(ctachmentslistfile)
 catchments= np.array(ctachmentslistfile['ID'])[:]
 
 
-foldername = "/BGFS/DISASTER/grimast/PARAM_TRANSFER_GloFASv5_headcatchments/HEADCATCHMENTS_noLakes_noRes_minKGE041/"
+foldername = "<PATH>/PARAM_TRANSFER_GloFASv5_headcatchments/HEADCATCHMENTS_noLakes_noRes_minKGE041/"
 
 
 start_ev=datetime(1975,1,2)
