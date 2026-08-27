@@ -4,6 +4,7 @@
 import os
 import argparse
 from dataclasses import dataclass
+from typing import Optional
 
 import pandas as pd
 
@@ -17,11 +18,11 @@ class CalibrationQualityResult:
     reason: str  # "", "KGEJSD_Low", "KGEJSD_Failed"
     pHistory_ranked: pd.DataFrame
     # For threshold evaluation context:
-    KGE_best: float | None
-    CORR_best: float | None
-    JSD_best: float | None
-    maxCORR: float | None
-    maxKGE: float | None
+    KGE_best: Optional[float]
+    CORR_best: Optional[float]
+    JSD_best: Optional[float]
+    maxCORR: Optional[float]
+    maxKGE: Optional[float]
 
 
 def rename_calibration_run(subcatch_path, path_out, suffix):
