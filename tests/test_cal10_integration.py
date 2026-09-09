@@ -83,11 +83,11 @@ class TestCAL10FromCSV:
 
         # Verify output files
         for param in ['UpperZoneTimeConstant', 'LowerZoneTimeConstant', 'LakeMultiplier']:
-            nc_file = os.path.join(output_dir, f'{param}_EFASv6.nc')
-            assert os.path.isfile(nc_file), f"main() did not produce {param}_EFASv6.nc"
+            nc_file = os.path.join(output_dir, f'{param}_GloFASv5.nc')
+            assert os.path.isfile(nc_file), f"main() did not produce {param}_GloFASv5.nc"
 
         # Load and verify UpperZoneTimeConstant
-        ds = xr.open_dataset(os.path.join(output_dir, 'UpperZoneTimeConstant_EFASv6.nc'))
+        ds = xr.open_dataset(os.path.join(output_dir, 'UpperZoneTimeConstant_GloFASv5.nc'))
         uztc = ds['UpperZoneTimeConstant'].values
 
         # Station 1 pixels = 20.0
@@ -111,7 +111,7 @@ class TestCAL10FromCSV:
         assert not np.isnan(uztc[2, 2])
 
         # Verify LakeMultiplier
-        ds_lake = xr.open_dataset(os.path.join(output_dir, 'LakeMultiplier_EFASv6.nc'))
+        ds_lake = xr.open_dataset(os.path.join(output_dir, 'LakeMultiplier_GloFASv5.nc'))
         lake = ds_lake['LakeMultiplier'].values
         assert lake[1, 1] == pytest.approx(1.5)  # station 1
         assert lake[1, 3] == pytest.approx(0.8)  # station 2
@@ -127,7 +127,7 @@ class TestCAL10FromCSV:
         output_dir = str(tmp_path / 'output')
         main(interstation_path, output_dir, params_path, calibrated_path, reg_path, useNN=False)
 
-        ds = xr.open_dataset(os.path.join(output_dir, 'UpperZoneTimeConstant_EFASv6.nc'))
+        ds = xr.open_dataset(os.path.join(output_dir, 'UpperZoneTimeConstant_GloFASv5.nc'))
         uztc = ds['UpperZoneTimeConstant'].values
 
         # -1 pixel without NN = NaN

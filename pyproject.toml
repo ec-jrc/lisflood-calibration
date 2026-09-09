@@ -28,6 +28,7 @@ dependencies = [
     "deap",
     "matplotlib",
     "scipy",
+    "scikit-learn",
     "tbb"
 ]
 
