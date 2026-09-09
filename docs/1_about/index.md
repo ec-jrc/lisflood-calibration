@@ -9,12 +9,12 @@ The calibration tools are also available through a Python library called liscal,
 import liscal
 ```
 
-The calibration tools was created by Hylke Beck 2014 (JRC, Princeton) hylkeb@princeton.edu.
+The calibration tools was created by Hylke Beck 2014 (JRC, Princeton).
 
 The submodule Hydrostats was created 2011 by Sat Kumar Tomer (modified by Hylke Beck).
  
-Modified by Feyera Aga Hirpa in 2015 (JRC) feyera.hirpa@ouce.ox.ac.uk.
+Modified by Feyera Aga Hirpa in 2015 (JRC).
  
-Modified by Valerio Lorini (valerio.lorini@ec.europa.eu) and Alfieri Lorenzo (lorenzo.alfieri@ec.europa.eu) in 2018.
+Modified by Valerio Lorini and Alfieri Lorenzo in 2018.
 
-The calibration tools were completely refactored by ECMWF (corentin.carton@ecmwf.int) for the EFAS 5.0 and GloFAS 4.0 releases in 2023 and updated by JRC for the EFAS 6.0 and GloFAS 5.0 releases in 2026
+The calibration tools were completely refactored by Corentin Carton de Wiart (ECMWF) for the EFAS 5.0 and GloFAS 4.0 releases in 2023, and updated by Stefania Grimaldi and Carlo Russo (JRC) for the GloFAS 5.0 and EFAS 6.0 releases in 2026.

@@ -17,11 +17,11 @@ Other useful resources
 
 This repository contains a collection of Python tools and libraries for calibrating the LISFLOOD hydrological model.
 
-The calibration tools were created by Hylke Beck 2014 (JRC, Princeton) hylkeb@princeton.edu.
+The calibration tools were created by Hylke Beck 2014 (JRC, Princeton).
 The submodule Hydrostats was created 2011 by Sat Kumar Tomer (modified by Hylke Beck).
-Modified by Feyera Aga Hirpa in 2015 (JRC) feyera.hirpa@ouce.ox.ac.uk.
-Modified by Valerio Lorini (valerio.lorini@ec.europa.eu) and Alfieri Lorenzo (lorenzo.alfieri@ec.europa.eu) in 2018.
-The calibration tools were completely refactored by ECMWF (corentin.carton@ecmwf.int) for the EFAS 5.0 and GloFAS 4.0 releases in 2023.
+Modified by Feyera Aga Hirpa in 2015 (JRC).
+Modified by Valerio Lorini and Alfieri Lorenzo (JRC) in 2018.
+The calibration tools were completely refactored by Corentin Carton de Wiart (ECMWF) for the EFAS 5.0 and GloFAS 4.0 releases in 2023, and updated by Stefania Grimaldi and Carlo Russo (JRC) for the GloFAS 5.0 and EFAS 6.0 releases in 2026.
 
 The calibration procedure consists of several Python scripts to be run consecutively. If needed, the tools are also available through a Python library called `liscal`:
 ```python

@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: LISFLOOD Calibration tool
+message: "If you use this software, please cite it using the information below."
+
+type: software
+
+authors:
+  - family-names: Beck
+    given-names: Hylke
+    orcid: https://orcid.org/0000-0003-2553-9566
+    affiliation: Joint Research Centre
+
+  - family-names: Hirpa
+    given-names: Feyera Aga
+    orcid: https://orcid.org/0000-0002-4919-4753
+    affiliation: Joint Research Centre
+
+  - family-names: Lorini
+    given-names: Valerio
+    orcid: https://orcid.org/0000-0003-2148-5476
+    affiliation: Joint Research Centre
+
+  - family-names: Alfieri
+    given-names: Lorenzo
+    orcid: https://orcid.org/0000-0002-3616-386X
+    affiliation: CIMA Research Foundation
+
+  - family-names: Carton de Wiart
+    given-names: Corentin
+    orcid: https://orcid.org/0000-0002-0681-2224
+    affiliation: European Centre for Medium-Range Weather Forecasts
+
+  - family-names: Grimaldi
+    given-names: Stefania
+    orcid: https://orcid.org/0000-0002-7025-7624
+    affiliation: Joint Research Centre
+
+  - family-names: Russo
+    given-names: Carlo
+    orcid: https://orcid.org/0000-0001-8296-4345
+    affiliation: Joint Research Centre
+
+repository-code: https://github.com/ec-jrc/lisflood-calibration
