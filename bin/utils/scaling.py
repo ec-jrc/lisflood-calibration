@@ -69,7 +69,8 @@ class ScalingModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, self.end, cfg.param_ranges, parameters)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.start, self.end, self.start, 
+                                                                 self.end, cfg, out_dir, self.subcatch.path_station, parameters)
 
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
@@ -83,7 +84,7 @@ def scaling_subcatchment(cfg, obsid, subcatch, n_runs):
 
     lock_mgr.set_gen(cfg.num_cpus)
 
-    obj = objective.ObjectiveKGE(cfg, subcatch, read_observations=False)
+    obj = objective.create_objective(cfg, subcatch, read_observations=False)
 
     model = ScalingModel(cfg, subcatch, lis_template, lock_mgr, obj)
 

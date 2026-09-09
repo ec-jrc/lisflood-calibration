@@ -1,3 +1,5 @@
+.kiro/
+.vscode/
 .idea/
 _site/
 .sass-cache/
@@ -63,10 +65,10 @@ venv.bak/
 .ropeproject
 /site
 .mypy_cache/
-catchments/
 result/
 temp/
 .jekyll-metadata
 Gemfile.lock
 _site/
 .vscode/launch.json
+_version.py

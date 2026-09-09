@@ -5,7 +5,7 @@ import pandas as pd
 def check_kge(kge_file, target1, target2, tol):
 
     df = pd.read_csv(kge_file)
-    kge_max = float(df['effmax_R'][-1:])
+    kge_max = float(df['effmax_KGE'][-1:])
     check = abs(kge_max - target2) < tol and kge_max > target1
 
     if check:

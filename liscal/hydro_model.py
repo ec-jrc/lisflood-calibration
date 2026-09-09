@@ -5,17 +5,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 
-import subprocess
-import traceback
-import random
-import time
-import sys
-
 # lisflood
 import lisf1
 from lisflood.global_modules.decorators import Cache
+from lisflood.global_modules.settings import LisSettings
 
-from liscal import utils
+from liscal import stations, utils, reservoirs as reservoir_module
 
 
 class HydrologicalModel():
@@ -83,12 +78,10 @@ class HydrologicalModel():
         self.prerun_start = cfg.prerun_start.strftime('%d/%m/%Y %H:%M')
         self.prerun_end = cfg.prerun_end.strftime('%d/%m/%Y %H:%M')
 
-    def init_run(self):
+    def init_settings(self):
         """
-        Initialize the model run. This method prepares the model by caching static maps and forcings.
-        It runs LISFLOOD in initialization mode.
+        Initialize the settings file
         """
-
         # dummy Individual, doesn't matter here
         param_ranges = self.cfg.param_ranges
         Individual = 0.5*np.ones(len(param_ranges))
@@ -101,11 +94,21 @@ class HydrologicalModel():
         os.makedirs(out_dir, exist_ok=True)
 
         parameters = self.objective.get_parameters(Individual)
+        prerun_file, run_file = self.lis_template.write_init(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)  
+        return prerun_file, run_file       
+
+    def init_run(self):
+        """
+        Initialize the model run. This method prepares the model by caching static maps and forcings.
+        It runs LISFLOOD in initialization mode.
+        """
+
+        prerun_file, run_file = self.init_settings()
+
         print('---------------------------------------------------------')
         print('Intialising prerun: caching static maps and forcings')
         print('---------------------------------------------------------')
         print('Cache size before initialisation: {}'.format(Cache.size()))
-        prerun_file, run_file = self.lis_template.write_init(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)          
         lisf1.main(prerun_file, '-i')
         print('Cache size after initialising prerun: {}'.format(Cache.size()))
 
@@ -120,6 +123,7 @@ class HydrologicalModel():
         print('---------------------------------------------------------')
         # store lisflood cache size to make sure we don't load anything else after that
         self.lisflood_cache_size = Cache.size()
+        self.lissettings = LisSettings.instance()
 
     def run(self, Individual):
         """
@@ -148,18 +152,104 @@ class HydrologicalModel():
 
         parameters = self.objective.get_parameters(Individual)
 
-        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, self.cal_end, cfg.param_ranges, parameters)
+        prerun_file, run_file = self.lis_template.write_template(run_id, self.prerun_start, self.prerun_end, self.cal_start, 
+                                                                 self.cal_end, cfg, out_dir, self.subcatch.path_station, parameters)
+
+        
             
         lisf1.main(prerun_file, '-v')
         lisf1.main(run_file, '-v')
-            
-        simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end)
-        objectives = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow)
+        Qsim_tss=LisSettings.instance().binding['DisTS']  
+        simulated_streamflow = self.objective.read_simulated_streamflow(run_id, self.cal_start, self.cal_end, Qsim_tss)
+        objectives, additional_metrics = self.objective.compute_objectives(run_id, self.obs_start, self.obs_end, simulated_streamflow, compute_additional_metrics=True)
+        precip_budyko=self.subcatch.data['precip_budyko']
+        PET_budyko=self.subcatch.data['PET_budyko']
 
+        etactBudyko_tss=LisSettings.instance().binding['actETPBUDYKOUpsTS'] 
+        evap_objective=self.objective.compute_evap_index(run_id,precip_budyko,PET_budyko, etactBudyko_tss)
         with self.lock_mgr.lock:
-            self.objective.update_parameter_history(run_id, parameters, objectives, gen, run)
+            self.objective.update_parameter_history(run_id, parameters, objectives, evap_objective, additional_metrics, gen, run)
 
-        return objectives  # If using just one objective function, put a comma at the end!!!
+        # Delegate objective filtering to the objective class
+        return self.objective.filter_objectives_for_deap(objectives, additional_metrics)
+
+
+def filter_param_ranges(cfg, model_initialized, split_lake_params):
+    """
+    Filter parameter ranges based on the initialized LISFLOOD model state.
+
+    Removes parameters from calibration that are not relevant for the current
+    subcatchment (e.g., no lakes, no reservoirs, no snow, etc.). Also handles
+    the split_lake_params feature which creates per-lake LakeMultiplier parameters.
+
+    This function uses lisflood/PCRaster imports and belongs in hydro_model.py
+    to keep those heavy dependencies isolated from config.py.
+
+    Parameters
+    ----------
+    cfg : ConfigCalibration
+        Configuration object whose param_ranges will be modified in place.
+    model_initialized : HydrologicalModel
+        Initialized model with loaded LISFLOOD settings (lissettings).
+    split_lake_params : bool
+        Whether to create per-lake LakeMultiplier parameters.
+    """
+    from lisflood.global_modules.add1 import loadmap, compressArray
+    from pcraster import boolean
+    import pandas
+
+    # Preserve original param_ranges before filtering
+    cfg.original_param_ranges = cfg.param_ranges.copy()
+
+    # Lakes
+    if model_initialized.lissettings.options['simulateLakes'] == False:
+        if 'LakeMultiplier' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("LakeMultiplier", inplace=True)
+    else:
+        if split_lake_params is True:
+            # Check how many lakes are in the catchment
+            cfg.LakeSitesC = loadmap('LakeSites')
+            IsChannelPcr = boolean(loadmap('Channels', pcr=True))
+            IsChannel = np.bool_(compressArray(IsChannelPcr))
+            cfg.LakeSitesC[cfg.LakeSitesC < 1] = 0
+            cfg.LakeSitesC[IsChannel == 0] = 0
+
+            # Mask lake sites when using sub-catchments mask
+            cfg.LakeSitesCC = np.compress(cfg.LakeSitesC > 0, cfg.LakeSitesC).astype(int)
+
+            if cfg.LakeSitesCC.size > 1:
+                # Get one param for each lake
+                if 'LakeMultiplier' in cfg.param_ranges.index:
+                    lake_multiplier_values = cfg.param_ranges.loc['LakeMultiplier']
+                    cfg.param_ranges.drop('LakeMultiplier', inplace=True)
+                    for lake_id in cfg.LakeSitesCC:
+                        new_row_name = f'LakeMultiplier_{lake_id}'
+                        cfg.param_ranges.loc[new_row_name] = lake_multiplier_values
+
+    # Reservoirs
+    if model_initialized.lissettings.options['simulateReservoirs'] == False:
+        if 'ReservoirFloodStorage' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("ReservoirFloodStorage", inplace=True)
+        if 'ReservoirFloodOutflowFactor' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("ReservoirFloodOutflowFactor", inplace=True)
+
+    # MCT Routing
+    if model_initialized.lissettings.options['MCTRouting'] == False:
+        if 'CalChanMan3' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("CalChanMan3", inplace=True)
+
+    # Snow: skip SnowMeltCoef if min daily avg temp > TempSnow threshold
+    station_data_file = os.path.join(model_initialized.subcatch.path_station, 'station_data.csv')
+    StationDataFile = pandas.read_csv(station_data_file, index_col=0)
+    if float(StationDataFile.loc["min_TAvgS"]) > float(model_initialized.lissettings.binding['TempSnow']):
+        if 'SnowMeltCoef' in cfg.param_ranges.index:
+            cfg.param_ranges.drop("SnowMeltCoef", inplace=True)
+
+    # Aridity: skip TransSub if min Aridity Index >= 0.5
+    if cfg.use_aridity_index_check:
+        if float(StationDataFile.loc["min_AridIdx"]) >= 0.5:
+            if 'TransSub' in cfg.param_ranges.index:
+                cfg.param_ranges.drop("TransSub", inplace=True)
 
 
 def read_parameters(path_subcatch):
@@ -209,7 +299,7 @@ def simulated_best_tss2csv(cfg, subcatch, run_id, forcing_start, dataname, outna
         Prefix for the output CSV file.
     """
 
-    tss_file = os.path.join(subcatch.path_out, run_id, dataname + '.tss')
+    tss_file = os.path.join(subcatch.path_out, run_id, dataname)
 
     tss = utils.read_tss(tss_file)
 
@@ -241,9 +331,9 @@ def stage_inflows(path_subcatch):
         Path to the subcatchment directory.
     """
 
-    inflow_tss = os.path.join(path_subcatch, "inflow", "chanq.tss")
-    inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanq_last_run.tss")
-    inflow_tss_cal = os.path.join(path_subcatch, "inflow", "chanq_cal.tss")
+    inflow_tss = os.path.join(path_subcatch, "inflow", "chanqavgdt.tss")
+    inflow_tss_last_run = os.path.join(path_subcatch, "inflow", "chanqavgdt_last_run.tss")
+    inflow_tss_cal = os.path.join(path_subcatch, "inflow", "chanqavgdt_cal.tss")
     if os.path.isfile(inflow_tss) or os.path.isfile(inflow_tss_cal):
         print(inflow_tss)
         print(inflow_tss_cal)
@@ -251,8 +341,20 @@ def stage_inflows(path_subcatch):
         os.rename(inflow_tss, inflow_tss_cal)
         os.rename(inflow_tss_last_run, inflow_tss)
 
+# Compatibility shims - these functions have moved to liscal.reservoirs
+def merge_tss_files(tss_file_list, output_tss_file):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module.merge_tss_files(tss_file_list, output_tss_file)
 
-def generate_outlet_streamflow(cfg, subcatch, lis_template):
+def parse_tss_header(lines):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module._parse_tss_header(lines)
+
+def create_merged_header(header_lines, all_column_names):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    return reservoir_module._create_merged_header(header_lines, all_column_names)
+
+def generate_outlet_streamflow(cfg, subcatch, lis_template, subperiods, filtered_reservoir_events):
     """
     Generate outlet streamflow using the calibrated parameters set by running LISFLOOD.
 
@@ -276,11 +378,12 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     os.makedirs(out_dir, exist_ok=True)
 
     # use forcings start and end for prerun and run
-    prerun_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
-    prerun_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
+    prerun_start = cfg.longterm_prerun_start.strftime('%d/%m/%Y %H:%M')
+    prerun_end = cfg.longterm_prerun_end.strftime('%d/%m/%Y %H:%M')
     run_start = cfg.forcing_start.strftime('%d/%m/%Y %H:%M')
     run_end = cfg.forcing_end.strftime('%d/%m/%Y %H:%M')
-    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, run_end, cfg.param_ranges, parameters, write_states=True)
+    prerun_file, run_file = lis_template.write_template(run_id, prerun_start, prerun_end, run_start, 
+                                                        run_end, cfg, out_dir, subcatch.path_station, parameters, write_states=True)
 
     # FIRST LISFLOOD RUN
     lisf1.main(prerun_file, '-v')
@@ -291,15 +394,28 @@ def generate_outlet_streamflow(cfg, subcatch, lis_template):
     cmd = 'cp {0}/out/{1}/lzavin.nc {0}/out/{1}/lzavin.simulated_bestend.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
 
-    # SECOND LISFLOOD RUN
-    lisf1.main(run_file, '-q')
+    if subperiods is None:
+        # SECOND LISFLOOD RUN
+        lisf1.main(run_file, '-q')
+    else:
+        #check if lakes and MCT were switched to OFF during the FIRST LISFLOOD RUN, for the write_warmstart_settings_files
+        instsettings = LisSettings.instance()
+        includeLakes, includeMCT = instsettings.options['simulateLakes'], instsettings.options['MCTRouting']
+
+        # Delegate the warm-start subperiod logic to the reservoirs module
+        reservoir_module.run_longterm_with_subperiods(
+            subcatch, lis_template, run_id, run_file,
+            subperiods, filtered_reservoir_events,
+            includeLakes, includeMCT
+        )
 
     # DD JIRA issue https://efascom.smhi.se/jira/browse/ECC-1210 restore the backup
     cmd = 'rm {0}/out/{1}/avgdis.nc {0}/out/{1}/lzavin.nc'.format(subcatch.path, run_id)
     utils.run_cmd(cmd)
-
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'dis', 'streamflow')
-    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, 'chanq', 'chanq')
+    Qsim_tss=LisSettings.instance().binding['DisTS']
+    Chanq_tss=LisSettings.instance().binding['ChanqavgdtTS']
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Qsim_tss, 'streamflow')
+    simulated_best_tss2csv(cfg, subcatch, run_id, cfg.forcing_start, Chanq_tss, 'chanqavgdt')
 
 
 def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, end):
@@ -333,7 +449,8 @@ def generate_timing(cfg, subcatch, lis_template, param_target, outfile, start, e
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, 
+                                                        end, cfg, out_dir, subcatch.path_station, parameters)
 
     # cache first
     f = open("timings.csv", "w")
@@ -393,14 +510,15 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
     for ii in range(len(param_ranges)):
         parameters[ii] = param_target[ii] * (float(param_ranges.iloc[ii, 1]) - float(param_ranges.iloc[ii, 0])) + float(param_ranges.iloc[ii, 0])
 
-    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, end, cfg.param_ranges, parameters)
+    prerun_file, run_file = lis_template.write_template(run_id, start, end, start, 
+                                                        end, cfg, out_dir, subcatch.path_station, parameters)
 
     lisf1.main(prerun_file, '-v')
     lisf1.main(run_file, '-q')
 
     # Outputing synthetic observed discharge
     print( ">> Saving simulated streamflow with default parameters in {}".format(outfile))
-    Qsim_tss = os.path.join(subcatch.path, "out", run_id, 'dis.tss')
+    Qsim_tss=LisSettings.instance().binding['DisTS']
     simulated_streamflow = utils.read_tss(Qsim_tss)
     simulated_streamflow[1][simulated_streamflow[1] == 1e31] = np.nan
     Qsim = simulated_streamflow[1].values
@@ -413,4 +531,4 @@ def generate_benchmark(cfg, subcatch, lis_template, param_target, outfile, start
 
     # required for downstream catchments
     simulated_best_tss2csv(cfg, subcatch, run_id, start, 'dis', 'streamflow')
-    simulated_best_tss2csv(cfg, subcatch, run_id, start, 'chanq', 'chanq')
+    simulated_best_tss2csv(cfg, subcatch, run_id, start, 'chanqavtdt', 'chanqavtdt')

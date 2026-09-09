@@ -1,11 +1,8 @@
 import os
-import sys
 import pandas
 import numpy as np
-import pcraster as pcr
-from datetime import datetime, timedelta
 
-from liscal import pcr_utils, utils, stations
+from liscal import pcr_utils, utils
 
 
 class SubCatchment():
@@ -85,6 +82,11 @@ class SubCatchment():
         gaugeloc = str(float(x))+" "+str(float(y))
         
         return gaugeloc
+    
+    def extract_budyko_data(self):
+        precip_budyko=self.data['precip_budyko']
+        PET_budyko=self.data['PET_budyko']
+        return precip_budyko, PET_budyko
 
     def resample_inflows(self, cfg):
         subcatchinlets_map = os.path.join(self.path, "inflow", "inflow.map")
@@ -110,7 +112,7 @@ class SubCatchment():
             if not os.path.exists(cfg.stations_links) or os.path.getsize(cfg.stations_links) == 0:
                 raise FileNotFoundError("stations_links missing: {}".format(cfg.stations_links))
             stations_links = pandas.read_csv(cfg.stations_links, sep=",", index_col=0)
-            inflow_tss = os.path.join(self.path, "inflow", "chanq.tss")
+            inflow_tss = os.path.join(self.path, "inflow", "chanqavgdt.tss")
             if os.path.isfile(inflow_tss):
                 os.remove(inflow_tss)
 
@@ -123,7 +125,7 @@ class SubCatchment():
 
                 print('Retrieving inflow for subcatchment {}'.format(subcatchment))
                                 
-                Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanq_simulated_best.tss")
+                Qsim_tss = os.path.join(cfg.subcatchment_path, subcatchment, "out", "chanqavgdt_simulated_best.tss")
 
                 if not os.path.exists(Qsim_tss) or os.path.getsize(Qsim_tss) == 0:
                     raise Exception("ERROR: Missing " + Qsim_tss)

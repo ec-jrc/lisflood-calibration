@@ -1,0 +1,35 @@
+[Main]
+prerun_start = 02/01/2017 00:00
+prerun_end = 31/12/2018 00:00
+forcing_start = 02/01/2017 00:00
+forcing_end = 31/12/2018 00:00
+timestep = 1440
+prerun_timestep = 1440
+fast_debug = 1
+num_max_calib_years = 20
+
+[Stations]
+stations_data = {INPUT_DIR}/stations/stations_data.csv
+stations_links = {INPUT_DIR}/stations/stations_links.csv
+observed_discharges = {INPUT_DIR}/stations/observations.csv
+
+[Path]
+param_ranges = {INPUT_DIR}/templates/param_ranges_v1.csv
+subcatchment_path = {INPUT_DIR}/catchments
+
+[Templates]
+LISFLOODSettings = {INPUT_DIR}/templates/OSLisfloodGloFASv5calibration_v1.xml
+
+[DEAP]
+min_gen = 2
+max_gen = 3
+mu = 4
+lambda_ = 8
+pop = 8
+gen_offset = 1
+effmax_tol = 0.01
+elite = 0
+split_lake_params = 0
+apply_statistical_stall_check = 0
+use_filtered_population = 0
+objectives = KGE

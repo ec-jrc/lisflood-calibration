@@ -18,34 +18,58 @@ class ConfigFilter(config.Config):
         if self.timestep != 360 and self.timestep != 1440:
             raise Exception('Calibration timestep {} not supported'.format(self.timestep))
         
-        self.stations_data = self.parser.get('Stations', 'stations_data')
-
         # observations
         self.observed_discharges = self.parser.get('Stations', 'observed_discharges')
         self.stations_data = self.parser.get('Stations', 'stations_data')
 
 
-if __name__ == '__main__':
+def main(settings_file, stations_csv, stations_type):
+    """Run station filtering based on data availability.
+
+    Parameters
+    ----------
+    settings_file : str
+        Path to calibration pre-processing settings file.
+    stations_csv : str
+        Path to input station CSV file.
+    stations_type : str or int
+        Station type (EC_calib threshold value).
+
+    Returns
+    -------
+    tuple of (pd.DataFrame, pd.DataFrame)
+        (valid_stations, invalid_stations) DataFrames.
+    """
 
     print("=================== START ===================")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('settings_file', help='Calibration pre-processing settings file')
-    parser.add_argument('stations_csv', help='Input station csv file')
-    parser.add_argument('stations_type', help='Station type (EC_calib value)')
-    args = parser.parse_args()
-
-    settings_file = args.settings_file
 
     cfg = ConfigFilter(settings_file)
 
     # Read stations data and selection stations of interest
-    print('Reading input stations data {}'.format(args.stations_csv))
-    stations_meta = pd.read_csv(args.stations_csv, sep=",", index_col='ObsID')
+    print('Reading input stations data {}'.format(stations_csv))
+    stations_meta = pd.read_csv(stations_csv, sep=",", index_col='ObsID')
     print(stations_meta)
-    stations_meta = stations_meta[stations_meta['EC_calib'] >= int(args.stations_type)]
+    stations_meta = stations_meta[stations_meta['EC_calib'] >= int(stations_type)]
     print('Found {} calibration stations to check'.format(len(stations_meta)))
 
     observed_data = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+
+    # Convert the index to datetime
+    observed_data.index = pd.to_datetime(observed_data.index, format='%d/%m/%Y %H:%M')
+
+    if cfg.timestep==1440:
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='D')
+    else:
+        assert(cfg.timestep==360)
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='6H')
+
+    # Reindex the DataFrame to include the full date range
+    observed_data = observed_data.reindex(full_date_range)
+    observed_data.index = observed_data.index.strftime('%d/%m/%Y %H:%M')
 
     valid_stations = []
     unvalid_stations = []
@@ -78,5 +102,18 @@ if __name__ == '__main__':
     unvalid_stations = stations_meta.loc[unvalid_stations]
     print(valid_stations)
     valid_stations.to_csv(cfg.stations_data)
-    unvalid_stations.to_csv(cfg.stations_data+'_unvalid')
+    unvalid_stations.to_csv(cfg.stations_data[:-4]+'_invalid.csv')
     print("==================== END ====================")
+
+    return valid_stations, unvalid_stations
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_file', help='Calibration pre-processing settings file')
+    parser.add_argument('stations_csv', help='Input station csv file')
+    parser.add_argument('stations_type', help='Station type (EC_calib value)')
+    args = parser.parse_args()
+
+    main(args.settings_file, args.stations_csv, args.stations_type)

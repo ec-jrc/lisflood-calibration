@@ -7,11 +7,7 @@ import os
 import calendar
 from datetime import datetime
 import matplotlib.pyplot as plt
-# import cartopy.crs as ccrs
-from matplotlib import gridspec
-from matplotlib import patches
-from matplotlib import transforms
-from matplotlib import ticker
+from matplotlib import gridspec, patches, transforms, ticker, cm
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 
@@ -184,8 +180,10 @@ class SpeedometerPlot():
         fig.set_size_inches(16.5, 11.7) # A3 size
         fig.subplots_adjust(left=0.1, bottom=0, right=1, top=1, wspace=-0.2, hspace=0.0)
 
-        # Save the figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+
+        return fig
 
 
 class MonthlyBoxPlot():
@@ -471,7 +469,7 @@ class MonthlyBoxPlot():
 
         # Esthetics
         # ax.set_title('Monthly discharge climatology in calibration period', fontsize=titleFontSize)
-        ax.grid(b=True, axis='y')
+        ax.grid(visible=True, axis='y')
 
         # horizontal axis
         plt.xlabel(r'Month', fontsize=self.label_size)
@@ -516,8 +514,11 @@ class MonthlyBoxPlot():
           plt.yscale(r'linear')
           plt.ylim([1, 1.05 * max_value])
         
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        
+        return fig
 
 
 class TimeSeriesPlot():
@@ -632,8 +633,11 @@ class TimeSeriesPlot():
           plt.yscale(r'linear')
           plt.ylim([1, 1.05 * max_value])
 
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        
+        return fig
 
 
 class QQPlot():
@@ -666,8 +670,11 @@ class QQPlot():
         plt.xlabel(r'Simulated Discharge [m3/s]')#, fontsize=self.label_size)  # ³
         plt.ylabel(r'Observed Discharge [m3/s]')#, fontsize=self.label_size)  # ³
         
-        # Save the linear scale figure
-        plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+        if path_out is not None:
+            # Save the linear scale figure
+            plt.savefig(path_out+'.'+self.plot_params.file_format, format=self.plot_params.file_format)
+
+        return fig
 
 
 class BestParamPlot():
@@ -675,11 +682,14 @@ class BestParamPlot():
     def __init__(self, plot_params):
         self.plot_params = plot_params
 
-    
-    def plot(self, path_out, infile_path):
-        bestparam_df = pd.read_csv(infile_path, index_col=0)
+    def plot(self, path_out, infile_path, obsid):
+        bestparam_df = pd.read_csv(infile_path)
         bestparam_df = bestparam_df.T.dropna()
-        bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[0].values})
+        bestparam_df['Param'] = bestparam_df.index
+        kept_rows = [i for i in bestparam_df.index if 'param_' in i]
+        bestparam_df = bestparam_df.loc[kept_rows]
+        # print(bestparam_df)
+        # bestparam_df = pd.DataFrame({'Param': bestparam_df.index, 'Value': bestparam_df[obsid].values})
 
         # Update the font before creating any plot objects
         plt.rc('font', **self.plot_params.text['font'])
@@ -705,8 +715,11 @@ class BestParamPlot():
         
         fig.tight_layout()
         
-        # Save the table with the set of the best parameters' values
-        plt.savefig(path_out+'.'+'png', format='png', dpi=300)
+        if path_out is not None:
+            # Save the table with the set of the best parameters' values
+            plt.savefig(path_out+'.'+'png', format='png', dpi=300)
+
+        return fig
 
 
 class SpatialPlot():
@@ -745,7 +758,7 @@ class SpatialPlot():
         pcrasterCommand(f"col2map {outlet_txt} {outlet_map} -N --clone {ldd_map}")
         full_mask_map = outlet_map.replace('.map', '_fullmask.map')
         pcrasterCommand("pcrcalc 'F0 = boolean(catchment(F1,F2))'", {"F0": full_mask_map, "F1":ldd_map, "F2":outlet_map})
-        ldd_xr = ldd_map.replace('ldd.map', 'static/ldd.nc')
+        ldd_xr = ldd_map.replace('ldd.map', '../ldd.nc')
         ldd_xr = self.get_da(ldd_xr)
 
         # define clone for pcraster, otherwise it gets any clone available which can be wrong
@@ -753,6 +766,7 @@ class SpatialPlot():
         pcraster.setclone(rows, cols, 1, 0, 0)
         
         fullmask = pcraster.readmap(full_mask_map)
+
         fullmask = pcraster.pcr2numpy(fullmask, 0)
         fullmask = ldd_xr.fillna(0)*0+fullmask
 
@@ -764,7 +778,10 @@ class SpatialPlot():
         fullmask = fullmask.sel(lat=lons_sum.lat, lon=lats_sum.lon)
         return fullmask
         
-    def plot(self, path_out, maps_dir):
+    def plot(self, path_out, subcatch_dir):
+        maps_dir = os.path.join(subcatch_dir, 'maps')
+        inflow_dir = os.path.join(subcatch_dir, 'inflow')
+
         # domain's main data for the plots
         pixarea = self.get_da(f'{maps_dir}/pixarea.nc')
         elevation = self.get_da(f'{maps_dir}/elv.nc')
@@ -783,15 +800,21 @@ class SpatialPlot():
         outlet = pcraster.readmap(f'{maps_dir}/outletsmall.map')
         outlet = pcraster.pcr2numpy(outlet, 0)
         outlet = pixarea.fillna(0)*0+outlet
-        # for some reasons, rarely, outlets can be more than 1 so we keep the one with max uparea
+        
+        # outlet = outlet.where(outlet==1).to_dataframe().dropna().reset_index()  # outlet is always 1
+
+        # for some reasons, rarely, outlets can be more than 1 so we keep the one with max uparea (this is normally not expected!)
         outlet = uparea.where(outlet).to_dataframe().reset_index().dropna()
         outlet = outlet.sort_values('Band1', ascending=False).iloc[[0],]  
-        
+
         # inflows in case of intercatchment
-        inflows = pcraster.readmap(f'{maps_dir}/../inflow/inflow_cut.map')
-        inflows = pcraster.pcr2numpy(inflows, 0)
-        inflows = pixarea.fillna(0)*0+inflows
-        inflows = inflows.where(maskmap).where(inflows!=0).to_dataframe().dropna().reset_index()
+        if os.path.exists(f'{inflow_dir}/inflow_cut.map'):
+            inflows = pcraster.readmap(f'{inflow_dir}/inflow_cut.map')
+            inflows = pcraster.pcr2numpy(inflows, 0)
+            inflows = pixarea.fillna(0)*0+inflows
+            inflows = inflows.where(inflows!=0).to_dataframe().dropna().reset_index()
+        else:
+            inflows = []
 
         if len(inflows)>0:
             print('The domain refers to an interbasin. Generating the full basin up to the outlet for adding to the plot...')
@@ -803,11 +826,12 @@ class SpatialPlot():
                 f.close()
 
             # get path of ldd.map which is available in the directories of the cutmaps-associated suite
-            original_ldd_path_aux = maps_dir.replace('maps', 'cutmaps.sh')
-            with open(original_ldd_path_aux) as f:
-                original_ldd_path = f.readline()
-            original_ldd_path = original_ldd_path.split(' ')[1]
-            original_ldd_path = original_ldd_path.replace('settings.txt', '../../inputs/maps/ldd.map')
+            # original_ldd_path_aux = maps_dir.replace('maps', 'cutmaps.sh')
+            # with open(original_ldd_path_aux) as f:
+            #     original_ldd_path = f.readline()
+            # original_ldd_path = original_ldd_path.split(' ')[1]
+            # original_ldd_path = original_ldd_path.replace('settings.txt', '../../inputs/maps/ldd.map')
+            original_ldd_path = maps_dir.replace('maps', '../../data/input_maps/staticMaps/pcraster/ldd.map')
             full_mask = self.get_fullmask(station_txt, original_ldd_path)
 
         inter_area = pixarea.where(maskmap==1).sum().values/10**6  # get outlet's (inter)catchment area in km2
@@ -845,5 +869,8 @@ class SpatialPlot():
 
         cb = fig.colorbar(elv_plot, cax=cax, label=r"Elevation [m]", orientation="vertical")
         
-        # Save the spatial plot
-        plt.savefig(path_out+'.png', format='png', dpi=300)
+        if path_out is not None:
+            # Save the spatial plot
+            plt.savefig(path_out+'.png', format='png', dpi=300)
+
+        return fig

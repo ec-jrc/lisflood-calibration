@@ -28,7 +28,12 @@ class DummyDEAPParameters():
 
         self.gen_offset = 3
         self.effmax_tol = 0.003
-
+        self.objectives_list = ["KGE"]
+        
+        self.elite = 0  		 
+        self.split_lake_params = 0
+        self.apply_statistical_stall_check = 0
+        self.use_filtered_population = 0
 
 class DummyConfig():
 

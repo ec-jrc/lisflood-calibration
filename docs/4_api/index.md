@@ -61,3 +61,45 @@ liscal.subcatchment
 ::: {.automodule members="" undoc-members="" show-inheritance=""}
 liscal.templates
 :::
+
+## liscal.reservoirs module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.reservoirs
+:::
+
+## liscal.pcr_utils module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.pcr_utils
+:::
+
+## liscal.utils module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.utils
+:::
+
+## liscal.diagnostic_plots module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.diagnostic_plots
+:::
+
+## liscal.evaluation module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.evaluation
+:::
+
+## liscal.thresholds module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.thresholds
+:::
+
+## liscal.binary_scores module
+
+::: {.automodule members="" undoc-members="" show-inheritance=""}
+liscal.binary_scores
+:::

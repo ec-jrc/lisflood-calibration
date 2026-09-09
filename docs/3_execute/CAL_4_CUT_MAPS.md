@@ -15,4 +15,8 @@ CAL_4_CUT_MAPS.py settings.txt /path/to/maps STATION_ID
 ```
 
 ## Note
-The `CAL_4b_CUT_MAPS_list.py` script provides a solution to loop all the catchments and cut the maps one catchment at a time. This script could take a long time to run for a large number of catchments, so scheduling the catchments one by one on an HPC can accelerate the process for large domains.
+The `CAL_4b_CUT_MAPS_list.py` script provides a solution to loop all the catchments and cut the maps one catchment at a time. The list should be provided in a text file. This script could take a long time to run for a large number of catchments, so scheduling the catchments one by one on an HPC can accelerate the process for large domains.
+
+```bash
+CAL_4b_CUT_MAPS_list.py settings.txt /path/to/maps catchments.txt
+```

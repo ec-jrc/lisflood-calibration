@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=65", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liscal"
+requires-python = ">3.8"
+authors = [
+    { name = "JRC-ECMWF" }
+    ]
+description = "LISFLOOD calibration tool"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering"
+    ]
+dynamic = ["version", "readme"]
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "xarray",
+    "deap",
+    "matplotlib",
+    "scipy",
+    "tbb"
+]
+
+[project.optional-dependencies]
+    explorers = [
+        "hydro_analysis_toolkit @ git+https://github.com/ecmwf/hat.git@f94c313731953b011682ab2c49374c313f99791e"
+    ]
+    test = [
+        "pytest",
+        ]
+
+[project.urls]
+    repository = "https://github.com/ec-jrc/lisflood-calibration"
+    documentation = "https://ec-jrc.github.io/lisflood-calibration/"
+    issues = "https://github.com/ec-jrc/lisflood-calibration/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.setuptools.packages.find]
+exclude = ["test_*", "*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools_scm]
+version_file = "liscal/_version.py"
+version_file_template = '''# Do not change! Do not track in version control!
+__version__ = "{version}"
+'''
+parentdir_prefix_version='lisflood-calibration-'  # get version from GitHub-like tarballs
+fallback_version='2.0.0'
+local_scheme = "no-local-version"

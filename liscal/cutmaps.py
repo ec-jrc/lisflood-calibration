@@ -1,12 +1,9 @@
-#!/fws5/lb/user/macw/lisflow_efas5/local/lisflow_env/bin/python3
-
 import os
 import xarray as xr
 import numpy as np
 import pcraster as pcr
 
 import dask
-#from dask.diagnostics import ResourceProfiler, Profiler, CacheProfiler, visualize
 from multiprocessing.pool import ThreadPool
 
 from liscal import pcr_utils
@@ -76,14 +73,14 @@ def copy_file(filein, fileout):
     return
 
 
-def clip_netcdf(filenc, fileout, clip_box):
+def clip_netcdf(ds, fileouts, clip_boxes):
     """
     Clip a NetCDF file using a specified bounding box.
 
     Parameters
     ----------
-    filenc : str
-        Path to the input NetCDF file.
+    ds : str
+        Xarray Dataset already in time chunck (if any)
     fileout : str
         Path to save the clipped NetCDF file.
     clip_box : list of int
@@ -95,43 +92,50 @@ def clip_netcdf(filenc, fileout, clip_box):
         If lat/lon or x/y coordinates are not found in the dataset.
     """
 
-    x_min = clip_box[0]
-    x_max = clip_box[1]
-    y_min = clip_box[2]
-    y_max = clip_box[3]
+    if ds is None:
+        raise Exception('Error, map not loaded correctly to generate output {}:\n'.format(fileout))
 
-    ds = xr.open_dataset(filenc)
-    if 'time' in ds.coords:
-       chunks = {coord: 'auto' for coord in ds.coords}
-       ds = ds.chunk(chunks)
+    ds_outs = []
+    ds_outs_filenames = []
+    for clip_box, fileout in zip(clip_boxes,fileouts):
+        if clip_box is None:
+            print("skipping %s for invalid mask map" % fileout)
+        else:
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
+            else:
+                current_time = datetime.now().strftime("%H:%M:%S")
+                print(current_time, ': creating...',fileout)
+                x_min, x_max, y_min, y_max = clip_box
 
-    if 'lon' in ds.coords and 'lat' in ds.coords:
-        ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
-    elif 'x' in ds.coords and 'y' in ds.coords:
-        ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
-    else:
-        raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
+                if 'lon' in ds.coords and 'lat' in ds.coords:
+                    ds_out = ds.isel(lat=range(y_min, y_max + 1), lon=range(x_min, x_max + 1))
+                elif 'x' in ds.coords and 'y' in ds.coords:
+                    ds_out = ds.isel(y=range(y_min, y_max + 1), x=range(x_min, x_max + 1))
+                else:
+                    raise Exception('Could not find lat/lon or x/y coordinates in dataset:\n {}'.format(ds))
+                ds_outs.append(ds_out)
+                ds_outs_filenames.append(fileout)
+        
 
-    ds_out.to_netcdf(fileout)
+    for ds_out,ds_outs_filename  in zip(ds_outs,ds_outs_filenames):
+        ds_out.to_netcdf(ds_outs_filename)
+        ds_out.close()
 
-    ds.close()
-    ds_out.close()
-
-
-def cut_map(maskpcr, filein, fileout, clip_box):
+def cut_map(maskpcrs, filein, fileouts, clip_boxes):
     """
     Cut a map file based on the file extension. It supports PCRaster map files (.map), NetCDF files (.nc).
     Other formats are not clipped but just copied over to the destination file.
 
     Parameters
     ----------
-    maskpcr : str
-        Path to the PCRaster mask file used for clipping .map files.
+    maskpcrs : list(str)
+        Paths to the PCRaster mask files used for clipping .map files.
     filein : str
         Path to the input file.
-    fileout : str
-        Path to the output file.
-    clip_box : list of int
+    fileouts : list(str)
+        Paths to the output files.
+    clip_boxes : list(array[int]) 
         Bounding box coordinates used for clipping NetCDF files.
 
     Notes
@@ -141,21 +145,51 @@ def cut_map(maskpcr, filein, fileout, clip_box):
 
     ext = filein[-4:][filein[-4:].find("."):]
 
-    now = datetime.now()
-    current_time = now.strftime("%H:%M:%S")
-    print(current_time, ': creating...',fileout)
-
     if ext == ".map":
-        clip_pcr(filein, fileout, maskpcr)
+        for mask, fileout in zip(maskpcrs,fileouts):
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
+            else:
+                current_time = datetime.now().strftime("%H:%M:%S")
+                print(current_time, ': creating...',fileout)
+                clip_pcr(filein, fileout, mask)
     elif ext == ".nc":
-        clip_netcdf(filein, fileout, clip_box)
+        if len(fileouts)==1 and os.path.isfile(fileouts[0]) and os.path.getsize(fileouts[0]) > 0:
+            print("skipping already existing %s" % fileouts[0])
+        else:
+            ds = xr.open_dataset(filein)
+            if 'time' in ds.coords:
+                chunks = {coord: 'auto' for coord in ds.coords}
+                ds = ds.chunk(chunks)        
+            clip_netcdf(ds, fileouts, clip_boxes)
+            ds.close()
     else:
-        copy_file(filein, fileout)
+        for fileout in fileouts:
+            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
+                print("skipping already existing %s" % fileout)
+            else:
+                current_time = datetime.now().strftime("%H:%M:%S")
+                print(current_time, ': creating...',fileout)
+                copy_file(filein, fileout)
 
 
-def cut_maps_station(cfg, path_maps, stations_data, obsid):
+def load_mask(mask_path):
+    if os.path.isfile(mask_path):
+        maskmap = pcr.readmap(mask_path)
+        masknp = pcr.pcr2numpy(maskmap, False)
+        mask_filter = np.where(masknp)
+        clip_box = [np.min(mask_filter[1]), np.max(mask_filter[1]), np.min(mask_filter[0]), np.max(mask_filter[0])]
+        return clip_box
+    else:
+        print('Wrong input mask file:', mask_path)
+        return None
+
+
+def cut_maps_stations(cfg, path_maps, obsids, useDaskConfig=False):
+    if isinstance(obsids, int):
+        obsids = [obsids]
     """
-    Process map files for a given station by clipping them to the station's subcatchment area directory.
+    Process map files for a given station or multiple stestions by clipping them to the station's subcatchment area directory.
 
     Parameters
     ----------
@@ -163,65 +197,54 @@ def cut_maps_station(cfg, path_maps, stations_data, obsid):
         Configuration object containing paths and settings.
     path_maps : str
         Path to the directory containing map files.
-    stations_data : str
-        Path to the stations data file.
-    obsid : int
-        Observation ID of the station.
+    obsids : int or list of ints
+        Observation ID (or IDs) of the station(s).
 
     Notes
     -----
     The function walks through the map files in the given directory, clips them based on the station's subcatchment area,
     and saves them to a specified output directory.
     """
+    if useDaskConfig:
+        with dask.config.set({'scheduler': 'threads', 'array.chunk-size': '2048MiB', 'pool': ThreadPool(1)}):  # [distributed, multiprocessing, processes, single-threaded, sync, synchronous, threading, threads]
+            _cut_maps_stations(cfg, path_maps, obsids)
+    else:
+        _cut_maps_stations(cfg, path_maps, obsids)
 
+def _cut_maps_stations(cfg, path_maps, obsids):
     # prof = Profiler()
     # rprof = ResourceProfiler(dt=0.25)
     # cprof = CacheProfiler() #metric=nbytes)
     # prof.register()
     # rprof.register()
     # cprof.register()
+    
+    maskpcrs = []
+    clip_boxes = []
+    for obsid in obsids:        
+        maskpcr = os.path.join(cfg.subcatchment_path, str(obsid), 'maps', 'mask.map')
+        maskpcrs.append(maskpcr)
+        clip_box = load_mask(maskpcr)
+        clip_boxes.append(clip_box)
 
-    with dask.config.set({'scheduler': 'threads', 'array.chunk-size': '2048MiB', 'pool': ThreadPool(1)}):  # [distributed, multiprocessing, processes, single-threaded, sync, synchronous, threading, threads]
-
-        subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
-        path_subcatch_maps = os.path.join(subcatchment_path,'maps')
-
-        # Cut bbox from ALL static maps and forcings for subcatchment
-        maskpcr = os.path.join(path_subcatch_maps, 'mask.map')
-
-        if os.path.isfile(maskpcr):
-            maskmap = pcr.readmap(maskpcr)
-        else:
-            print('wrong input mask file')
-            exit(1)
-
-        masknp = pcr.pcr2numpy(maskmap, False)
-        mask_filter = np.where(masknp)
-        clip_box = []
-        clip_box.append(np.min(mask_filter[1]))
-        clip_box.append(np.max(mask_filter[1]))
-        clip_box.append(np.min(mask_filter[0]))
-        clip_box.append(np.max(mask_filter[0]))
-        
-        if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
-            afile = os.path.basename(path_maps)
-            fileout = os.path.join(path_subcatch_maps, afile)
-            if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
-                print("skipping already existing %s" % fileout)
-            else:
-                cut_map(maskpcr, path_maps, fileout, clip_box)
-        else:
-            # Enter in maps dir and walk through subfolders
-            for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
-                for afile in files:
-                    fileout = os.path.join(path_subcatch_maps, afile)
-                    if os.path.isfile(fileout) and os.path.getsize(fileout) > 0:
-                        print("skipping already existing %s" % fileout)
-                        continue
-                    else:
-                        filenc = os.path.join(root, afile)
-                        if filenc.find("bak") > -1:
-                            continue
-                        cut_map(maskpcr, filenc, fileout, clip_box)
+    if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
+        afile = os.path.basename(path_maps)
+        fileouts = []
+        for obsid in obsids:
+            fileout = os.path.join(cfg.subcatchment_path, str(obsid), 'maps', afile)
+            fileouts.append(fileout)
+        cut_map(maskpcrs, path_maps, fileouts, clip_boxes)
+    else:
+        # Enter in maps dir and walk through subfolders
+        for root, dirs, files in os.walk(path_maps, topdown=False, followlinks=True):
+            for afile in files:
+                fileouts = []
+                for obsid in obsids:
+                    fileout = os.path.join(cfg.subcatchment_path, str(obsid),'maps', afile)
+                    fileouts.append(fileout)
+                filenc = os.path.join(root, afile)
+                if filenc.find("bak") > -1:
+                    continue
+                cut_map(maskpcrs, filenc, fileouts, clip_boxes)
 
     # visualize([prof, rprof, cprof], file_path='profile.html', show=False)

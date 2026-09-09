@@ -6,45 +6,59 @@ import pandas as pd
 
 def time_step_from_type(station_type):
     """
-    Determines the time step based on the station/calibration type.
+    Determines the time step (6 or 24) based on the station/calibration type.
 
     Parameters
     ----------
-    station_type : int, float, np.int64, np.float64, or str
-        Type of the station which could be an integer, float, or string
-        indicating the station/calibration type.
+    station_type : int, float, str, np.int64, np.float64
+        Type of the station (e.g., 6, 24, 6.0, 24.0, "6", "24", "6.0", "24.0", "*_6h", "*_24h")
 
     Returns
     -------
     int
-        The time step as an integer.
+        Time step in hours (6 or 24)
 
     Raises
     ------
     Exception
-        If the station/calibration type is not supported.
-        Support formats for the station/calibration type are 6.0, 24.0, 6, 24, "*_6h", and "*_24h".
+        If the input type or format is unsupported.
     """
+    # Handle 0D NumPy arrays (e.g., np.array(6.0))
+    if isinstance(station_type, np.ndarray) and station_type.shape == ():
+        station_type = station_type.item()  # Extract scalar
 
-    if isinstance(station_type, float) or isinstance(station_type, np.float64):
-        if (station_type == 6.0 or station_type == 24.0):
-            dt = int(station_type)
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
-    elif isinstance(station_type, int) or isinstance(station_type, np.int64):
-        if (station_type == 6 or station_type == 24):
-            dt = station_type
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
-    else:
-        if station_type.find("_6h") > -1:
-            dt = 6
-        elif station_type.find("_24h") > -1:
-            dt = 24
-        else:
-            raise Exception('Calibration type {} not supported'.format(station_type))
+    # Normalize numeric types
+    if isinstance(station_type, (int, float, np.integer, np.floating)):    
+        station_type = int(station_type)
+        if station_type in (6, 24):
+            return station_type
 
-    return dt
+    # Handle strings
+    if isinstance(station_type, str):
+        cleaned = station_type.strip()
+
+        # Try to parse as float (e.g., "6.0")
+        try:
+            numeric_value = float(cleaned)
+            if numeric_value in (6.0, 24.0):
+                return int(numeric_value)
+        except ValueError:
+            pass
+
+        # Check for suffix patterns
+        if "_6h" in cleaned:
+            return 6
+        elif "_24h" in cleaned:
+            return 24
+        elif cleaned == "6":
+            return 6
+        elif cleaned == "24":
+            return 24
+
+    raise Exception(
+        f"Calibration type {station_type} not supported. "
+        "Supported formats: 6, 24, 6.0, 24.0, '6', '24', '6.0', '24.0', '*_6h', '*_24h'."
+    )
 
 
 def observation_period_days(station_type, observed_streamflow):
@@ -107,7 +121,7 @@ def observation_period_years(station_type, observed_streamflow):
     return obs_period_years
 
 
-def compute_split_date(obs_period_years, dt, valid_start, observations_filtered):
+def compute_split_date(obs_period_years, dt, valid_start, observations_filtered, num_max_calib_years):
     """
     Computes the split date for the dataset, which splits the dataset in
     two parts for calibration and validation.
@@ -129,21 +143,32 @@ def compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
         The computed split date.
     """
 
-    # if < 8 years: take all
-    if obs_period_years <= 8:
+    # if < num_max_calib_years (usually 20 years): take all
+    if obs_period_years < num_max_calib_years:
         split_date = valid_start
-    # if > 8 and < 16 years, only use last 8 years
-    elif obs_period_years > 8 and obs_period_years < 16:    
-        steps_8years = 8*365.25*24/dt
-        split_date = observations_filtered.index[-steps_8years]
-    # if >= 16, split in two
-    elif obs_period_years >= 16:
-        split_date = observations_filtered.index[int(len(observations_filtered.index)/2)]
+    # if >=num_max_calib_years, only use last num_max_calib_years years
+    else:  
+        steps_MAXyears = int(num_max_calib_years*365.25*24/dt)
+        split_date = observations_filtered.index[-steps_MAXyears]
 
     return split_date
 
+def process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, Min_calib_days, isLongRun=False):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    from liscal.reservoirs import process_reservoir_periods as _prp
+    return _prp(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, Min_calib_days, isLongRun)
 
-def extract_station_data(cfg, obsid, station_data, check_obs=True):
+def create_netcdf_map(map_name, reservoirs, reservoir_events_df, model_initialized, period_start_dt, period_end_dt):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    from liscal.reservoirs import create_netcdf_map as _cnm
+    return _cnm(map_name, reservoirs, reservoir_events_df, model_initialized, period_start_dt, period_end_dt)
+
+def update_rsfil_netcdf_map(map_name, reservoir_events_df, settings, period_start_dt):
+    """Moved to liscal.reservoirs. This is a compatibility shim."""
+    from liscal.reservoirs import update_rsfil_netcdf_map as _urnm
+    return _urnm(map_name, reservoir_events_df, settings, period_start_dt)
+
+def extract_station_data(cfg, model_initialized, obsid, station_data, check_obs=True):
     """
     Extracts and processes station data for calibration.
 
@@ -171,8 +196,35 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
 
     # Retrieve observed streamflow and extract observation period
     observations = pd.read_csv(cfg.observed_discharges, sep=",", index_col=0)
+
+    # Create output directory
+    subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
+    out_dir = os.path.join(subcatchment_path, 'station')
+    os.makedirs(out_dir, exist_ok=True)
+
+    observations[str(obsid)].to_csv(os.path.join(out_dir, 'observations_original.csv'))
+    
+    # Convert the index to datetime
+    observations.index = pd.to_datetime(observations.index, format='%d/%m/%Y %H:%M')
+
+    if cfg.timestep==1440:
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='D')
+    else:
+        assert(cfg.timestep==360)
+        full_date_range = pd.date_range(start=cfg.forcing_start.strftime('%d/%m/%Y %H:%M'), 
+                                        end=cfg.forcing_end.strftime('%d/%m/%Y %H:%M'), 
+                                        freq='6H')
+
+    # Reindex the DataFrame to include the full date range
+    observations = observations.reindex(full_date_range)
+    observations.index = observations.index.strftime('%d/%m/%Y %H:%M')
+
     observed_streamflow = observations[str(obsid)]
     observed_streamflow = observed_streamflow[start_date:end_date]
+    observed_streamflow.to_csv(os.path.join(out_dir, 'observations_complete.csv'))
+
     obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
     obs_period_years = obs_period_days/365.25
 
@@ -183,18 +235,32 @@ def extract_station_data(cfg, obsid, station_data, check_obs=True):
     # Extract valid calibration period
     observations_filtered = observed_streamflow[observed_streamflow.notna()]
 
+    dt = time_step_from_type(station_data['CAL_TYPE'])  # here we use dt to calculate the observation period in process_reservoir_periods
+    Min_calib_days = float(station_data['Min_calib_days']) # used also in process_reservoir_periods
     valid_start = observations_filtered.index[0]
     valid_end = observations_filtered.index[-1]
+
+    if model_initialized is not None:
+        if cfg.reservoir_events is not None:
+            if os.path.exists(cfg.reservoir_events):
+                reservoir_events_df = pd.read_csv(cfg.reservoir_events)
+                valid_start, valid_end = process_reservoir_periods(model_initialized, reservoir_events_df, dt, observations_filtered, valid_start, valid_end, Min_calib_days, isLongRun=False)
+                # update observed_streamflow and obs_period_years after reservoir_events to compute correct split date
+                observed_streamflow = observed_streamflow[valid_start:valid_end]
+                obs_period_days = observation_period_days(station_data['CAL_TYPE'], observed_streamflow)
+                obs_period_years = obs_period_days/365.25
+                if check_obs:
+                    if obs_period_days < Min_calib_days:
+                        raise Exception('ERROR after process_reservoir_periods: Station {} only contains {} days of data! {} required'.format(obsid, obs_period_days, Min_calib_days))
+                observations_filtered = observed_streamflow[observed_streamflow.notna()]
+            else:
+                print("WARNING: reservoir_events csv file not found. Observations will not be filtered by reservoir events")
+
+
     valid_observations = observed_streamflow[valid_start:valid_end]
 
     # Compute split date
-    dt = time_step_from_type(station_data['CAL_TYPE'])
-    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered)
-
-    # Create output directory
-    subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
-    out_dir = os.path.join(subcatchment_path, 'station')
-    os.makedirs(out_dir, exist_ok=True)
+    split_date = compute_split_date(obs_period_years, dt, valid_start, observations_filtered, cfg.num_max_calib_years)
 
     # Export observation at station
     obs_df = pd.DataFrame(data=valid_observations, index=valid_observations.index)

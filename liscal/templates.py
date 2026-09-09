@@ -1,5 +1,10 @@
+from datetime import timedelta
 import os
+import numpy as np
+from lisflood.global_modules.netcdf import uncompress_array, write_netcdf_header
+from lisflood.global_modules.settings import LisSettings
 
+from liscal import reservoirs as reservoir_module
 
 class LisfloodSettingsTemplate():
     """
@@ -26,7 +31,7 @@ class LisfloodSettingsTemplate():
         Initializes the LisfloodSettingsTemplate object with configuration and subcatchment data.
     settings_path(suffix, run_id)
         Returns the path for a settings file given a suffix and run ID.
-    write_template(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters, write_states=False)
+    write_template(run_id, prerun_start, prerun_end, run_start, run_end, original_param_ranges, cfg, out_dir, path_station, parameters, write_states=False)
         Writes the LISFLOOD settings file for both prerun and main run.
     write_init(run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters)
         Writes the LISFLOOD initialization settings file.
@@ -52,26 +57,48 @@ class LisfloodSettingsTemplate():
 
         self.template_xml = template_xml
 
-    def settings_path(self, suffix, run_id):
-        return self.outfix+suffix+run_id+'.xml'
+    def settings_path(self, suffix, run_id, warmstart_idx = None):
+        if warmstart_idx is None:
+            return self.outfix+suffix+run_id+'.xml'
+        else:
+            return self.outfix+suffix+run_id+'_ws_'+str(warmstart_idx)+'.xml'
 
-    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters, write_states=False):
+    def write_template(self, run_id, prerun_start, prerun_end, run_start, run_end, cfg, out_dir, path_station, parameters, write_states=False):
 
+        original_param_ranges, param_ranges = cfg.original_param_ranges, cfg.param_ranges
         prerun_file = self.settings_path('PreRun', run_id)
         run_file = self.settings_path('Run', run_id)
 
         out_xml = self.template_xml
 
-        for ii in range(len(param_ranges)):
-            ## DD Special Rule for the SAVA --> SAVA belongs to EFAS, these lines must be commented when running the GloFAS calibration
-            if self.timestep == 360 and self.obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
-                out_xml = out_xml.replace('%adjust_Normal_Flood',"0.8")
-                out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
-            out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
-
+        strLakeMultiplierMap = ""
+        LakeMultiplierMap = None
+        for oii in range(len(original_param_ranges)):
+            if original_param_ranges.index[oii] in param_ranges.index:
+                ii = param_ranges.index.get_loc(original_param_ranges.index[oii])
+                out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
+            elif original_param_ranges.index[oii]=='LakeMultiplier' and any(index.startswith('LakeMultiplier_') for index in param_ranges.index):
+                # if we have here more LakeMultiplier parameters, create a map for the lakes
+                LakeMultiplierMap = np.full_like(cfg.LakeSitesC, -1, dtype=float)
+                for i, lake_id in enumerate(cfg.LakeSitesCC):
+                    ii = param_ranges.index.get_loc(f'LakeMultiplier_{lake_id}')
+                    assert(cfg.LakeSitesCC[i]==lake_id)
+                    # get index from LakeSitesC
+                    LakeMultiplierMap[cfg.LakeSitesC==lake_id]=parameters[ii]
+                strLakeMultiplierMap=os.path.join(out_dir, 'LakeMultiplierMap.nc')
+                out_xml = out_xml.replace("%"+original_param_ranges.index[oii],"$(PathInit)/LakeMultiplierMap")
+            else:
+                #out_xml = out_xml.replace("%"+original_param_ranges.index[oii],'-9999')
+                out_xml = out_xml.replace("%"+original_param_ranges.index[oii],str(original_param_ranges.iloc[oii,2]))
+        
+        # Check if FilteredReservoirMap.nc exists and use it in 'ReservoirSites' Key in xml
+        if run_id != 'long_term_run':
+            out_xml = reservoir_module.inject_filtered_reservoir_map(out_xml, path_station, cfg.reservoir_events)
+        
         # Prerun file
         out_xml_prerun = out_xml
         out_xml_prerun = out_xml_prerun.replace('%InitLisflood',"1")
+        out_xml_prerun = out_xml_prerun.replace('%ColdStart',"0")
         out_xml_prerun = out_xml_prerun.replace('%EndMaps', "1")
         out_xml_prerun = out_xml_prerun.replace('%CalStart', prerun_start)
         out_xml_prerun = out_xml_prerun.replace('%CalEnd', prerun_end)
@@ -82,7 +109,7 @@ class LisfloodSettingsTemplate():
         for data in ['uz', 'uzf', 'uzi']:
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '0')
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_prerun_init', '0')
-        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+        for data in ['tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_init', '-9999')
             out_xml_prerun = out_xml_prerun.replace(f'%{data}_prerun_init', '-9999')
         out_xml_prerun = out_xml_prerun.replace('%run_rand_id', run_id)
@@ -98,6 +125,7 @@ class LisfloodSettingsTemplate():
         # Run file
         out_xml_run = out_xml
         out_xml_run = out_xml_run.replace('%InitLisflood',"0")
+        out_xml_run = out_xml_run.replace('%ColdStart',"1")
         out_xml_run = out_xml_run.replace('%EndMaps', "0")
         out_xml_run = out_xml_run.replace('%CalStart', run_start)
         out_xml_run = out_xml_run.replace('%CalEnd', run_end)
@@ -109,7 +137,7 @@ class LisfloodSettingsTemplate():
             out_xml_run = out_xml_run.replace('%repStateGauges', "0")
             out_xml_run = out_xml_run.replace('%repRateGauges', "0")
             out_xml_run = out_xml_run.replace('%repMeteoGauges', "0")
-        init_data = ['uz', 'uzf', 'uzi', 'lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']
+        init_data = ['uz', 'uzf', 'uzi', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']
         for data in init_data:
             out_xml_run = out_xml_run.replace(f'%{data}_init', f'$(PathOut)/{data}.end.nc')
             # %{data}_prerun_init added to allow use of %initialize variable in output wrinting of the prerun
@@ -125,7 +153,27 @@ class LisfloodSettingsTemplate():
         with open(run_file, "w") as f:
             f.write(out_xml_run)
 
+        if strLakeMultiplierMap != "" and LakeMultiplierMap is not None:
+            # Save the new map LakeMultiplierMap to a NetCDF file                
+            map_name = "LakeMultiplierMap"
+            settings = LisSettings(run_file)
+            nf1 = write_netcdf_header(settings, map_name, strLakeMultiplierMap, None,
+                                    map_name, map_name, "",
+                                    None, None, None)
+
+            map_np = uncompress_array(LakeMultiplierMap)
+
+            nf1.variables[map_name][:, :] = map_np
+
+            nf1.close()
+
         return prerun_file, run_file     
+
+    def write_warmstart_settings_files(self, run_id, original_run_file, path_station, subperiods, includeLakes, includeMCT):
+        """Delegate to reservoirs module."""
+        return reservoir_module.write_warmstart_settings_files(
+            self, run_id, original_run_file, path_station, subperiods, includeLakes, includeMCT
+        )
 
     def write_init(self, run_id, prerun_start, prerun_end, run_start, run_end, param_ranges, parameters):
 
@@ -136,12 +184,9 @@ class LisfloodSettingsTemplate():
         
         # Common parameters
         for ii in range(len(param_ranges)):
-            ## DD Special Rule for the SAVA --> SAVA belongs to EFAS, these lines must be commented when running the GloFAS calibration
-            if self.timestep == 360 and self.obsid == '851' and (param_ranges.index[ii] == "adjust_Normal_Flood" or param_ranges.index[ii] == "ReservoirRnormqMult"):
-                out_xml = out_xml.replace('%adjust_Normal_Flood',"0.8")
-                out_xml = out_xml.replace('%ReservoirRnormqMult',"1.0")
             out_xml = out_xml.replace("%"+param_ranges.index[ii],str(parameters[ii]))
         out_xml = out_xml.replace('%InitLisflood', "1")
+        out_xml = out_xml.replace('%ColdStart', "0")
         # do not write tss files of the states during the calibration
         out_xml = out_xml.replace('%repStateGauges', "0")
         out_xml = out_xml.replace('%repRateGauges', "0")
@@ -149,13 +194,14 @@ class LisfloodSettingsTemplate():
         for data in ['uz', 'uzf', 'uzi']:
             out_xml = out_xml.replace(f'%{data}_init', '0')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '0')
-        for data in ['lz', 'tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
+        for data in ['tha', 'thb', 'thc', 'thfa', 'thfb', 'thfc', 'thia', 'thib', 'thic']:
             out_xml = out_xml.replace(f'%{data}_init', '-9999')
             out_xml = out_xml.replace(f'%{data}_prerun_init', '-9999')
 
         # Prerun file
         out_xml_prerun = out_xml
         out_xml_prerun = out_xml_prerun.replace('%InitLisflood', "1")
+        out_xml_prerun = out_xml_prerun.replace('%ColdStart', "0")
         out_xml_prerun = out_xml_prerun.replace('%CalStart', prerun_start)
         out_xml_prerun = out_xml_prerun.replace('%CalEnd', prerun_end)
         out_xml_prerun = out_xml_prerun.replace('%EndMaps', "1")
@@ -172,6 +218,7 @@ class LisfloodSettingsTemplate():
         # Run file
         out_xml_run = out_xml
         out_xml_run = out_xml_run.replace('%InitLisflood', "0")
+        out_xml_run = out_xml_run.replace('%ColdStart', "1")
         out_xml_run = out_xml_run.replace('%CalStart', run_start)
         out_xml_run = out_xml_run.replace('%CalEnd', run_end)
         out_xml_run = out_xml_run.replace('%EndMaps', "0")

@@ -43,7 +43,8 @@ def test_subcatchment_full(dummy_cfg):
     assert subcatch.path_station == os.path.join(dummy_cfg.subcatchment_path, str(380), 'station')
     assert subcatch.gaugeloc == '4307500.0 2377500.0'
     assert subcatch.inflowflag == '0'
-    os.remove(os.path.join(subcatch.path, "inflow", "inflow_cut.map"))
+    # 380 do not have any inflow
+    # os.remove(os.path.join(subcatch.path, "inflow", "inflow_cut.map"))
     os.remove(os.path.join(subcatch.path, "inflow", "inflow.map"))
 
 
@@ -82,12 +83,12 @@ def test_prepare_inflows(dummy_cfg, catch, has_inflow):
 
     if inflow_flag == '1':
         chanq_truth = utils.read_tss(os.path.join(subcatch.path, 'chanq_truth.tss'), skiprows=3+n_inflows)
-        chanq_check = utils.read_tss(os.path.join(inflow_dir, 'chanq.tss'), skiprows=3+n_inflows)
+        chanq_check = utils.read_tss(os.path.join(inflow_dir, 'chanqavgdt.tss'), skiprows=3+n_inflows)
         
         chanq_truth = chanq_truth.to_numpy()
         chanq_check = chanq_check.to_numpy()
         assert np.allclose(chanq_truth, chanq_check)
-        os.remove(os.path.join(inflow_dir, 'chanq.tss'))
+        os.remove(os.path.join(inflow_dir, 'chanqavgdt.tss'))
 
 
 @pytest.mark.parametrize('catch', [2823, 380])

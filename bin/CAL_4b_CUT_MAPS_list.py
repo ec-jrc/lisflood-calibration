@@ -5,7 +5,7 @@ import os
 import sys
 import numpy as np
 
-from liscal import config, cutmaps
+from liscal import config
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[3])
 print(file_CatchmentsToProcess)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     full_path_to_prog = sys.argv[0]
     prog_name = parser.prog
-    new_prog_name = full_path_to_prog.replace(prog_name,"CAL_6_CUT_MAPS.py")
+    new_prog_name = full_path_to_prog.replace(prog_name,"CAL_4_CUT_MAPS.py")
 
     for index, row in stationdata_sorted.iterrows():
       catchment = index
@@ -67,7 +67,7 @@ if __name__ == '__main__':
       subcatchment_path = os.path.join(cfg.subcatchment_path, str(obsid))
       path_subcatch_maps = os.path.join(subcatchment_path,'maps')
 
-      cmd="python " + new_prog_name + " "+settings_file+" "+path_maps+" "+str(obsid)
+      cmd="python " + new_prog_name + " "+settings_file+" "+path_maps+" "+str(obsid) + " --use-dask-config"
       atLeastOneFileToProcess=False
       if os.path.isfile(path_maps) and os.path.getsize(path_maps) > 0:
             afile = os.path.basename(path_maps)

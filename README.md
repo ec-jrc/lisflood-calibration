@@ -17,11 +17,11 @@ Other useful resources
 
 This repository contains a collection of Python tools and libraries for calibrating the LISFLOOD hydrological model.
 
-The calibration tools were created by Hylke Beck 2014 (JRC, Princeton) hylkeb@princeton.edu.
+The calibration tools were created by Hylke Beck 2014 (JRC, Princeton).
 The submodule Hydrostats was created 2011 by Sat Kumar Tomer (modified by Hylke Beck).
-Modified by Feyera Aga Hirpa in 2015 (JRC) feyera.hirpa@ouce.ox.ac.uk.
-Modified by Valerio Lorini (valerio.lorini@ec.europa.eu) and Alfieri Lorenzo (lorenzo.alfieri@ec.europa.eu) in 2018.
-The calibration tools were completely refactored by ECMWF (corentin.carton@ecmwf.int) for the EFAS 5.0 and GloFAS 4.0 releases in 2023.
+Modified by Feyera Aga Hirpa in 2015 (JRC).
+Modified by Valerio Lorini and Alfieri Lorenzo (JRC) in 2018.
+The calibration tools were completely refactored by Corentin Carton de Wiart (ECMWF) for the EFAS 5.0 and GloFAS 4.0 releases in 2023, and updated by Stefania Grimaldi and Carlo Russo (JRC) for the GloFAS 5.0 and EFAS 6.0 releases in 2026.
 
 The calibration procedure consists of several Python scripts to be run consecutively. If needed, the tools are also available through a Python library called `liscal`:
 ```python
@@ -49,8 +49,9 @@ Scripts involved in this step:
     - `CAL_2_HYDRO_DEPENDENCIES.py`: computes the hydrological dependencies between the stations.
 3. Cut all the static maps and forcings and create one folder per catchment, named using the station ID of the station corresponding to the catchment. Best practice is to save the cutmaps outputs in a different folder than the calibration to avoid having to recompute them.
 Scripts involved in this step:
-    - `CAL_3_MASK.py`: extracts the mask of a specified stations.
+    - `CAL_3_MASK.py`: extracts the mask of the stations.
     - `CAL_4_CUT_MAPS.py`: cuts all the static and forcing maps from the mask computed in the previous step.
+    - `CAL_4b_CUT_MAPS_list.py` script provides a solution to apply CAL_4_CUT_MAPS.py to loop all the catchments
 4. From these maps, calibrate the catchment with respect to the observations at the station outlet of the catchment.
 Scripts involved in this step:
     - `CAL_5_EXTRACT_STATION.py`: extracts station metadata and observation for a specified catchment.

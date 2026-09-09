@@ -5,18 +5,8 @@ import os
 import sys
 import numpy as np
 import pandas
-import re
-import pdb
 import time
-from datetime import datetime
-ver = sys.version
-ver = ver[:ver.find('(')-1]
-if ver.find('3.') > -1:
-  from configparser import ConfigParser # Python 3.8
-else:
-  from ConfigParser import SafeConfigParser # Python 2.7-15
-import glob
-import datetime
+from configparser import ConfigParser as Parser # Python 3.8
 import subprocess
 import random
 
@@ -49,8 +39,9 @@ def check_newmax_nodes_number(parser, iniFile, list_id, job_prefix, nmax):
                         time.sleep(15)
                         for i in range(1,num_process_to_kill+1):
                             if len(curr_jobs_list)>i:
-                                print('Killing job: ' + str(curr_jobs_list[len(curr_jobs_list)-i]))
-                                job_to_kill = str(curr_jobs_list[len(curr_jobs_list)-i])[2:8]
+                                job_string = str(curr_jobs_list[-i])            # on PBS most recent job (that we want ot kill) is at the end of the list
+                                print('Killing job: ' + job_string)
+                                job_to_kill = job_string[2:].split('.')[0]      # the line starts with b', so skip first 2 chars and take full job number separated by dot
                                 cmd="qdel "+job_to_kill
                                 print(">> Calling \""+cmd+"\"")
                                 os.system(cmd)
@@ -70,10 +61,7 @@ iniFile = os.path.normpath(sys.argv[1])
 
 file_CatchmentsToProcess = os.path.normpath(sys.argv[2])
 
-if ver.find('3.') > -1:
-    parser = ConfigParser()  # python 3.8
-else:
-    parser = SafeConfigParser()  # python 2.7-15
+parser = Parser()
 parser.read(iniFile)
 
 src_root = parser.get('Main', 'src_root')
@@ -84,7 +72,9 @@ stations_data_path = parser.get("Stations", "stations_data")
 stations_links_path = parser.get('Stations', 'stations_links')
 
 SubCatchmentPath = parser.get('Path','subcatchment_path')
+SettingsPath = parser.get('Path','settings_file')
 numCPUs = parser.get('DEAP','numCPUs')
+seed = parser.get('DEAP','seed', fallback=0)
 
 python_cmd = parser.get('Path', 'PYTHONCMD')
 
@@ -109,7 +99,11 @@ for index, row in stationdata_sorted.iterrows():
         continue
     print("=================== "+str(catchment)+" ====================")
     path_subcatch = os.path.join(SubCatchmentPath,str(catchment))
-    if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")):
+    if os.path.exists(os.path.join(path_subcatch,"out","streamflow_simulated_best.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForLowKGE.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighWaterRemoval.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForHighTL.csv")) or \
+        os.path.exists(os.path.join(path_subcatch, "out", "streamflow_simulated_best_STOPForChanqAvgDiff.csv")):
         print("streamflow_simulated_best.csv already exists! Moving on...")
         continue
     print(">> Starting calibration of catchment "+str(catchment)+", size "+str(row['DrainingArea.km2.LDD'])+" km2...")
@@ -125,7 +119,7 @@ for index, row in stationdata_sorted.iterrows():
         subcatchment = str(subcatchment)
         print(subcatchment+" ")
                     
-        Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","chanq_simulated_best.tss")
+        Qsim_tss = os.path.join(SubCatchmentPath,subcatchment,"out","chanqavgdt_simulated_best.tss")
         
         #loop here till previous catchment on the list is done
         timer = 0
@@ -169,25 +163,29 @@ for index, row in stationdata_sorted.iterrows():
 
             f=open(script_name,'w')
             f.write("#!/bin/sh \n")
-            f.write("source activate liscal \n")
+            f.write("source activate liscalnew \n")
             f.write("set -euo pipefail \n")
             f.write("export NUMBA_THREADING_LAYER='tbb' \n")
             f.write("export NUMBA_NUM_THREADS=1 \n")
             f.write("export NUMBA_CACHE_DIR=\"" + path_current_numba_cache_dir + "\" \n")
-            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + ' ' + str(numCPUs) + '\n'
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_5_EXTRACT_STATION.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
             f.write(cmd)
-            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ os.path.join(SubCatchmentPath,str(index),'settings.txt') + ' ' + str(index) + '\n'
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_5c_FORCING_STATS.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
             f.write(cmd)
-            # delete all unnecessary files in out directory after calibration
-            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
-            f.write("find . -type d | grep -P \"^./[0-9]{1,}_[0-9]{1,}$\" | xargs -d\"\\n\" rm -r\n")
-            # delete all unnecessary files in settings directory after calibration
-            f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
-            f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_6_CALIBRATION.py') + ' '+ SettingsPath + ' ' + str(index) + ' ' + str(numCPUs) + ' --seed=' +str(seed) + '\n'
+            f.write(cmd)
+            cmd = python_cmd+' '+ os.path.join(src_root,'bin/CAL_7_LONGTERM_RUN.py') + ' '+ SettingsPath + ' ' + str(index) + '\n'
+            f.write(cmd)
+            # # delete all unnecessary files in out directory after calibration
+            # f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'out\n'))
+            # f.write("find . -type d | grep -P \"^./[0-9]{1,}_[0-9]{1,}$\" | xargs -d\"\\n\" rm -r\n")
+            # # delete all unnecessary files in settings directory after calibration
+            # f.write('cd ' + os.path.join(SubCatchmentPath,str(index),'settings\n'))
+            # f.write("ls | grep -P -v \"^.*(RunX.xml|Run0.xml)\" | xargs -d\"\\n\" rm\n")
             if (numba_cache_root[:8]=="/local0/"):
                 f.write("rm -Rf " + path_current_numba_cache_dir + " \n")
             f.close()
-            cmd="qsub -l nodes=1:ppn=32 -q long -N "+job_name+" "+script_name
+            cmd="qsub -l nodes=1:ppn=32 -q long -W umask=022 -N "+job_name+" "+script_name
 
             timerqsub = 0
             
