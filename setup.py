@@ -163,9 +163,15 @@ class UploadCommandTest(Command):
                 'Build failed. Fix the errors above before publishing.'
             )
 
+            self.print_console('Checking distribution metadata...')
+            _run_or_fail(
+                '{} -m twine check dist/*'.format(sys.executable),
+                'Twine metadata check failed.'
+            )
+
             self.print_console('Uploading the package to Test PyPI via Twine...')
             _run_or_fail(
-                'twine upload --repository testpypi dist/*',
+                'twine upload --verbose --repository testpypi dist/*',
                 'Twine upload to Test PyPI failed.'
             )
         finally:
