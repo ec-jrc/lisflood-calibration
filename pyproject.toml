@@ -38,6 +38,7 @@ dependencies = [
     ]
     test = [
         "pytest",
+        "plotly",
         ]
 
 [project.urls]
