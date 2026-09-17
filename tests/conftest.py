@@ -26,6 +26,14 @@ class DummyDEAPParameters():
         self.cxpb = 0.6
         self.mutpb = 0.4
 
+        self.gen_offset = 3
+        self.effmax_tol = 0.003
+        self.objectives_list = ["KGE"]
+        
+        self.elite = 0  		 
+        self.split_lake_params = 0
+        self.apply_statistical_stall_check = 0
+        self.use_filtered_population = 0
 
 class DummyConfig():
 
@@ -52,7 +60,7 @@ class DummyConfig():
         self.param_ranges = pandas.read_csv(param_ranges_file, sep=",", index_col=0)
 
         # template
-        self.lisflood_template = path.join(ROOT_DIR, 'templates','settings_lisflood.xml')
+        self.lisflood_template = path.join(ROOT_DIR, 'templates', 'settings_lisflood.xml')
 
         # Debug/test parameters
         self.fast_debug = False

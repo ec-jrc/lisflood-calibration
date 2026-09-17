@@ -1,0 +1,8 @@
+[Main]
+forcing_start = 02/01/2010 00:00
+forcing_end = 31/12/2023 00:00
+timestep = 1440
+
+[Stations]
+stations_data = {OUTPUT_DIR}/stations_data.csv
+observed_discharges = {INPUT_DIR}/observations_subset.csv

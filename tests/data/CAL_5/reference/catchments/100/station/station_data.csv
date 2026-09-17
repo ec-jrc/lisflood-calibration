@@ -1,0 +1,12 @@
+,100
+LisfloodX,140.075
+LisfloodY,-20.225
+DrainingArea.km2.LDD,5000.0
+Spinup_days,365.0
+Min_calib_days,730.0
+CAL_TYPE,24.0
+EC_calib,2.0
+Obs_start,02/01/2011 00:00
+Obs_end,30/12/2016 00:00
+Split_date,02/01/2011 00:00
+N_data,2190

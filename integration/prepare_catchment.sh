@@ -16,5 +16,5 @@ sed -i "s:OBS:$stations_dir/observed_discharges.csv:" $catchment_root/settings.t
 sed -i "s:NCPUS:$NCPUS:" $catchment_root/settings.txt
 sed -i "s:CATCHMENTS_DIR:$root_dir/catchments:" $catchment_root/settings.txt
 
-#time python $src_root/bin/CAL_4_EXTRACT_STATION.py $catchment_root/settings.txt $OBSID
+#time python $src_root/bin/CAL_5_EXTRACT_STATION.py $catchment_root/settings.txt $OBSID
 

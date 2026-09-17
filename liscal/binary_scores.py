@@ -2,6 +2,7 @@
 
 import math
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def contingency_table(threshold, Q):
@@ -164,7 +165,7 @@ def BR(n, a, b, c, d):
 
 # Calibration Refinement
 def CR(n, a, b, c, d):
-    rateeturn (a+b) / n
+    return (a+b) / n
 
 # Summary: likelihood-base rate factorization (Pepe, 2003)
 def BRHFSummary(n, a, b, c, d):

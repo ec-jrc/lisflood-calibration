@@ -1,0 +1,33 @@
+<div class="masthead">
+
+  <div class="masthead__inner-wrap">
+    <div style="display: flow; float: left"><h2>{{ site.title }}</h2></div>
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+
+        <ul class="visible-links">
+          <!-- {{page.url}} - {{link.url}}-->
+          {% for link in site.data.navigation.main %}
+            {% if link.url contains 'http' %}
+              {% assign domain = '' %}
+            {% else %}
+              {% assign domain = site.url | append: site.baseurl %}
+            {% endif %}
+
+            {% assign navclass = '' %}
+            <li class="masthead__menu-item {{ navclass }}">
+              <a href="{{ domain }}{{ link.url }}" class="{{ navclass }}" {% if link.description %}title="{{ link.description }}"{% endif %}>
+              &nbsp;{{ link.title }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">{{ site.data.ui-text[site.locale].menu_label | default: "Toggle Menu" }}</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>

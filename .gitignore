@@ -1,6 +1,10 @@
-# Created by .ignore support plugin (hsz.mobi)
+.kiro/
+.vscode/
 .idea/
-__pycache__/
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
 *.py[cod]
 *$py.class
 *.so
@@ -61,10 +65,10 @@ venv.bak/
 .ropeproject
 /site
 .mypy_cache/
-catchments/
 result/
 temp/
 .jekyll-metadata
 Gemfile.lock
 _site/
 .vscode/launch.json
+_version.py
